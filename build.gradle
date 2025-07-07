@@ -33,7 +33,15 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    runtimeOnly 'org.postgresql:postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+
+    //json 처리
+    implementation 'org.json:json:20240303'
+
+    //csv파일 읽기
+    implementation 'org.apache.commons:commons-csv:1.8'
 }
 
 tasks.named('test') {
