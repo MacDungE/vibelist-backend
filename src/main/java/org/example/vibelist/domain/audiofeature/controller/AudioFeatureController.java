@@ -17,7 +17,7 @@ import java.util.Collections;
 
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/v1")
 public class AudioFeatureController {
 
     private final String clientId = "55de41f9717041cd87107c29ea8747ab";

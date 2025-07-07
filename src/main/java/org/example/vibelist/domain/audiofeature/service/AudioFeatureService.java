@@ -34,9 +34,9 @@ public class AudioFeatureService {
             AudioFeature af = new AudioFeature();
             af.setDanceability(Double.parseDouble(record.get("danceability")));
             af.setEnergy(Double.parseDouble(record.get("energy")));
-            af.setKeyy(Integer.parseInt(record.get("key")));
+            af.setKey(Integer.parseInt(record.get("key")));
             af.setLoudness(Double.parseDouble(record.get("loudness")));
-            af.setMoood(Integer.parseInt(record.get("mood")));
+            af.setMode(Integer.parseInt(record.get("mode")));
             af.setSpeechiness(Double.parseDouble(record.get("speechiness")));
             af.setAcousticness(Double.parseDouble(record.get("acousticness")));
             af.setInstrumentalness(Double.parseDouble(record.get("instrumentalness")));

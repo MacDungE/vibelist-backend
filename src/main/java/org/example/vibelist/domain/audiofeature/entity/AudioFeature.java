@@ -9,7 +9,7 @@ import org.example.vibelist.domain.track.entity.Track;
 public class AudioFeature {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "audio_feature_id")
     private Long id;
 
@@ -17,7 +17,7 @@ public class AudioFeature {
     private double energy;
     private int key;
     private double loudness;
-    private int mood;
+    private int mode;
     private double speechiness;
     private double acousticness;
     private double instrumentalness;
@@ -25,8 +25,10 @@ public class AudioFeature {
     private double valence;
     private double tempo;
     private int durationMs;
-    private int timeSignature;
+    private double timeSignature;
     private String spotifyId;
+
+    @Column(columnDefinition = "text")
     private String genres;
 
     @OneToOne(fetch = FetchType.LAZY)   //지연로딩 적용 -> Auth 앤티티 조회할때 user 객체는 불러오지 않음

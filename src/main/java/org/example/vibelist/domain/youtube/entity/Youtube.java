@@ -9,7 +9,7 @@ import org.example.vibelist.domain.track.entity.Track;
 public class Youtube {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "youtube_id")
     private Long id;
 

@@ -2,6 +2,7 @@ package org.example.vibelist.domain.track.controller;
 
 
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,8 +19,11 @@ import java.util.Collections;
 @RestController
 public class SpotifyController {
 
-    private final String clientId = "55de41f9717041cd87107c29ea8747ab";
-    private final String clientSecret = "2600f4307ef54c0a8318ecd1c6e59e45";
+    @Value("${spotify.clientId}")
+    private String clientId;
+
+    @Value("${spotify.clientSecret}")
+    private String clientSecret;
 
     private final RestTemplate restTemplate = new RestTemplate();
 

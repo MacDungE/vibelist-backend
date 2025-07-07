@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 public class Track {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "track_id")
     private Long id;
 

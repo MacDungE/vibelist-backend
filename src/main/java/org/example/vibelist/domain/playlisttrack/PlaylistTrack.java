@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class PlaylistTrack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "playlist_track_id")
     private Long id;
 
     @ManyToOne
