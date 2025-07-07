@@ -3,6 +3,7 @@ package org.example.vibelist.domain.track.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.playlisttrack.PlaylistTrack;
 import org.example.vibelist.domain.youtube.entity.Youtube;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
 public class Track {
     @Id
