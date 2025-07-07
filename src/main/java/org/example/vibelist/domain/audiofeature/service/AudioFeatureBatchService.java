@@ -2,7 +2,7 @@ package org.example.vibelist.domain.audiofeature.service;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.batch.BatchService;
+import org.example.vibelist.domain.batch.service.BatchService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
