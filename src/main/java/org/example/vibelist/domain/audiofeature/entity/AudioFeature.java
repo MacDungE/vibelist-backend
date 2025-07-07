@@ -15,9 +15,9 @@ public class AudioFeature {
 
     private double danceability;
     private double energy;
-    private int keyy;
+    private int key;
     private double loudness;
-    private int moood;
+    private int mood;
     private double speechiness;
     private double acousticness;
     private double instrumentalness;
