@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.batch;
+package org.example.vibelist.domain.batch.service;
 
 
 

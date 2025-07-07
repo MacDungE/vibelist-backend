@@ -1,7 +1,7 @@
 package org.example.vibelist.domain.track.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.batch.BatchService;
+import org.example.vibelist.domain.batch.service.BatchService;
 import org.example.vibelist.domain.track.repository.TrackRepository;
 import org.springframework.stereotype.Service;
 
