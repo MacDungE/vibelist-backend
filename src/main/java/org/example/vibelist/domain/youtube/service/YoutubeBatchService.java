@@ -9,6 +9,7 @@ import org.example.vibelist.domain.youtube.client.YoutubeApiClient;
 import org.example.vibelist.domain.youtube.dto.YoutubeVideoMetaDto;
 import org.example.vibelist.domain.youtube.entity.Youtube;
 import org.example.vibelist.domain.youtube.repository.YoutubeRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,13 +45,12 @@ public class YoutubeBatchService implements BatchService {
     @Override
     @Transactional
     public void executeBatch() {
-        int page = 0;
         int count = 0;
         Set<Long> failedIds = loadFailedTrackIds();
         Page<Track> trackPage;
 
         do {
-            Pageable pageable = PageRequest.of(page++, 100);
+            Pageable pageable = PageRequest.of(0, 100, Sort.by("id").ascending());
             trackPage = trackRepository.findByYoutubeIsNull(pageable);
 
             for (Track track : trackPage.getContent()) {

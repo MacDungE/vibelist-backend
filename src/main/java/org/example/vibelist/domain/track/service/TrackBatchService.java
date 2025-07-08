@@ -21,6 +21,7 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,15 +47,13 @@ public class TrackBatchService implements BatchService {
     @Override
     @Transactional
     public void executeBatch() {
-        int page = 0;
         int count = 0;
         Set<Long> failedIds = loadFailedTrackIds();
         Page<AudioFeature> afPage;
         do {
-            Pageable pageable = PageRequest.of(page++, 1000);
+            Pageable pageable = PageRequest.of(0, 1000, Sort.by("id").ascending());
             afPage = audioFeatureRepository.findByTrackIsNull(pageable);
             log.info("🔍 AudioFeature 조회 결과: {}건", afPage.getTotalElements());
-            log.info("🔍 현재 페이지 번호: {}", page - 1);
 
             for (AudioFeature feature : afPage.getContent()) {
                 if (failedIds.contains(feature.getId())) {
