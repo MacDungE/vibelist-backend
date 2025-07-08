@@ -37,35 +37,54 @@ public class TrackBatchService implements BatchService {
     private static final int RETRY_DELAY_MS = 3000; // API 요청 제한 시 딜레이 시간
     private static final String FAILED_TRACKS_FILE = "spotify_failed_tracks.log"; // 실패한 트랙 -> 따로 로그 파일 저장
 
+    /**
+     * AudioFeature 엔티티 중 Track이 없는 데이터를 찾아,
+     * Spotify API로 메타데이터를 조회하여 Track으로 저장하는 배치 작업을 수행한다.
+     * 일정 개수마다 flush를 호출하여 메모리 사용을 최적화하며,
+     * 실패한 ID는 로그 파일로 별도 기록한다.
+     */
     @Override
     @Transactional
     public void executeBatch() {
         int page = 0;
+        int count = 0;
         Set<Long> failedIds = loadFailedTrackIds();
         Page<AudioFeature> afPage;
         do {
-            Pageable pageable = PageRequest.of(page++, 100);
+            Pageable pageable = PageRequest.of(page++, 1000);
             afPage = audioFeatureRepository.findByTrackIsNull(pageable);
+            log.info("🔍 AudioFeature 조회 결과: {}건", afPage.getTotalElements());
+            log.info("🔍 현재 페이지 번호: {}", page - 1);
 
             for (AudioFeature feature : afPage.getContent()) {
                 if (failedIds.contains(feature.getId())) {
                     log.info("⏭️ [건너뜀] 이전 실패: {}", feature.getId());
                     continue;
                 }
+                log.info("🚀 처리 시작 - AudioFeature ID: {}, SpotifyID: {}", feature.getId(), feature.getSpotifyId());
 
                 boolean success = processTrackWithRetry(feature);
                 if (!success) {
                     recordFailedTrack(feature.getId());
                 }
+                if (++count % 1000 == 0) {
+                    trackRepository.flush();
+                    log.info("💾 {}개 단위 flush 완료", count);
+                }
             }
         } while (!afPage.isLast());
     }
 
+    /**
+     * Spotify API를 호출하여 트랙 정보를 조회하고 저장한다.
+     * 최대 3회까지 재시도하며, 성공 시 true를 반환하고 실패 시 false를 반환한다.
+     */
     private boolean processTrackWithRetry(AudioFeature feature) {
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 log.info("🎧 [시도 {}] Spotify ID: {}", attempt, feature.getSpotifyId());
                 SpotifyTrackMetaDto dto = spotifyApiClient.getTrackMeta(feature.getSpotifyId());
+                log.info("📥 수신된 DTO: {}", dto);
 
                 Track track = new Track();
                 track.setTitle(dto.getTitle());
@@ -78,7 +97,9 @@ public class TrackBatchService implements BatchService {
                 track.setAudioFeature(feature);
                 feature.setTrack(track);
 
+                log.info("🎧 트랙 정보: title={}, artist={}, album={}", dto.getTitle(), dto.getArtist(), dto.getAlbum());
                 trackRepository.save(track);
+                log.info("💾 저장된 Track: {}", track);
                 log.info("✅ [성공] {} - {}", dto.getTitle(), dto.getArtist());
                 return true;
 
@@ -91,15 +112,13 @@ public class TrackBatchService implements BatchService {
                 Thread.sleep(RETRY_DELAY_MS);
             } catch (InterruptedException ignored) {}
         }
-
+        log.warn("❗ 최종 실패 - AudioFeature ID: {}", feature.getId());
         return false;
     }
 
-    private boolean isQuotaExceeded(SpotifyTrackMetaDto dto) {
-        //return dto.getUrl() != null && dto.getUrl().contains("quotaExceeded");
-        return true;
-    }
-
+    /**
+     * Spotify API 호출 실패한 AudioFeature ID를 로그 파일에 기록한다.
+     */
     private void recordFailedTrack(Long trackId) {
         try {
             Files.write(Paths.get(FAILED_TRACKS_FILE),
@@ -110,6 +129,10 @@ public class TrackBatchService implements BatchService {
         }
     }
 
+    /**
+     * 실패 로그 파일로부터 AudioFeature ID 목록을 로드한다.
+     * 파일이 없거나 읽기에 실패하면 빈 Set을 반환한다.
+     */
     private Set<Long> loadFailedTrackIds() {
         Set<Long> ids = new HashSet<>();
         Path path = Paths.get(FAILED_TRACKS_FILE);

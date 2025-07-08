@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -33,14 +34,23 @@ public class YoutubeBatchService implements BatchService {
     private static final int RETRY_DELAY_MS = 3000; // API 요청 제한 시 딜레이 시간
     private static final String FAILED_TRACKS_FILE = "failed_tracks.log"; // 실패한 트랙 -> 따로 로그 파일 저장
 
+    /**
+     * 배치 작업을 수행하여 Youtube 정보가 없는 트랙들을 찾아
+     * Youtube API로 메타데이터를 조회한 후 DB에 저장한다.
+     * 일정 단위마다 flush를 호출하여 DB에 반영하며,
+     * 실패한 트랙은 로그 파일에 기록한다.
+     */
+
     @Override
+    @Transactional
     public void executeBatch() {
         int page = 0;
+        int count = 0;
         Set<Long> failedIds = loadFailedTrackIds();
         Page<Track> trackPage;
 
         do {
-            Pageable pageable = PageRequest.of(page++, 1000);
+            Pageable pageable = PageRequest.of(page++, 100);
             trackPage = trackRepository.findByYoutubeIsNull(pageable);
 
             for (Track track : trackPage.getContent()) {
@@ -53,10 +63,19 @@ public class YoutubeBatchService implements BatchService {
                 if (!success) {
                     recordFailedTrack(track.getId());
                 }
+
+                if (++count % 100 == 0) {
+                    youtubeRepository.flush();
+                    log.info("💾 {}개 단위 flush 완료", count);
+                }
             }
         } while (!trackPage.isLast());
     }
 
+    /**
+     * 트랙 정보를 기반으로 Youtube API를 호출하여 메타데이터를 수집하고 저장한다.
+     * 최대 3회까지 재시도하며, 실패 시 false를 반환한다.
+     */
     private boolean processTrackWithRetry(Track track) {
         String query = track.getTitle() + " " + track.getArtist();
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -88,10 +107,16 @@ public class YoutubeBatchService implements BatchService {
         return false;
     }
 
+    /**
+     * Youtube API 응답이 쿼터 초과(quotaExceeded) 상태인지 여부를 판단한다.
+     */
     private boolean isQuotaExceeded(YoutubeVideoMetaDto dto) {
         return dto.getUrl() != null && dto.getUrl().contains("quotaExceeded");
     }
 
+    /**
+     * 실패한 트랙 ID를 로그 파일에 기록한다.
+     */
     private void recordFailedTrack(Long trackId) {
         try {
             Files.write(Paths.get(FAILED_TRACKS_FILE),
@@ -102,6 +127,9 @@ public class YoutubeBatchService implements BatchService {
         }
     }
 
+    /**
+     * 이전에 실패한 트랙 ID 목록을 로그 파일로부터 읽어온다.
+     */
     private Set<Long> loadFailedTrackIds() {
         Set<Long> ids = new HashSet<>();
         Path path = Paths.get(FAILED_TRACKS_FILE);

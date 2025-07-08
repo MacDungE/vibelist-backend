@@ -7,8 +7,13 @@ import org.example.vibelist.domain.track.service.TrackBatchService;
 import org.example.vibelist.domain.youtube.service.YoutubeBatchService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/*
+* 세 가지 BatchService 한 번에 실행
+* */
+@Profile("batch")
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -24,7 +29,7 @@ public class BatchSequenceRunner implements ApplicationRunner {
 
         audioFeatureBatchService.executeBatch();
         trackBatchService.executeBatch();
-        //youtubeBatchService.executeBatch();
+        youtubeBatchService.executeBatch();
 
         log.info("🏁 전체 배치 실행 종료");
     }

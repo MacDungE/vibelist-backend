@@ -6,9 +6,12 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-//@Component
+/**
+* Youtube Batch만 별도 실행 시 실행하는 클래스
+**/
+@Component
 @RequiredArgsConstructor
-@Profile("youtube-batch") // "youtube-batch" profile만 실행
+@Profile("youtube-batch")
 public class YoutubeImportRunner implements CommandLineRunner {
 
     private final YoutubeBatchService youtubeBatchService;

@@ -2,7 +2,6 @@ package org.example.vibelist.domain.track.client;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.track.controller.SpotifyController;
 import org.example.vibelist.domain.track.dto.SpotifyTrackMetaDto;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Base64;
 import java.util.Collections;
-//import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
 @RequiredArgsConstructor
