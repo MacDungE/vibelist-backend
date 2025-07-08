@@ -18,12 +18,13 @@ public class AudioFeatureBatchService implements BatchService {
     private final JdbcTemplate jdbcTemplate;
 
 
-    //@PostConstruct
+
 
     /**
      * @PostConstruct 주석을 해제하면 프로젝트를 실핼할때 해당 클래스의 executeBatch 메소드를 실행합니다.
      * 지정한 audio_feature 관련 csv을 읽어 테이블에 데이터를 저장합니다.
      */
+    //@PostConstruct
     public void init() {
         executeBatch();
     }

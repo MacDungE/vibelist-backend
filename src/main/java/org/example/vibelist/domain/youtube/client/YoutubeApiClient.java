@@ -33,6 +33,7 @@ public class YoutubeApiClient {
                             .queryParam("q", query)
                             .queryParam("type", "video")
                             .queryParam("maxResults", 1)
+                            .queryParam("videoEmbeddable", true)
                             .queryParam("key", apiKey)
                             .build())
                     .retrieve()

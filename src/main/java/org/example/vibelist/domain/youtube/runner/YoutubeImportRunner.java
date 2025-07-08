@@ -6,7 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 @RequiredArgsConstructor
 @Profile("youtube-batch") // "youtube-batch" profile만 실행
 public class YoutubeImportRunner implements CommandLineRunner {

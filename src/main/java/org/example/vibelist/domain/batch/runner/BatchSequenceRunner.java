@@ -24,7 +24,7 @@ public class BatchSequenceRunner implements ApplicationRunner {
 
         audioFeatureBatchService.executeBatch();
         trackBatchService.executeBatch();
-        youtubeBatchService.executeBatch();
+        //youtubeBatchService.executeBatch();
 
         log.info("🏁 전체 배치 실행 종료");
     }
