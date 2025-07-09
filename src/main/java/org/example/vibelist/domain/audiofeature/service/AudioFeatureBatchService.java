@@ -18,7 +18,7 @@ public class AudioFeatureBatchService implements BatchService {
 
     @Override
     public void executeBatch() {
-        String csvFile = "src/main/resources/audio_features.csv";
+        String csvFile = "/Users/sung_1/Documents/VibeList/vibelist-backend/src/main/resources/audio_features.csv";
         String line;
         String delimiter = ",";
 

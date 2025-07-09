@@ -6,7 +6,9 @@ import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.audiofeature.repository.AudioFeatureRepository;
 import org.example.vibelist.domain.elasticsearch.dto.AudioFeatureEsDoc;
 import org.example.vibelist.domain.elasticsearch.repository.AudioFeatureEsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,32 +22,55 @@ public class AudioFeatureEsService {
     private final AudioFeatureEsRepository audioFeatureEsRepository;//ElasticSearch 접근
     private final AudioFeatureRepository audioFeatureRepository; //Rds 접근
 
+    @Autowired
+    private ElasticsearchOperations elasticsearchOperations; // 심층 검색
+
+    @Transactional
+    /*
+    1000개만 Es에 저장하는 메소드입니다.
+     */
+    public void executeTestInsert(){
+        log.info("테스트 insert 작업 시작");
+        long start = System.currentTimeMillis();
+        List<AudioFeature> features = audioFeatureRepository
+                .findAll(PageRequest.of(0, 1000))
+                .getContent();
+        audioFeatureEsRepository.saveAll(features.stream().map(this::convertToEs).toList());
+        long end = System.currentTimeMillis();
+        log.info("작업 종료 소요 시간 {}ms", (end - start));
+    }
+
     @Transactional
     /*
     Rds에서 데이터를 읽어와 Es에 저장하는 메소드입니다.
      */
-    public void insert() {
-        long start, end;
+    public void executeBatchInsert() {
+        log.info("Batch Insert 작업 시작");
+        int batchSize = 1000;
+        long totalStart = System.currentTimeMillis();
+        long totalCount = audioFeatureRepository.count(); // RDS의 총 개수
+        int totalPages = (int) Math.ceil((double) totalCount / batchSize);
 
-        log.info("Insert 작업 시작");
-        log.info("Rds에서 데이터 불러오기 시작 [0-1000]");
-        start = System.currentTimeMillis();
-        List<AudioFeature> features = audioFeatureRepository.findAll(PageRequest.of(0, 1000)).getContent();
-        end  = System.currentTimeMillis();
-        log.info("Rds에서 데이터 불러오기 종료 소요시간 {}", (end - start));
+        for (int i = 0; i < totalPages; i++) {
+            log.info("Batch {} 시작", i);
 
-        log.info("Es에 삽입 시작");
-        start = System.currentTimeMillis();
-//        한개씩 저장
-//        for(AudioFeature feature: features){
-//        audioFeatureEsRepository.save(convertToEs(feature));
-//        }
+            long start = System.currentTimeMillis();
+            List<AudioFeature> features = audioFeatureRepository
+                    .findAll(PageRequest.of(i, batchSize))
+                    .getContent();
 
-        audioFeatureEsRepository.saveAll(features.stream().map(this::convertToEs).toList());
-        end = System.currentTimeMillis();
-        log.info("Insert 작업 종료, 소요 시간 :{}", (end - start));
+            audioFeatureEsRepository.saveAll(
+                    features.stream().map(this::convertToEs).toList()
+            );
+
+            long end = System.currentTimeMillis();
+            log.info("Batch {} 완료, 소요 시간: {}ms", i, (end - start));
+        }
+        long totalEnd  = System.currentTimeMillis();
+
+        log.info("Rds에서 데이터 불러오기 종료 소요시간 {}", (totalEnd - totalStart));
+
     }
-
 
     public AudioFeatureEsDoc convertToEs(AudioFeature audioFeature) {
         /*
