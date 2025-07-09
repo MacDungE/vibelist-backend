@@ -85,15 +85,18 @@ public class TrackBatchService implements BatchService {
                 SpotifyTrackMetaDto dto = spotifyApiClient.getTrackMeta(feature.getSpotifyId());
                 log.info("📥 수신된 DTO: {}", dto);
 
-                Track track = new Track();
-                track.setTitle(dto.getTitle());
-                track.setArtist(dto.getArtist());
-                track.setAlbum(dto.getAlbum());
-                track.setDurationMs(dto.getDurationMs());
-                track.setExplicit(dto.isExplicit());
-                track.setPopularity(dto.getPopularity());
-                track.setImageUrl(dto.getImageUrl());
-                track.setAudioFeature(feature);
+                Track track = Track.builder()
+                        .title(dto.getTitle())
+                        .artist(dto.getArtist())
+                        .album(dto.getAlbum())
+                        .durationMs(dto.getDurationMs())
+                        .explicit(dto.isExplicit())
+                        .popularity(dto.getPopularity())
+                        .imageUrl(dto.getImageUrl())
+                        .spotifyId(dto.getSpotifyId())
+                        .audioFeature(feature)
+                        .build();
+
                 feature.setTrack(track);
 
                 log.info("🎧 트랙 정보: title={}, artist={}, album={}", dto.getTitle(), dto.getArtist(), dto.getAlbum());

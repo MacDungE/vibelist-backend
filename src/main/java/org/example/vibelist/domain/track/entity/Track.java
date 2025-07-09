@@ -1,9 +1,7 @@
 package org.example.vibelist.domain.track.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.playlisttrack.PlaylistTrack;
 import org.example.vibelist.domain.youtube.entity.Youtube;
@@ -15,6 +13,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Track {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,6 +28,7 @@ public class Track {
     private int durationMs;
     private boolean explicit;
     private String imageUrl;
+    private String spotifyId;
 
 
     @OneToOne(fetch = FetchType.LAZY)   //지연로딩 적용 -> Auth 앤티티 조회할때 user 객체는 불러오지 않음
