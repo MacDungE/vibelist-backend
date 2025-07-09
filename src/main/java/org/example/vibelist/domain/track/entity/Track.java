@@ -40,4 +40,5 @@ public class Track {
     @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistTrack> playlistTracks = new ArrayList<>();
 
+
 }

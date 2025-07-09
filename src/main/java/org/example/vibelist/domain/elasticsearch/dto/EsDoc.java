@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Document(indexName = "audio_feature_index")
-public class AudioFeatureEsDoc {
+public class EsDoc {
     @Id
     private String id;
     private double danceability;
@@ -25,5 +25,16 @@ public class AudioFeatureEsDoc {
     private int durationMs;
     private double timeSignature;
     private List<String> genres;//RDS에는 하나의 String으로 저장되어 있는데 나중에 ; 기준으로 Split해야함
-    private String spotifyId;
+    private String spotifyId; //playlist에 대한 id
+
+    //--------audio feature -----//
+
+
+    private TrackMetrics trackMetrics;
+
+    //--- track------//
+
+    private YoutubeMetrics youtubeMetrics;
+
+    //--youtube--//
 }
