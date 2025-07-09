@@ -53,7 +53,7 @@ public class AudioFeatureEsService {
         ; 기준으로 Split 했습니다.
          */
         List<String> generList = Arrays.stream(audioFeature.getGenres()
-                        .split(","))
+                        .split(";"))
                 .map(String::trim)
                 .toList();
 
