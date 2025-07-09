@@ -22,13 +22,13 @@ public class AudioFeatureEsService {
 
     @Transactional
     /*
-    나중에 성능 비교를 위한 pureInsert 메소드입니다.
+    Rds에서 데이터를 읽어와 Es에 저장하는 메소드입니다.
      */
-    public void pureInsert() {
+    public void insert() {
         long start, end;
 
-        log.info("Pure Insert 작업 시작");
-        log.info("Rds에서 데이터 불러오기 시작");
+        log.info("Insert 작업 시작");
+        log.info("Rds에서 데이터 불러오기 시작 [0-1000]");
         start = System.currentTimeMillis();
         List<AudioFeature> features = audioFeatureRepository.findAll(PageRequest.of(0, 1000)).getContent();
         end  = System.currentTimeMillis();
@@ -36,11 +36,14 @@ public class AudioFeatureEsService {
 
         log.info("Es에 삽입 시작");
         start = System.currentTimeMillis();
-        for(AudioFeature feature: features){
-        audioFeatureEsRepository.save(convertToEs(feature));
-        }
+//        한개씩 저장
+//        for(AudioFeature feature: features){
+//        audioFeatureEsRepository.save(convertToEs(feature));
+//        }
+
+        audioFeatureEsRepository.saveAll(features.stream().map(this::convertToEs).toList());
         end = System.currentTimeMillis();
-        log.info("Pure Insert 작업 종료, 소요 시간 :{}", (end - start));
+        log.info("Insert 작업 종료, 소요 시간 :{}", (end - start));
     }
 
 
