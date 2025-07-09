@@ -17,5 +17,5 @@ public class SpotifyTrackMetaDto {
     private int durationMs;
     private boolean explicit;
     private String imageUrl;
-
+    private String spotifyId;
 }
