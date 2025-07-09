@@ -69,7 +69,10 @@ public class AudioFeatureEsService {
         esDoc.setLiveness(audioFeature.getLiveness());
         esDoc.setValence(audioFeature.getValence());
         esDoc.setTempo(audioFeature.getTempo());
+        esDoc.setDurationMs(audioFeature.getDurationMs());
+        esDoc.setTimeSignature(audioFeature.getTimeSignature());
         esDoc.setGenres(generList);
+        esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
         return esDoc;
 
