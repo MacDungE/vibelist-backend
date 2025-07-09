@@ -6,13 +6,11 @@ import lombok.Getter;
 @Getter
 @Builder
 public class EmotionFeatureProfile {
-    private DoubleRange danceability;
-    private DoubleRange energy;
-    private DoubleRange loudness;
-    private DoubleRange speechiness;
-    private DoubleRange acousticness;
-    private DoubleRange instrumentalness;
-    private DoubleRange liveness;
+    /**
+     * 감정 검색에 사용할 valence, energy의 범위를 저장하는 객체
+     */
+
     private DoubleRange valence;
-    private DoubleRange tempo;
+    private DoubleRange energy;
+
 }
