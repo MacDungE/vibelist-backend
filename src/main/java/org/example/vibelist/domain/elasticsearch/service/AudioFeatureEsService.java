@@ -42,7 +42,7 @@ public class AudioFeatureEsService {
 
     @Transactional
     /*
-    Rds에서 데이터를 읽어와 Es에 저장하는 메소드입니다.
+    Rds에서 모든 데이터를 읽어와 Es에 저장하는 메소드입니다.
      */
     public void executeBatchInsert() {
         log.info("Batch Insert 작업 시작");
