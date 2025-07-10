@@ -34,7 +34,7 @@ public class EsDoc {
 
     //--- track------//
 
-    private YoutubeMetrics youtubeMetrics;
+    //private YoutubeMetrics youtubeMetrics;
 
     //--youtube--//
 }

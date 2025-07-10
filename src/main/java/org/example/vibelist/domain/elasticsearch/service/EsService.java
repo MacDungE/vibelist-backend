@@ -6,11 +6,9 @@ import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.audiofeature.repository.AudioFeatureRepository;
 import org.example.vibelist.domain.elasticsearch.dto.EsDoc;
 import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
-import org.example.vibelist.domain.elasticsearch.dto.YoutubeMetrics;
 import org.example.vibelist.domain.elasticsearch.repository.EsRepository;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
-import org.example.vibelist.domain.youtube.entity.Youtube;
 import org.example.vibelist.domain.youtube.repository.YoutubeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -54,28 +52,24 @@ public class EsService {
                 .map(Track::getId)
                 .toList();
 
-        //track_id로 audio
+        /*
+        Key = track_id
+        Value = track_id에 대응되는 AudioFeature
+         */
         Map<Long, AudioFeature> audioFeatureMap = audioFeatureRepository.findAllById(trackIds).stream()
                 .collect(Collectors.toMap(AudioFeature::getId, Function.identity()));
 
-        Map<Long, Youtube> youtubeMap = youtubeRepository.findAll().stream()
-                .filter(y -> y.getTrack() != null && trackIds.contains(y.getTrack().getId()))
-                .collect(Collectors.toMap(y -> y.getTrack().getId(), Function.identity()));
-        List<EsDoc> esDocs = new ArrayList<>();
+
+        List<EsDoc> esDocs = new ArrayList<>();//ElasticSearch에 접근할 Document
 
         for (Track track : tracks) {
             AudioFeature af = audioFeatureMap.get(track.getId());
-            Youtube yt = youtubeMap.get(track.getId());
 
             if (af == null){
                 log.warn("track에 대응되는 AudioFeature를 찾을 수 없습니다. trackid : {} ", track.getId());
                 continue;
             }
-            if(yt == null){
-                log.warn("track에 대응되는 Youtube를 찾을 수 없습니다. trackid : {} ", track.getId());
-                continue;
-            }
-            esDocs.add(convertToEs(af, track, yt));
+            esDocs.add(convertToEs(af, track));
         }
 
         esRepository.saveAll(esDocs);
@@ -117,7 +111,7 @@ public class EsService {
 //
 //    }
 
-    public EsDoc convertToEs(AudioFeature audioFeature, Track track, Youtube youtube) {
+    public EsDoc convertToEs(AudioFeature audioFeature, Track track) {
         /*
         Rds에 저장되어있는 genre는 하나의 String 값입니다.
         ; 기준으로 Split 했습니다.
@@ -155,14 +149,6 @@ public class EsService {
         trackMetrics.setExplicit(track.isExplicit());
         esDoc.setTrackMetrics(trackMetrics);
 
-        YoutubeMetrics youtubeMetrics = new YoutubeMetrics();
-        youtubeMetrics.setUrl(youtube.getUrl());
-        youtubeMetrics.setDurationSeconds(youtube.getDurationSeconds());
-
-        esDoc.setYoutubeMetrics(youtubeMetrics);
-
         return esDoc;
-
-
     }
 }
