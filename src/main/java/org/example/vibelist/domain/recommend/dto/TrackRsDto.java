@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.example.vibelist.domain.track.entity.Track;
 
 @Data
@@ -11,25 +12,32 @@ import org.example.vibelist.domain.track.entity.Track;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrackRsDto {
+
+    private String spotifyId;
+    private int durationMs;
+
     private String trackId;
     private String title;
     private String artist;
     private String album;
+    private int popularity;
+    private boolean explicit;
     private String imageUrl;
-    private String spotifyId;
-    private int durationMs;
 
-    public static TrackRsDto from(Track track) {
-        // 추천 결과로 클라이언트에게 반환되는 트랙 정보를 담는 DTO
-        // title, artist, spotifyId 등을 포함
+
+    public static TrackRsDto from(AudioFeatureEsDocument doc) {
         return TrackRsDto.builder()
-                .trackId(String.valueOf(track.getId()))
-                .title(track.getTitle())
-                .artist(track.getArtist())
-                .album(track.getAlbum())
-                .imageUrl(track.getImageUrl())
-                .spotifyId(track.getSpotifyId())
-                .durationMs(track.getDurationMs())
+                .spotifyId(doc.getSpotifyId())
+                .durationMs(doc.getDurationMs())
+                .trackId(String.valueOf(doc.getTrackMetrics().getId()))
+                .title(doc.getTrackMetrics().getTitle())
+                .artist(doc.getTrackMetrics().getArtist())
+                .album(doc.getTrackMetrics().getAlbum())
+                .popularity(doc.getTrackMetrics().getPopularity())
+                .explicit(doc.getTrackMetrics().isExplicit())
+                .imageUrl(doc.getTrackMetrics().getImageUrl())
                 .build();
     }
+
 }
+

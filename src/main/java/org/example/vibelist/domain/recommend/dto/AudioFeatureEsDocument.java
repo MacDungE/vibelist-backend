@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -15,10 +16,18 @@ import org.springframework.data.elasticsearch.annotations.Document;
 @Builder
 public class AudioFeatureEsDocument {
     private String spotifyId;
+    private int durationMs;
 
-    public static AudioFeatureEsDocument from(TrackRsDto dto) {
-        return AudioFeatureEsDocument.builder()
-                .spotifyId(dto.getSpotifyId())
-                .build();
-    }
+
+
+    private TrackMetrics trackMetrics;
+
+//    private String trackId;
+//    private String title;
+//    private String artist;
+//    private String album;
+//    private int popularity;
+//    private String imageUrl;
+//    private boolean explicit;
 }
+
