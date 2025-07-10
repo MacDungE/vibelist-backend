@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class TrackMetrics {
     //track 정보
+    private Long id;
     private String title;
     private String artist;
     private String album;

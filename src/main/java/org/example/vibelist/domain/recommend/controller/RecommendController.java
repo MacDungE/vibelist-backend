@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.recommend.dto.RecommendRqDto;
 import org.example.vibelist.domain.recommend.dto.TrackRsDto;
 import org.example.vibelist.domain.recommend.service.RecommendService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recommend")
@@ -18,10 +22,12 @@ import java.util.List;
 public class RecommendController {
 
     private final RecommendService recommendService;
-
     @PostMapping
     public ResponseEntity<List<TrackRsDto>> recommend(@RequestBody RecommendRqDto request) {
         List<TrackRsDto> result = recommendService.recommend(request.getUserValence(), request.getUserEnergy(), request.getMode());
+        recommendService.registerSpotify(result);
+
+
         return ResponseEntity.ok(result);
     }
 

@@ -45,7 +45,7 @@ public class EsService {
         long start = System.currentTimeMillis();
 
         //RDS에 접근하여 track을 가져오기
-        List<Track> tracks = trackRepository.findAll(PageRequest.of(0, 1000)).getContent();
+        List<Track> tracks = trackRepository.findAll(PageRequest.of(0, 100)).getContent();
 
         //track_id 추출
         List<Long> trackIds = tracks.stream()
@@ -142,12 +142,15 @@ public class EsService {
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
         TrackMetrics trackMetrics = new TrackMetrics();
+        trackMetrics.setId(track.getId());
         trackMetrics.setAlbum(track.getAlbum());
         trackMetrics.setArtist(track.getArtist());
         trackMetrics.setTitle(track.getTitle());
         trackMetrics.setPopularity(track.getPopularity());
         trackMetrics.setExplicit(track.isExplicit());
+        trackMetrics.setImageUrl(track.getImageUrl());
         esDoc.setTrackMetrics(trackMetrics);
+
 
         return esDoc;
     }
