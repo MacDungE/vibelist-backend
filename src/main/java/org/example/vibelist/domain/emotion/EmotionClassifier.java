@@ -1,8 +1,13 @@
 package org.example.vibelist.domain.emotion;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 /**
  * valence와 energy 값을 기반으로 감정 타입을 분류하는 클래스
  */
+@RequiredArgsConstructor
+@Component
 public class EmotionClassifier {
 
     public static EmotionType classify(double valence, double energy) {

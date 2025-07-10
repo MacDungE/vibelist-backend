@@ -4,67 +4,124 @@ package org.example.vibelist.domain.recommend.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.emotion.EmotionFeatureProfile;
-import org.example.vibelist.domain.emotion.EmotionModeType;
-import org.example.vibelist.domain.emotion.EmotionType;
+import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.emotion.*;
 import org.example.vibelist.domain.recommend.builder.ESQueryBuilder;
 import org.example.vibelist.domain.recommend.dto.*;
-import org.example.vibelist.domain.emotion.EmotionMapper;
+import org.example.vibelist.domain.track.client.SpotifyApiClient;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
 import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RecommendService {
 
+    // 감정 분류 및 전이 → 검색 범위 계산 → Elasticsearch 쿼리 실행을 수행하는 추천 서비스
+    // 추천 결과를 트랙 리스트로 반환
+
     private final EmotionMapper emotionMapper;
-
     private final TrackRepository trackRepository;
-
     private final ElasticsearchClient client;
+    private final EmotionClassifier emotionClassifier;
 
 
-    public List<TrackRsDto> recommend(EmotionType emotion, EmotionModeType mode) {
+    public List<TrackRsDto> recommend(double userValence, double userEnergy, EmotionModeType mode) {
+        log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
+
+        EmotionType emotion = emotionClassifier.classify(userValence, userEnergy);
+        log.info("🧠 분류된 감정: {}", emotion);
+
+        EmotionType transitioned = EmotionTransitionMap.getNext(emotion, mode);
+        log.info("🔁 전이된 감정: {}", transitioned);
+
         EmotionFeatureProfile profile = emotionMapper.map(emotion, mode);
-        Query emotionQuery = ESQueryBuilder.build(profile);
+        log.info("📊 검색 범위 - valence: {} ~ {}, energy: {} ~ {}",
+                profile.getValence().getMin(), profile.getValence().getMax(),
+                profile.getEnergy().getMin(), profile.getEnergy().getMax());
 
+        Query emotionQuery = ESQueryBuilder.build(profile);
+        log.info("🔍 Elasticsearch 쿼리 생성 완료");
 
         SearchRequest request = SearchRequest.of(s -> s
-                .index("audio_feature_index") // 검색할 인덱스 이름
-                .query(emotionQuery) // 위에서 생성한 emotionQuery를 사용
-                .size(20) // 가져올 문서의 최대 개수
+                .index("audio_feature_index")
+                .query(emotionQuery)
+                .size(20)
                 .sort(sort -> sort
-                        // _score를 기준으로 정렬합니다.
-                        // function_score 쿼리에서 random_score가 _score를 무작위로 변경했으므로,
-                        // _score로 정렬하면 무작위 결과를 얻을 수 있습니다.
-                        .score(scoreSort -> scoreSort.order(SortOrder.Desc)) // 점수가 높은(무작위로 부여된) 순서로 정렬
+                        .score(scoreSort -> scoreSort.order(SortOrder.Desc))
                 )
         );
 
         try {
             SearchResponse<AudioFeatureEsDocument> response = client.search(request, AudioFeatureEsDocument.class);
+            log.info("📦 검색 결과 수신 - 총 {}개", response.hits().hits().size());
 
-            List<String> spotifyIds = response.hits()
-                    .hits()
-                    .stream()
-                    .map(hit -> hit.source().getSpotifyId())
+
+            return response.hits().hits().stream()
+                    .map(Hit::source)
+                    .map(TrackRsDto::from)  // ES document -> DTO
                     .collect(Collectors.toList());
 
-            List<Track> tracks = trackRepository.findAllBySpotifyIdIn(spotifyIds);
-
-            return tracks.stream()
-                    .map(TrackRsDto::from)
-                    .collect(Collectors.toList());
+//            List<String> spotifyIds = response.hits()
+//                    .hits()
+//                    .stream()
+//                    .map(hit -> hit.source().getSpotifyId())
+//                    .collect(Collectors.toList());
+//
+//            List<Track> tracks = trackRepository.findAllBySpotifyIdIn(spotifyIds);
+//            log.info("🎶 최종 추천 트랙 수: {}", tracks.size());
+//
+//            return tracks.stream()
+//                    .map(TrackRsDto::from)
+//                    .collect(Collectors.toList());
 
         } catch (IOException e) {
+            log.error("❌ Elasticsearch 검색 실패", e);
             throw new RuntimeException("Failed to search Elasticsearch", e);
         }
     }
+
+    @Transactional
+    public void registerSpotify(List<TrackRsDto> results){
+        //Spotify에 playlist 생성하기
+        String user_id = "Sung1";
+        String url = "https://api.spotify.com/v1/users/"+ user_id+"/playlists";
+        HttpHeaders headers = new HttpHeaders();
+        //headers.setBearerAuth(spotifyApiClient.getAccessToken());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 요청 바디
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", "New Playlist");
+        body.put("description", "New playlist description");
+        body.put("public", false);
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
+    }
 }
+
