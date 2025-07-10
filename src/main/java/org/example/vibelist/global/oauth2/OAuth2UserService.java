@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.auth.entity.UserSocial;
 import org.example.vibelist.global.auth.repository.UserSocialRepository;
 import org.example.vibelist.global.constants.Role;
-import org.example.vibelist.global.constants.SocialProvider;
+import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
 import org.example.vibelist.global.user.entity.User;
@@ -64,7 +64,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             String providerUserId, username, email;
 
             // provider 별로 파싱 방식이 다름
-            if ("google".equals(provider)) {
+            if (SocialProviderConstants.GOOGLE_LOWER.equals(provider)) {
                 email = (String) attributes.get("email");    // 구글의 이메일
                 // Google OAuth2 API는 다양한 필드명을 사용할 수 있으므로 여러 방법으로 시도
                 providerUserId = (String) attributes.get("id");
@@ -80,7 +80,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                         email, attributes.get("id"), attributes.get("sub"), username, providerUserId);
                 log.info("[OAuth2_LOG] 전체 attributes: {}", attributes);
 
-            } else if ("kakao".equals(provider)) {
+            } else if (SocialProviderConstants.KAKAO_LOWER.equals(provider)) {
                 providerUserId = attributes.get("id").toString();   // 카카오 고유 id
                 Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
                 email = (String) kakaoAccount.get("email");
@@ -88,6 +88,20 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 username = (String) profile.get("nickname");
                 
                 log.info("[OAuth2_LOG] 카카오 사용자 정보 - id: {}, email: {}, nickname: {}", providerUserId, email, username);
+
+            } else if (SocialProviderConstants.SPOTIFY_LOWER.equals(provider)) {
+                providerUserId = attributes.get("id").toString();   // Spotify 고유 id
+                email = (String) attributes.get("email");
+                username = (String) attributes.get("display_name");
+                
+                // Spotify에서 display_name이 null일 수 있으므로 대체값 설정
+                if (username == null || username.isEmpty()) {
+                    username = (String) attributes.get("id"); // id를 username으로 사용
+                }
+                
+                log.info("[OAuth2_LOG] Spotify 사용자 정보 - id: {}, email: {}, display_name: {}, 최종 username: {}", 
+                        providerUserId, email, attributes.get("display_name"), username);
+                log.info("[OAuth2_LOG] Spotify 전체 attributes: {}", attributes);
 
             } else {
                 // 기타 provider 처리 안함
@@ -106,12 +120,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 throw new OAuth2AuthenticationException("Provider user ID가 없습니다.");
             }
 
-            // SocialProvider enum으로 변환
-            SocialProvider socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-
             // 회원 정보가 DB에 존재하는지 확인 (UserSocial 테이블에서 확인)
             Optional<UserSocial> existingUserSocial = userSocialRepository.findByProviderAndProviderUserId(
-                    socialProvider, providerUserId);
+                    provider.toUpperCase(), providerUserId);
 
             User user;
             if (existingUserSocial.isPresent()) {
@@ -120,7 +131,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 log.info("기존 소셜 회원 로그인: userId = {}", user.getId());
             } else {
                 // 신규 회원인 경우 자동 회원가입 처리
-                user = createNewSocialUser(providerUserId, username, email, socialProvider);
+                user = createNewSocialUser(providerUserId, username, email, provider.toUpperCase());
                 log.info("신규 소셜 회원가입: userId = {}", user.getId());
             }
 
@@ -132,7 +143,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                     user.getId(), accessToken != null, refreshToken != null);
 
             // UserSocial 정보 업데이트 (refresh token만 저장)
-            upsertUserSocial(user, socialProvider, providerUserId, email, refreshToken);
+            upsertUserSocial(user, provider.toUpperCase(), providerUserId, email, refreshToken);
 
             // JWT는 SuccessHandler에서 쿠키/쿼리로 전달 → 여기선 속성에만 담아 둠
             Map<String, Object> customAttributes = new HashMap<>(attributes);
@@ -153,7 +164,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
             // 최종적으로 Spring Security에 전달할 OAuth2User 반환
             String nameAttributeKey;
-            if ("google".equals(provider)) {
+            if (SocialProviderConstants.GOOGLE_LOWER.equals(provider)) {
                 // Google에서 실제로 제공하는 식별자 필드를 확인하여 사용
                 if (attributes.containsKey("id") && attributes.get("id") != null) {
                     nameAttributeKey = "id";
@@ -162,8 +173,10 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
                 } else {
                     nameAttributeKey = "email"; // 최후의 수단
                 }
-            } else if ("kakao".equals(provider)) {
+            } else if (SocialProviderConstants.KAKAO_LOWER.equals(provider)) {
                 nameAttributeKey = "id";  // Kakao's unique identifier
+            } else if (SocialProviderConstants.SPOTIFY_LOWER.equals(provider)) {
+                nameAttributeKey = "id";  // Spotify's unique identifier
             } else {
                 nameAttributeKey = "id";  // Default to 'id'
             }
@@ -206,7 +219,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
      * 새로운 소셜 사용자 생성
      */
     @Transactional
-    private User createNewSocialUser(String providerUserId, String username, String email, SocialProvider provider) {
+    private User createNewSocialUser(String providerUserId, String username, String email, String provider) {
         // 임시 사용자명 생성 (나중에 사용자가 변경할 수 있음)
         String tempUsername = generateTempUsername(provider);
 
@@ -242,7 +255,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     /**
      * 임시 사용자명 생성
      */
-    private String generateTempUsername(SocialProvider provider) {
+    private String generateTempUsername(String provider) {
         String[] prefixes = {"temp", "new", "user"};
         String prefix = prefixes[new Random().nextInt(prefixes.length)];
         String timestamp = String.valueOf(System.currentTimeMillis()).substring(8); // 마지막 4자리
@@ -252,7 +265,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     /**
      * UserSocial 정보 업데이트 또는 생성 (Upsert)
      */
-    private void upsertUserSocial(User user, SocialProvider provider, String providerUserId,
+    private void upsertUserSocial(User user, String provider, String providerUserId,
                                   String email, String refreshToken) {
         Optional<UserSocial> userSocialOpt = userService.findUserSocialByUserIdAndProvider(user.getId(), provider);
 

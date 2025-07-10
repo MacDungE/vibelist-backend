@@ -11,7 +11,6 @@ import org.example.vibelist.global.auth.util.AuthUtil;
 import org.example.vibelist.global.auth.util.CookieUtil;
 import org.example.vibelist.global.auth.util.SocialAuthUtil;
 import org.example.vibelist.global.constants.Role;
-import org.example.vibelist.global.constants.SocialProvider;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
 import org.example.vibelist.global.security.jwt.JwtTokenType;
@@ -219,7 +218,7 @@ public class AuthService {
      * 소셜 제공자와 제공자 사용자 ID로 소셜 계정 조회
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findUserSocialByProviderAndProviderUserId(SocialProvider provider, String providerUserId) {
+    public Optional<UserSocial> findUserSocialByProviderAndProviderUserId(String provider, String providerUserId) {
         return userSocialRepository.findByProviderAndProviderUserId(provider, providerUserId);
     }
 
@@ -227,7 +226,7 @@ public class AuthService {
      * 소셜 제공자와 제공자 이메일로 소셜 계정 조회
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findUserSocialByProviderAndProviderEmail(SocialProvider provider, String providerEmail) {
+    public Optional<UserSocial> findUserSocialByProviderAndProviderEmail(String provider, String providerEmail) {
         return userSocialRepository.findByProviderAndProviderEmail(provider, providerEmail);
     }
 
@@ -235,7 +234,7 @@ public class AuthService {
      * 소셜 제공자별 소셜 계정 목록 조회
      */
     @Transactional(readOnly = true)
-    public List<UserSocial> findUserSocialsByProvider(SocialProvider provider) {
+    public List<UserSocial> findUserSocialsByProvider(String provider) {
         return userSocialRepository.findByProvider(provider);
     }
 
@@ -243,7 +242,7 @@ public class AuthService {
      * 특정 소셜 제공자 계정 존재 여부 확인
      */
     @Transactional(readOnly = true)
-    public boolean existsByProviderAndProviderUserId(SocialProvider provider, String providerUserId) {
+    public boolean existsByProviderAndProviderUserId(String provider, String providerUserId) {
         return userSocialRepository.existsByProviderAndProviderUserId(provider, providerUserId);
     }
 
@@ -259,7 +258,7 @@ public class AuthService {
      * Builder 패턴을 사용한 UserSocial 생성 및 저장 (소셜 로그인용)
      */
     @Transactional
-    public UserSocial createUserSocial(User user, SocialProvider provider, String providerUserId, 
+    public UserSocial createUserSocial(User user, String provider, String providerUserId, 
                                      String providerEmail, String refreshTokenEnc) {
         UserSocial userSocial = UserSocial.builder()
                 .user(user)
@@ -293,7 +292,7 @@ public class AuthService {
      * 사용자의 UserSocial 정보 조회 (소셜 로그인용)
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findSocialUserSocialByUserIdAndProvider(Long userId, SocialProvider provider) {
+    public Optional<UserSocial> findSocialUserSocialByUserIdAndProvider(Long userId, String provider) {
         return userSocialRepository.findByUserIdAndProvider(userId, provider);
     }
 

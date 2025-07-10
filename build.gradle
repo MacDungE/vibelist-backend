@@ -49,7 +49,11 @@ dependencies {
 
     //elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-
+    
+    // OpenTelemetry 의존성 추가
+    implementation 'io.opentelemetry:opentelemetry-api:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-sdk:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-exporter-logging:1.36.0'
 
 }
 

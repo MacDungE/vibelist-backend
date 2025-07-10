@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.vibelist.global.auth.entity.UserSocial;
 import org.example.vibelist.global.auth.repository.UserSocialRepository;
 import org.example.vibelist.global.constants.Role;
-import org.example.vibelist.global.constants.SocialProvider;
+
 import org.example.vibelist.global.user.dto.CreateUserRequest;
 import org.example.vibelist.global.user.dto.SocialAccountResponse;
 import org.example.vibelist.global.user.dto.UpdateUserProfileRequest;
@@ -123,7 +123,7 @@ public class UserService {
         return userSocialRepository.findByUserId(userId);
     }
 
-    public Optional<UserSocial> findUserSocialByUserIdAndProvider(Long userId, SocialProvider provider) {
+    public Optional<UserSocial> findUserSocialByUserIdAndProvider(Long userId, String provider) {
         return userSocialRepository.findByUserIdAndProvider(userId, provider);
     }
 

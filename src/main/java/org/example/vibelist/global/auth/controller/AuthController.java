@@ -8,7 +8,8 @@ import org.example.vibelist.global.auth.dto.StatusResponse;
 import org.example.vibelist.global.auth.dto.TokenResponse;
 import org.example.vibelist.global.auth.service.AuthService;
 import org.example.vibelist.global.auth.util.CookieUtil;
-import org.example.vibelist.global.constants.SocialProvider;
+
+import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.user.dto.SocialAccountResponse;
 import org.example.vibelist.global.user.service.UserService;
@@ -147,17 +148,17 @@ public class AuthController {
         Map<String, String> loginUrls = new HashMap<>();
         
         // Google 로그인 URL
-        loginUrls.put(SocialProvider.GOOGLE.name().toLowerCase(), "/oauth2/authorization/google");
+        loginUrls.put(SocialProviderConstants.GOOGLE_LOWER, SocialProviderConstants.getOAuth2LoginUrl(SocialProviderConstants.GOOGLE_LOWER));
         
         // Kakao 로그인 URL
-        loginUrls.put(SocialProvider.KAKAO.name().toLowerCase(), "/oauth2/authorization/kakao");
+        loginUrls.put(SocialProviderConstants.KAKAO_LOWER, SocialProviderConstants.getOAuth2LoginUrl(SocialProviderConstants.KAKAO_LOWER));
         
         return ResponseEntity.ok(loginUrls);
     }
 
     // 소셜 제공자 정보 추출
     private String getProviderFromAttributes(Map<String, Object> attributes) {
-        SocialProvider provider = SocialProvider.fromAttributes(attributes);
-        return provider != null ? provider.getLowerCaseName() : "unknown";
+        String provider = SocialProviderConstants.fromAttributes(attributes);
+        return provider != null ? SocialProviderConstants.getLowerCaseName(provider) : "unknown";
     }
 }

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.vibelist.global.auth.entity.UserSocial;
 import org.example.vibelist.global.auth.repository.UserSocialRepository;
 import org.example.vibelist.global.constants.Role;
-import org.example.vibelist.global.constants.SocialProvider;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.user.entity.User;
 import org.example.vibelist.global.user.service.UserService;
@@ -24,7 +23,7 @@ public class SocialAuthUtil {
     /**
      * 소셜 계정으로 사용자 찾기 또는 생성
      */
-    public User findOrCreateSocialUser(SocialProvider provider, String providerUserId, 
+    public User findOrCreateSocialUser(String provider, String providerUserId, 
                                      String email, String name, String refreshToken) {
         // 기존 소셜 계정 확인
         Optional<UserSocial> existingSocial = userSocialRepository.findByProviderAndProviderUserId(provider, providerUserId);
@@ -44,7 +43,7 @@ public class SocialAuthUtil {
     /**
      * 새로운 소셜 사용자 생성
      */
-    private User createNewSocialUser(SocialProvider provider, String providerUserId, 
+    private User createNewSocialUser(String provider, String providerUserId, 
                                    String email, String name, String refreshToken) {
         // 이메일 중복 확인
         if (email != null && userService.existsByEmail(email)) {
@@ -83,7 +82,7 @@ public class SocialAuthUtil {
     /**
      * 소셜 계정 연동
      */
-    public void linkSocialAccount(Long userId, SocialProvider provider, String providerUserId, 
+    public void linkSocialAccount(Long userId, String provider, String providerUserId, 
                                  String providerEmail, String refreshToken) {
         Optional<User> userOpt = userService.findUserById(userId);
         if (userOpt.isEmpty()) {
