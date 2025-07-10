@@ -11,6 +11,7 @@ import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
 import org.example.vibelist.domain.youtube.repository.YoutubeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Service;
@@ -83,33 +84,48 @@ public class EsService {
 //    /*
 //    Rds에서 모든 데이터를 읽어와 Es에 저장하는 메소드입니다.
 //     */
-//    public void executeBatchInsert() {
-//        log.info("Batch Insert 작업 시작");
-//        int batchSize = 1000;
-//        long totalStart = System.currentTimeMillis();
-//        long totalCount = audioFeatureRepository.count(); // RDS의 총 개수
-//        int totalPages = (int) Math.ceil((double) totalCount / batchSize);
-//
-//        for (int i = 0; i < totalPages; i++) {
-//            log.info("Batch {} 시작", i);
-//
-//            long start = System.currentTimeMillis();
-//            List<AudioFeature> features = audioFeatureRepository
-//                    .findAll(PageRequest.of(i, batchSize))
-//                    .getContent();
-//
-////            esRepository.saveAll(
-////                    features.stream().map(this::convertToEs).toList()
-////            );
-//
-//            long end = System.currentTimeMillis();
-//            log.info("Batch {} 완료, 소요 시간: {}ms", i, (end - start));
-//        }
-//        long totalEnd  = System.currentTimeMillis();
-//
-//        log.info("Rds에서 데이터 불러오기 종료 소요시간 {}", (totalEnd - totalStart));
-//
-//    }
+    public void executeBatchInsert() {
+        log.info("Batch Insert 작업 시작");
+        int batchSize = 1000;
+        int page = 0;
+        long totalStart = System.currentTimeMillis();
+
+        while (true) {
+            // 트랙 페이지 가져오기
+            Page<Track> trackPage = trackRepository.findAll(PageRequest.of(page, batchSize));
+            List<Track> tracks = trackPage.getContent();
+
+            if (tracks.isEmpty()) break;
+
+            List<Long> trackIds = tracks.stream()
+                    .map(Track::getId)
+                    .toList();
+
+            Map<Long, AudioFeature> audioFeatureMap = audioFeatureRepository.findAllById(trackIds).stream()
+                    .collect(Collectors.toMap(AudioFeature::getId, Function.identity()));
+
+            List<EsDoc> esDocs = new ArrayList<>();
+            for (Track track : tracks) {
+                AudioFeature af = audioFeatureMap.get(track.getId());
+
+                if (af == null) {
+                    log.warn("track에 대응되는 AudioFeature를 찾을 수 없습니다. trackId: {}", track.getId());
+                    continue;
+                }
+
+                esDocs.add(convertToEs(af, track));
+            }
+
+            esRepository.saveAll(esDocs);
+            log.info("Page {} 삽입 완료 ({}개)", page, esDocs.size());
+
+            if (!trackPage.hasNext()) break;
+            page++;
+    }
+
+    long totalEnd = System.currentTimeMillis();
+    log.info("전체 작업 종료, 총 소요 시간: {}ms", (totalEnd - totalStart));
+}
 
     public EsDoc convertToEs(AudioFeature audioFeature, Track track) {
         /*

@@ -19,8 +19,8 @@ public class EsController {
     Rds에 저장되어 있는 Audio-feature 데이터들을 ElasticSearch로 옮기는 메소드.
      */
     public ResponseEntity<?> rdsToEs() {
-        esService.executeTestInsert();
-        //audioFeatureEsService.executeBatchInsert(); 모든 데이터 삽입시
+    //        esService.executeTestInsert();
+        esService.executeBatchInsert();
         return ResponseEntity.ok().body("insertion success");
     }
 
