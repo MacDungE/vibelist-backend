@@ -1,28 +1,37 @@
 package org.example.vibelist.domain.recommend.builder;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.*;
+import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery.*;
+import co.elastic.clients.elasticsearch._types.query_dsl.RandomScoreFunction.*;
 import co.elastic.clients.json.JsonData;
 import org.example.vibelist.domain.emotion.DoubleRange;
 import org.example.vibelist.domain.emotion.EmotionFeatureProfile;
+
+import java.util.List;
 
 
 public class ESQueryBuilder {
 
     public static Query build(EmotionFeatureProfile profile) {
-        return BoolQuery.of(b -> {
-//            addRangeQuery(b, "danceability", profile.getDanceability());
+        Query innerQuery = BoolQuery.of(b -> {
             addRangeQuery(b, "energy", profile.getEnergy());
-//            addRangeQuery(b, "loudness", profile.getLoudness());
-//            addRangeQuery(b, "speechiness", profile.getSpeechiness());
-//            addRangeQuery(b, "acousticness", profile.getAcousticness());
-//            addRangeQuery(b, "instrumentalness", profile.getInstrumentalness());
-//            addRangeQuery(b, "liveness", profile.getLiveness());
             addRangeQuery(b, "valence", profile.getValence());
-//            addRangeQuery(b, "tempo", profile.getTempo());
-
             return b;
         })._toQuery();
+
+        return Query.of(q -> q
+                .functionScore(fs -> fs
+                        .query(innerQuery)
+                        .functions(List.of(
+                                FunctionScore.of(fn -> fn
+                                        .randomScore(rs -> rs
+                                                .seed(String.valueOf(System.currentTimeMillis()))
+                                                .field("_seq_no") // 또는 "_id"
+                                        )
+                                )
+                        ))
+                )
+        );
     }
 
     private static void addRangeQuery(BoolQuery.Builder b, String field, DoubleRange range) {
