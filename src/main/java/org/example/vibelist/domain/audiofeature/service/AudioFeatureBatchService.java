@@ -18,7 +18,7 @@ public class AudioFeatureBatchService implements BatchService {
 
     @Override
     public void executeBatch() {
-        String csvFile = "src/main/resources/audio_features.csv";
+        String csvFile = "audio_features.csv";
         String line;
         String delimiter = ",";
 

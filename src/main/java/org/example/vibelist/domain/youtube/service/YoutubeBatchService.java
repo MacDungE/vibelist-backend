@@ -43,7 +43,6 @@ public class YoutubeBatchService implements BatchService {
      */
 
     @Override
-    @Transactional
     public void executeBatch() {
         int count = 0;
         Set<Long> failedIds = loadFailedTrackIds();
@@ -62,11 +61,6 @@ public class YoutubeBatchService implements BatchService {
                 boolean success = processTrackWithRetry(track);
                 if (!success) {
                     recordFailedTrack(track.getId());
-                }
-
-                if (++count % 100 == 0) {
-                    youtubeRepository.flush();
-                    log.info("💾 {}개 단위 flush 완료", count);
                 }
             }
         } while (!trackPage.isLast());

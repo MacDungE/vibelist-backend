@@ -30,7 +30,7 @@ public class EsDoc {
     //--------audio feature -----//
 
 
-    private TrackMetrics trackMetrics;
+    //private TrackMetrics trackMetrics;
 
     //--- track------//
 

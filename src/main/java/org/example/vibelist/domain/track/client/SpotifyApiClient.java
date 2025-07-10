@@ -1,5 +1,6 @@
 package org.example.vibelist.domain.track.client;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.track.dto.SpotifyTrackMetaDto;
@@ -18,21 +19,23 @@ import java.util.Collections;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Getter
 public class SpotifyApiClient {
 
-    private final WebClient.Builder webClientBuilder;
 
-    @Value("${spotify.clientId}")
     private String clientId;
 
-    @Value("${spotify.clientSecret}")
     private String clientSecret;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    public SpotifyApiClient(String clientId, String clientSecret) {
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+    }
 
-    public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {
-        try {
+
+    public SpotifyTrackMetaDto getTrackMeta(String spotifyId) throws Exception{
             String token = getAccessToken();
 
             String trackUrl = "https://api.spotify.com/v1/tracks/" + spotifyId;
@@ -70,14 +73,10 @@ public class SpotifyApiClient {
                     .popularity(popularity)
                     .explicit(explicit)
                     .imageUrl(imageUrl)
+                    .spotifyId(spotifyId)
                     .build();
 
             return dto;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private String getAccessToken() {

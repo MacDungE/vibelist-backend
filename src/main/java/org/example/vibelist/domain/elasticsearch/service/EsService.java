@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.audiofeature.repository.AudioFeatureRepository;
 import org.example.vibelist.domain.elasticsearch.dto.EsDoc;
-import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
+//import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.example.vibelist.domain.elasticsearch.repository.EsRepository;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
@@ -141,13 +141,13 @@ public class EsService {
         esDoc.setGenres(generList);
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
-        TrackMetrics trackMetrics = new TrackMetrics();
-        trackMetrics.setAlbum(track.getAlbum());
-        trackMetrics.setArtist(track.getArtist());
-        trackMetrics.setTitle(track.getTitle());
-        trackMetrics.setPopularity(track.getPopularity());
-        trackMetrics.setExplicit(track.isExplicit());
-        esDoc.setTrackMetrics(trackMetrics);
+//        TrackMetrics trackMetrics = new TrackMetrics();
+//        trackMetrics.setAlbum(track.getAlbum());
+//        trackMetrics.setArtist(track.getArtist());
+//        trackMetrics.setTitle(track.getTitle());
+//        trackMetrics.setPopularity(track.getPopularity());
+//        trackMetrics.setExplicit(track.isExplicit());
+//        esDoc.setTrackMetrics(trackMetrics);
 
         return esDoc;
     }
