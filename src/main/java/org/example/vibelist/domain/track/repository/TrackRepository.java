@@ -17,4 +17,6 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
     List<Track> findAllByAudioFeatureId(Long audioFeatureId);
 
     List<Track> findByAudioFeatureIdIn(List<Long> audioFeatureIds);
+
+    List<Track> findAllBySpotifyIdIn(List<String> spotifyIds);
 }
