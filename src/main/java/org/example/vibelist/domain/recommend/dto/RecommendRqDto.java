@@ -11,6 +11,7 @@ import org.example.vibelist.domain.emotion.EmotionType;
 @NoArgsConstructor
 public class RecommendRqDto {
 
-    private EmotionType emotion;
+    private double userValence;
+    private double userEnergy;
     private EmotionModeType mode;
 }
