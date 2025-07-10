@@ -80,7 +80,7 @@ public class SpotifyApiClient {
         }
     }
 
-    private String getAccessToken() {
+    public String getAccessToken() {
         String url = "https://accounts.spotify.com/api/token";
 
         // Authorization 헤더 설정 (Base64 인코딩)

@@ -9,13 +9,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.emotion.*;
 import org.example.vibelist.domain.recommend.builder.ESQueryBuilder;
 import org.example.vibelist.domain.recommend.dto.*;
+import org.example.vibelist.domain.track.client.SpotifyApiClient;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
 import java.io.IOException;
 
 @Service
@@ -31,6 +40,7 @@ public class RecommendService {
     private final ElasticsearchClient client;
     private final EmotionClassifier emotionClassifier;
 
+    public final SpotifyApiClient spotifyApiClient ; // spotify 등록을 위해
 
     public List<TrackRsDto> recommend(double userValence, double userEnergy, EmotionModeType mode) {
         log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
@@ -79,5 +89,32 @@ public class RecommendService {
             log.error("❌ Elasticsearch 검색 실패", e);
             throw new RuntimeException("Failed to search Elasticsearch", e);
         }
+    }
+
+    @Transactional
+    public void registerSpotify(List<TrackRsDto> results){
+        //Spotify에 playlist 생성하기
+        String user_id = "Sung1";
+        String url = "https://api.spotify.com/v1/users/"+ user_id+"/playlists";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(spotifyApiClient.getAccessToken());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 요청 바디
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", "New Playlist");
+        body.put("description", "New playlist description");
+        body.put("public", false);
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                String.class
+        );
     }
 }
