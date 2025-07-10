@@ -5,9 +5,12 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import lombok.RequiredArgsConstructor;
+import org.example.vibelist.domain.emotion.EmotionFeatureProfile;
+import org.example.vibelist.domain.emotion.EmotionModeType;
+import org.example.vibelist.domain.emotion.EmotionType;
 import org.example.vibelist.domain.recommend.builder.ESQueryBuilder;
 import org.example.vibelist.domain.recommend.dto.*;
-import org.example.vibelist.domain.recommend.emotion.EmotionMapper;
+import org.example.vibelist.domain.emotion.EmotionMapper;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
 import org.springframework.stereotype.Service;
@@ -25,11 +28,10 @@ public class RecommendService {
 
     private final TrackRepository trackRepository;
 
-
     private final ElasticsearchClient client;
 
 
-    public List<TrackRsDto> recommend(EmotionType emotion, EmotionMode mode) {
+    public List<TrackRsDto> recommend(EmotionType emotion, EmotionModeType mode) {
         EmotionFeatureProfile profile = emotionMapper.map(emotion, mode);
         Query emotionQuery = ESQueryBuilder.build(profile);
 

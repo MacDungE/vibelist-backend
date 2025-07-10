@@ -3,24 +3,23 @@ package org.example.vibelist.domain.recommend.builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
-import org.example.vibelist.domain.recommend.dto.DoubleRange;
-import org.example.vibelist.domain.recommend.dto.EmotionFeatureProfile;
+import org.example.vibelist.domain.emotion.DoubleRange;
+import org.example.vibelist.domain.emotion.EmotionFeatureProfile;
 
 
 public class ESQueryBuilder {
 
     public static Query build(EmotionFeatureProfile profile) {
         return BoolQuery.of(b -> {
-            // danceability
-            addRangeQuery(b, "danceability", profile.getDanceability());
+//            addRangeQuery(b, "danceability", profile.getDanceability());
             addRangeQuery(b, "energy", profile.getEnergy());
-            addRangeQuery(b, "loudness", profile.getLoudness());
-            addRangeQuery(b, "speechiness", profile.getSpeechiness());
-            addRangeQuery(b, "acousticness", profile.getAcousticness());
-            addRangeQuery(b, "instrumentalness", profile.getInstrumentalness());
-            addRangeQuery(b, "liveness", profile.getLiveness());
+//            addRangeQuery(b, "loudness", profile.getLoudness());
+//            addRangeQuery(b, "speechiness", profile.getSpeechiness());
+//            addRangeQuery(b, "acousticness", profile.getAcousticness());
+//            addRangeQuery(b, "instrumentalness", profile.getInstrumentalness());
+//            addRangeQuery(b, "liveness", profile.getLiveness());
             addRangeQuery(b, "valence", profile.getValence());
-            addRangeQuery(b, "tempo", profile.getTempo());
+//            addRangeQuery(b, "tempo", profile.getTempo());
 
             return b;
         })._toQuery();

@@ -1,6 +1,8 @@
 package org.example.vibelist.domain.recommend.dto;
 
 import lombok.*;
+import org.example.vibelist.domain.emotion.EmotionModeType;
+import org.example.vibelist.domain.emotion.EmotionType;
 
 @Getter
 @Setter
@@ -10,5 +12,5 @@ import lombok.*;
 public class RecommendRqDto {
 
     private EmotionType emotion;
-    private EmotionMode mode;
+    private EmotionModeType mode;
 }
