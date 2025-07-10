@@ -2,7 +2,6 @@ package org.example.vibelist.domain.recommend.dto;
 
 import lombok.*;
 import org.example.vibelist.domain.emotion.EmotionModeType;
-import org.example.vibelist.domain.emotion.EmotionType;
 
 @Getter
 @Setter
@@ -10,6 +9,7 @@ import org.example.vibelist.domain.emotion.EmotionType;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RecommendRqDto {
+    // 추천 요청 시 클라이언트로부터 받는 감정 좌표 및 모드 정보를 담는 DTO
 
     private double userValence;
     private double userEnergy;

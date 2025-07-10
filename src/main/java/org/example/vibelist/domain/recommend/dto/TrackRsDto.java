@@ -17,8 +17,11 @@ public class TrackRsDto {
     private String album;
     private String imageUrl;
     private String spotifyId;
+    private int durationMs;
 
     public static TrackRsDto from(Track track) {
+        // 추천 결과로 클라이언트에게 반환되는 트랙 정보를 담는 DTO
+        // title, artist, spotifyId 등을 포함
         return TrackRsDto.builder()
                 .trackId(String.valueOf(track.getId()))
                 .title(track.getTitle())
@@ -26,6 +29,7 @@ public class TrackRsDto {
                 .album(track.getAlbum())
                 .imageUrl(track.getImageUrl())
                 .spotifyId(track.getSpotifyId())
+                .durationMs(track.getDurationMs())
                 .build();
     }
 }

@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/recommend")
+@RequestMapping("/v1/recommend")
 @RequiredArgsConstructor
 public class RecommendController {
+    // 감정 기반 트랙 추천 API의 HTTP 요청을 처리하는 컨트롤러
+    // RecommendService를 호출해 추천 결과를 반환
 
     private final RecommendService recommendService;
 

@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.emotion.*;
 import org.example.vibelist.domain.recommend.builder.ESQueryBuilder;
 import org.example.vibelist.domain.recommend.dto.*;
@@ -19,37 +20,47 @@ import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RecommendService {
 
+    // 감정 분류 및 전이 → 검색 범위 계산 → Elasticsearch 쿼리 실행을 수행하는 추천 서비스
+    // 추천 결과를 트랙 리스트로 반환
+
     private final EmotionMapper emotionMapper;
-
     private final TrackRepository trackRepository;
-
     private final ElasticsearchClient client;
-
     private final EmotionClassifier emotionClassifier;
 
 
     public List<TrackRsDto> recommend(double userValence, double userEnergy, EmotionModeType mode) {
-        EmotionType emotion = emotionClassifier.classify(userValence, userEnergy);
-        EmotionFeatureProfile profile = emotionMapper.map(emotion, mode);
-        Query emotionQuery = ESQueryBuilder.build(profile);
+        log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
 
+        EmotionType emotion = emotionClassifier.classify(userValence, userEnergy);
+        log.info("🧠 분류된 감정: {}", emotion);
+
+        EmotionType transitioned = EmotionTransitionMap.getNext(emotion, mode);
+        log.info("🔁 전이된 감정: {}", transitioned);
+
+        EmotionFeatureProfile profile = emotionMapper.map(emotion, mode);
+        log.info("📊 검색 범위 - valence: {} ~ {}, energy: {} ~ {}",
+                profile.getValence().getMin(), profile.getValence().getMax(),
+                profile.getEnergy().getMin(), profile.getEnergy().getMax());
+
+        Query emotionQuery = ESQueryBuilder.build(profile);
+        log.info("🔍 Elasticsearch 쿼리 생성 완료");
 
         SearchRequest request = SearchRequest.of(s -> s
-                .index("audio_feature_index") // 검색할 인덱스 이름
-                .query(emotionQuery) // 위에서 생성한 emotionQuery를 사용
-                .size(20) // 가져올 문서의 최대 개수
+                .index("audio_feature_index")
+                .query(emotionQuery)
+                .size(20)
                 .sort(sort -> sort
-                        // _score를 기준으로 정렬합니다.
-                        // function_score 쿼리에서 random_score가 _score를 무작위로 변경했으므로,
-                        // _score로 정렬하면 무작위 결과를 얻을 수 있습니다.
-                        .score(scoreSort -> scoreSort.order(SortOrder.Desc)) // 점수가 높은(무작위로 부여된) 순서로 정렬
+                        .score(scoreSort -> scoreSort.order(SortOrder.Desc))
                 )
         );
 
         try {
             SearchResponse<AudioFeatureEsDocument> response = client.search(request, AudioFeatureEsDocument.class);
+            log.info("📦 검색 결과 수신 - 총 {}개", response.hits().hits().size());
 
             List<String> spotifyIds = response.hits()
                     .hits()
@@ -58,12 +69,14 @@ public class RecommendService {
                     .collect(Collectors.toList());
 
             List<Track> tracks = trackRepository.findAllBySpotifyIdIn(spotifyIds);
+            log.info("🎶 최종 추천 트랙 수: {}", tracks.size());
 
             return tracks.stream()
                     .map(TrackRsDto::from)
                     .collect(Collectors.toList());
 
         } catch (IOException e) {
+            log.error("❌ Elasticsearch 검색 실패", e);
             throw new RuntimeException("Failed to search Elasticsearch", e);
         }
     }
