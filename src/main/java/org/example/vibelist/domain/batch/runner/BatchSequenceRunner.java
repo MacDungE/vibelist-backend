@@ -27,9 +27,9 @@ public class BatchSequenceRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         log.info("▶️ 전체 배치 실행 시작");
 
-        audioFeatureBatchService.executeBatch();
-        trackBatchService.executeBatch();
-        youtubeBatchService.executeBatch();
+//        audioFeatureBatchService.executeBatch();
+//        trackBatchService.executeBatch();
+//        youtubeBatchService.executeBatch();
 
         log.info("🏁 전체 배치 실행 종료");
     }

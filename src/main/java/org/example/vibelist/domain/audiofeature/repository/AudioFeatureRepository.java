@@ -14,6 +14,8 @@ public interface AudioFeatureRepository extends JpaRepository<AudioFeature, Long
 
     Page<AudioFeature> findByTrackIsNull(Pageable pageable);
 
+    Page<AudioFeature> findAll(Pageable pageable); //개수 제한을 걸어두기 위해 정의
+
     Optional<Track> findByTrackId(Long id);
 
 }
