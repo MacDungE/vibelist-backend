@@ -1,4 +1,4 @@
-package org.example.vibelist.global.controller;
+package org.example.vibelist.global.health.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;

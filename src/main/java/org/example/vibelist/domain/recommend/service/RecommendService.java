@@ -41,7 +41,6 @@ public class RecommendService {
     private final ElasticsearchClient client;
     private final EmotionClassifier emotionClassifier;
 
-    public final SpotifyApiClient spotifyApiClient ; // spotify 등록을 위해
 
     public List<TrackRsDto> recommend(double userValence, double userEnergy, EmotionModeType mode) {
         log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
