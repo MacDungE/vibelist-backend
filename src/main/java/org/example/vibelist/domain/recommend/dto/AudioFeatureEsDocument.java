@@ -16,8 +16,6 @@ import org.springframework.data.elasticsearch.annotations.Document;
 public class AudioFeatureEsDocument {
     private String spotifyId;
 
-
-
     public static AudioFeatureEsDocument from(TrackRsDto dto) {
         return AudioFeatureEsDocument.builder()
                 .spotifyId(dto.getSpotifyId())
