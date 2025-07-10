@@ -38,7 +38,7 @@ public class SpotifyApiClient {
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) throws Exception{
             String token = getAccessToken();
 
-            String trackUrl = "https://api.spotify.com/v1/tracks/" + spotifyId;
+            String trackUrl = "https://api.spotify.com/v1/tracks/" + spotifyId + "?market=KR";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
