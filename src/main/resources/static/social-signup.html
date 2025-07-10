@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>VibeList - 사용자명 설정</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .signup-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-message {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .complete-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .complete-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            background-color: #fdf2f2;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #27ae60;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: none;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .username-suggestions {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .suggestion-btn {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .suggestion-btn:hover {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo">VibeList</div>
+        <div class="subtitle">사용자명을 설정해주세요</div>
+        <div class="welcome-message">
+            VibeList에 오신 것을 환영합니다!<br>
+            원하는 사용자명을 입력해주세요.
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <form id="usernameForm">
+            <div class="form-group">
+                <label for="username">사용자명</label>
+                <input id="username" maxlength="30" name="username" placeholder="원하는 사용자명을 입력하세요"
+                       required
+                       type="text">
+            </div>
+            
+            <div class="username-suggestions">
+                <div style="margin-bottom: 8px; font-weight: 600;">추천 사용자명:</div>
+                <button class="suggestion-btn" onclick="setUsername('iu_lover')" type="button">iu_lover</button>
+                <button class="suggestion-btn" onclick="setUsername('bts_stan')" type="button">bts_stan</button>
+                <button class="suggestion-btn" onclick="setUsername('blackpink_fan')" type="button">blackpink_fan</button>
+                <button class="suggestion-btn" onclick="setUsername('twice_supporter')" type="button">twice_supporter</button>
+                <button class="suggestion-btn" onclick="setUsername('random_generate')" type="button">🎲 랜덤 생성</button>
+            </div>
+            
+            <button class="complete-btn" id="completeBtn" type="submit">
+                완료
+            </button>
+        </form>
+    </div>
+    
+    <script>
+        // URL 파라미터에서 tempUserId와 provider 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const tempUserId = urlParams.get('tempUserId');
+        const provider = urlParams.get('provider');
+        
+        // 추천 사용자명 설정
+        function setUsername(username) {
+            if (username === 'random_generate') {
+                // 랜덤 사용자명 생성
+                const prefixes = ['iu', 'bts', 'blackpink', 'twice', 'redvelvet', 'exo', 'nct', 'seventeen', 'txt', 'enhypen'];
+                const suffixes = ['fan', 'lover', 'stan', 'supporter', 'enthusiast'];
+                const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+                const randomNumber = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                username = `${randomPrefix}_${randomSuffix}_${randomNumber}`;
+            }
+            document.getElementById('username').value = username;
+        }
+        
+        // 메시지 표시 함수
+        function showMessage(message, isError = false) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            
+            console.log('메시지 표시 함수 호출:', message, 'isError:', isError);
+            
+            if (isError) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+                console.log('에러 메시지 표시됨:', message);
+            } else {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+                console.log('성공 메시지 표시됨:', message);
+            }
+            
+            // 성공 메시지는 5초 후, 에러 메시지는 3초 후 숨기기
+            const hideDelay = isError ? 3000 : 5000;
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                console.log('메시지 숨김');
+            }, hideDelay);
+        }
+        
+        // 사용자명 제출 처리
+        async function handleUsernameSubmit(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const completeBtn = document.getElementById('completeBtn');
+            
+            if (!username) {
+                showMessage('사용자명을 입력해주세요.', true);
+                return;
+            }
+            
+            if (username.length < 3) {
+                showMessage('사용자명은 3자 이상 입력해주세요.', true);
+                return;
+            }
+            
+
+            try {
+                completeBtn.disabled = true;
+                completeBtn.textContent = '처리 중...';
+                
+                const response = await fetch('/v1/auth/social/complete-signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        provider: provider,
+                        userId: tempUserId
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('API 응답:', data);
+                console.log('응답 상태:', response.status);
+                
+                if (response.ok) {
+                    const successMessage = data.message || '사용자명 설정이 완료되었습니다! 메인 페이지로 이동합니다.';
+                    showMessage(successMessage);
+                    console.log('성공 메시지 표시됨:', successMessage);
+                    // 성공 시 메인 페이지로 이동
+                    setTimeout(() => {
+                        console.log('메인 페이지로 이동 중...');
+                        window.location.href = '/main.html';
+                    }, 1500);
+                } else {
+                    const errorMessage = data.message || '사용자명 설정에 실패했습니다.';
+                    showMessage(errorMessage, true);
+                    console.log('에러 메시지 표시됨:', errorMessage);
+                }
+            } catch (error) {
+                console.error('사용자명 설정 오류:', error);
+                showMessage('사용자명 설정 중 오류가 발생했습니다.', true);
+            } finally {
+                completeBtn.disabled = false;
+                completeBtn.textContent = '완료';
+            }
+        }
+        
+        // 폼 제출 이벤트 리스너
+        document.getElementById('usernameForm').addEventListener('submit', handleUsernameSubmit);
+        
+        // 페이지 로드 시 파라미터 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!tempUserId || !provider) {
+                showMessage('잘못된 접근입니다. 다시 로그인해주세요.', true);
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html> 
