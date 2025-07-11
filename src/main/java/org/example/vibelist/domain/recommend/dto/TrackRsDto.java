@@ -16,7 +16,6 @@ public class TrackRsDto {
     private String artist;
     private String album;
     private String imageUrl;
-    private String youtubeUrl;
     private String spotifyId;
 
     public static TrackRsDto from(Track track) {
@@ -26,7 +25,6 @@ public class TrackRsDto {
                 .artist(track.getArtist())
                 .album(track.getAlbum())
                 .imageUrl(track.getImageUrl())
-                .youtubeUrl(track.getYoutube().getUrl())
                 .spotifyId(track.getSpotifyId())
                 .build();
     }

@@ -43,6 +43,7 @@ public class SpotifyApiClientManager {
 
     public boolean switchToNextClient() {
         if (currentIndex + 1 >= clientInstances.size()) {
+            log.info("❌ 모든 클라이언트 소진! 금일 배치 작업 종료");
             return false;
         }
         currentIndex++;

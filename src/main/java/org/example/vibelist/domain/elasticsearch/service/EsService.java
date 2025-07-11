@@ -5,11 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.audiofeature.repository.AudioFeatureRepository;
 import org.example.vibelist.domain.elasticsearch.dto.EsDoc;
-//import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.example.vibelist.domain.elasticsearch.repository.EsRepository;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
-import org.example.vibelist.domain.youtube.repository.YoutubeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -30,7 +28,6 @@ public class EsService {
     private final EsRepository esRepository;//ElasticSearch 접근
     private final AudioFeatureRepository audioFeatureRepository; //Rds 접근
     private final TrackRepository trackRepository;
-    private final YoutubeRepository youtubeRepository;
 
 
     @Autowired

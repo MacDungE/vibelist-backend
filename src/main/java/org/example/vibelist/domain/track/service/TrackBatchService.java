@@ -61,7 +61,7 @@ public class TrackBatchService implements BatchService {
                 if ("false".equals(res)) {
                     recordFailedAudioFeature(feature.getId());
                 } else if ("done".equals(res)) {
-                    return;
+                    System.exit(0);
                 }
             }
         } while (!afPage.isLast());
@@ -113,10 +113,25 @@ public class TrackBatchService implements BatchService {
     }
 
     private void recordFailedAudioFeature(Long trackId) {
+        Path path = Paths.get(FAILED_TRACKS_FILE);
         try {
-            Files.write(Paths.get(FAILED_TRACKS_FILE),
-                    (trackId + System.lineSeparator()).getBytes(),
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            // 이미 기록된 ID들을 불러옴
+            Set<Long> existingIds = new HashSet<>();
+            if (Files.exists(path)) {
+                List<String> lines = Files.readAllLines(path);
+                for (String line : lines) {
+                    try {
+                        existingIds.add(Long.parseLong(line.trim()));
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+
+            // 이미 존재하지 않는 경우에만 기록
+            if (!existingIds.contains(trackId)) {
+                Files.write(path,
+                        (trackId + System.lineSeparator()).getBytes(),
+                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            }
         } catch (IOException e) {
             log.error("🚨 실패 로그 기록 오류: {}", e.getMessage());
         }
