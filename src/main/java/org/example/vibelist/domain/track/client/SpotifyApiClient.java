@@ -23,11 +23,11 @@ public class SpotifyApiClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    @Value("${spotify.clientId}")
-    private String clientId;
+    //@Value("${spotify.clientId:}")
+    private String clientId = "";
 
-    @Value("${spotify.clientSecret}")
-    private String clientSecret;
+    //@Value("${spotify.clientSecret:null}")
+    private String clientSecret = "";
 
     private final RestTemplate restTemplate = new RestTemplate();
 

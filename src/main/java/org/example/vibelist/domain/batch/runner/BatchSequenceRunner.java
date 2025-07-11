@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.audiofeature.service.AudioFeatureBatchService;
 import org.example.vibelist.domain.track.service.TrackBatchService;
-import org.example.vibelist.domain.youtube.service.YoutubeBatchService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
 public class BatchSequenceRunner implements ApplicationRunner {
 
     private final TrackBatchService trackBatchService;
-    private final YoutubeBatchService youtubeBatchService;
     private final AudioFeatureBatchService audioFeatureBatchService;
 
     @Override

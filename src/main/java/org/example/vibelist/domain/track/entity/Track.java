@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.playlisttrack.PlaylistTrack;
-import org.example.vibelist.domain.youtube.entity.Youtube;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +33,6 @@ public class Track {
     @JoinColumn(name = "audio_feature_id") //auth.getUser()에 실제로 접근할 때 User 쿼리 발생!
     private AudioFeature audioFeature;
 
-    @OneToOne(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Youtube youtube;
 
     @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistTrack> playlistTracks = new ArrayList<>();
