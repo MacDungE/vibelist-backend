@@ -97,31 +97,6 @@ public class RecommendService {
         }
     }
 
-    @Transactional
-    public void registerSpotify(List<TrackRsDto> results){
-        //Spotify에 playlist 생성하기
-        String user_id = "Sung1";
-        String url = "https://api.spotify.com/v1/users/"+ user_id+"/playlists";
-        HttpHeaders headers = new HttpHeaders();
-        //headers.setBearerAuth(spotifyApiClient.getAccessToken());
-        headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // 요청 바디
-        Map<String, Object> body = new HashMap<>();
-        body.put("name", "New Playlist");
-        body.put("description", "New playlist description");
-        body.put("public", false);
-
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                requestEntity,
-                String.class
-        );
-    }
 }
 

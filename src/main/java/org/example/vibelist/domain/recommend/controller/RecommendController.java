@@ -27,7 +27,6 @@ public class RecommendController {
     @PostMapping
     public ResponseEntity<List<TrackRsDto>> recommend(@RequestBody RecommendRqDto request) {
         List<TrackRsDto> result = recommendService.recommend(request.getUserValence(), request.getUserEnergy(), request.getMode());
-        recommendService.registerSpotify(result);
 
 
         return ResponseEntity.ok(result);
