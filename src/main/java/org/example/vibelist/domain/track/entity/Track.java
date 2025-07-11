@@ -30,7 +30,6 @@ public class Track {
     private String imageUrl;
     private String spotifyId;
 
-
     @OneToOne(fetch = FetchType.LAZY)   //지연로딩 적용 -> Auth 앤티티 조회할때 user 객체는 불러오지 않음
     @JoinColumn(name = "audio_feature_id") //auth.getUser()에 실제로 접근할 때 User 쿼리 발생!
     private AudioFeature audioFeature;

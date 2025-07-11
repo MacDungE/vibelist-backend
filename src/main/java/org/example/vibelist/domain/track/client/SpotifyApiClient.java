@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -114,6 +115,34 @@ public class SpotifyApiClient {
         public void setAccess_token(String access_token) {
             this.access_token = access_token;
         }
+    }
+
+    public String getAccessTokenFromCode(String code) {
+        String url = "https://accounts.spotify.com/api/token";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth(clientId, clientSecret); // Base64 자동 처리
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "authorization_code");
+        params.add("code", code);
+        params.add("redirect_uri", "http://localhost:8080/callback"); // Spotify 앱에 등록된 redirect_uri
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+
+        Map<String, Object> tokenMap = response.getBody();
+
+        String accessToken = (String) tokenMap.get("access_token");
+        String refreshToken = (String) tokenMap.get("refresh_token");
+
+        // 🔐 저장 필요 시 DB나 Redis 등에 저장
+        System.out.println("access_token = " + accessToken);
+        System.out.println("refresh_token = " + refreshToken);
+
+        return accessToken;
     }
 
 
