@@ -22,7 +22,6 @@ import java.util.Map;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     // 로그인 동작을 커스텀으로 구현하고 싶을때 사용하는 인터페이스
 
-
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,

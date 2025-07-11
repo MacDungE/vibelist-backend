@@ -2,7 +2,9 @@ package org.example.vibelist.global.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.oauth2.CustomAuthorizationCodeTokenResponseClient;
 import org.example.vibelist.global.oauth2.OAuth2LoginSuccessHandler;
 import org.example.vibelist.global.oauth2.OAuth2LogoutSuccessHandler;
 import org.example.vibelist.global.oauth2.OAuth2UserService;
@@ -23,6 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @Profile("prod")
 @RequiredArgsConstructor
+@Slf4j
 public class ProdSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -30,6 +33,7 @@ public class ProdSecurityConfig {
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
+    private final CustomAuthorizationCodeTokenResponseClient customTokenResponseClient;
 
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -85,6 +89,9 @@ public class ProdSecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)
+                        )
+                        .tokenEndpoint(token -> token
+                                .accessTokenResponseClient(customTokenResponseClient)
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                 )
