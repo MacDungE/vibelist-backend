@@ -2,8 +2,8 @@ package org.example.vibelist.domain.batch.runner;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.audiofeature.service.AudioFeatureBatchService;
-import org.example.vibelist.domain.track.service.TrackBatchService;
+import org.example.vibelist.domain.batch.audiofeature.service.AudioFeatureBatchService;
+import org.example.vibelist.domain.batch.spotify.service.TrackBatchService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -27,7 +27,6 @@ public class BatchSequenceRunner implements ApplicationRunner {
 
 //        audioFeatureBatchService.executeBatch();
 //        trackBatchService.executeBatch();
-//        youtubeBatchService.executeBatch();
 
         log.info("🏁 전체 배치 실행 종료");
     }
