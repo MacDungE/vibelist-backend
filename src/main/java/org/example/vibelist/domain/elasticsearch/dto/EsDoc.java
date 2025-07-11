@@ -7,7 +7,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import java.util.List;
 
 @Data
-@Document(indexName = "audio_feature_index")
+@Document(indexName = "audio_feature_index", createIndex = true)
 public class EsDoc {
     @Id
     private String id;
@@ -30,11 +30,8 @@ public class EsDoc {
     //--------audio feature -----//
 
 
-    //private TrackMetrics trackMetrics;
+    private TrackMetrics trackMetrics;
 
     //--- track------//
 
-    //private YoutubeMetrics youtubeMetrics;
-
-    //--youtube--//
 }

@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.audiofeature.service;
+package org.example.vibelist.domain.batch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.batch.service.BatchService;

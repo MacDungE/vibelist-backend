@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.track.service;
+package org.example.vibelist.domain.batch.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

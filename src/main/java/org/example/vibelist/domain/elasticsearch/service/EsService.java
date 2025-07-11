@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.audiofeature.entity.AudioFeature;
 import org.example.vibelist.domain.audiofeature.repository.AudioFeatureRepository;
 import org.example.vibelist.domain.elasticsearch.dto.EsDoc;
+import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.example.vibelist.domain.elasticsearch.repository.EsRepository;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
@@ -42,7 +43,7 @@ public class EsService {
         long start = System.currentTimeMillis();
 
         //RDS에 접근하여 track을 가져오기
-        List<Track> tracks = trackRepository.findAll(PageRequest.of(0, 1000)).getContent();
+        List<Track> tracks = trackRepository.findAll(PageRequest.of(0, 100)).getContent();
 
         //track_id 추출
         List<Long> trackIds = tracks.stream()
@@ -108,7 +109,8 @@ public class EsService {
 //
 //    }
 
-    public EsDoc convertToEs(AudioFeature audioFeature, Track track) {
+
+    private EsDoc convertToEs(AudioFeature audioFeature, Track track) {
         /*
         Rds에 저장되어있는 genre는 하나의 String 값입니다.
         ; 기준으로 Split 했습니다.
@@ -138,13 +140,16 @@ public class EsService {
         esDoc.setGenres(generList);
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
-//        TrackMetrics trackMetrics = new TrackMetrics();
-//        trackMetrics.setAlbum(track.getAlbum());
-//        trackMetrics.setArtist(track.getArtist());
-//        trackMetrics.setTitle(track.getTitle());
-//        trackMetrics.setPopularity(track.getPopularity());
-//        trackMetrics.setExplicit(track.isExplicit());
-//        esDoc.setTrackMetrics(trackMetrics);
+        TrackMetrics trackMetrics = new TrackMetrics();
+        trackMetrics.setId(track.getId());
+        trackMetrics.setAlbum(track.getAlbum());
+        trackMetrics.setArtist(track.getArtist());
+        trackMetrics.setTitle(track.getTitle());
+        trackMetrics.setPopularity(track.getPopularity());
+        trackMetrics.setExplicit(track.isExplicit());
+        trackMetrics.setImageUrl(track.getImageUrl());
+        esDoc.setTrackMetrics(trackMetrics);
+
 
         return esDoc;
     }
