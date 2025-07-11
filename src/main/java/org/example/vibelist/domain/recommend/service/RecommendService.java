@@ -36,22 +36,21 @@ public class RecommendService {
     // 감정 분류 및 전이 → 검색 범위 계산 → Elasticsearch 쿼리 실행을 수행하는 추천 서비스
     // 추천 결과를 트랙 리스트로 반환
 
-    private final EmotionMapper emotionMapper;
     private final TrackRepository trackRepository;
     private final ElasticsearchClient client;
-    private final EmotionClassifier emotionClassifier;
+    private final EmotionProfileRepository profileRepository;
 
 
     public List<TrackRsDto> recommend(double userValence, double userEnergy, EmotionModeType mode) {
         log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
 
-        EmotionType emotion = emotionClassifier.classify(userValence, userEnergy);
+        EmotionType emotion = profileRepository.classify(userValence, userEnergy);
         log.info("🧠 분류된 감정: {}", emotion);
 
-        EmotionType transitioned = EmotionTransitionMap.getNext(emotion, mode);
+        EmotionType transitioned = profileRepository.getTransition(emotion, mode);
         log.info("🔁 전이된 감정: {}", transitioned);
 
-        EmotionFeatureProfile profile = emotionMapper.map(emotion, mode);
+        EmotionFeatureProfile profile = profileRepository.getProfile(transitioned);
         log.info("📊 검색 범위 - valence: {} ~ {}, energy: {} ~ {}",
                 profile.getValence().getMin(), profile.getValence().getMax(),
                 profile.getEnergy().getMin(), profile.getEnergy().getMax());
