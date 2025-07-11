@@ -1,0 +1,110 @@
+{
+  "DEPRESSED": {
+    "range": {
+      "valence": { "min": 0.0, "max": 0.281 },
+      "energy": { "min": 0.0, "max": 0.415 }
+    },
+    "transitions": {
+      "MAINTAIN": "DEPRESSED",
+      "ELEVATE": "SAD",
+      "CALM_DOWN": "DEPRESSED",
+      "REVERSE": "EXCITED"
+    }
+  },
+  "SLEEPY": {
+    "range": {
+      "valence": { "min": 0.0, "max": 0.281 },
+      "energy": { "min": 0.415, "max": 0.722 }
+    },
+    "transitions": {
+      "MAINTAIN": "SLEEPY",
+      "ELEVATE": "NEUTRAL",
+      "CALM_DOWN": "SLEEPY",
+      "REVERSE": "TENSE"
+    }
+  },
+  "TENSE": {
+    "range": {
+      "valence": { "min": 0.0, "max": 0.281 },
+      "energy": { "min": 0.722, "max": 1.0 }
+    },
+    "transitions": {
+      "MAINTAIN": "TENSE",
+      "ELEVATE": "FEAR",
+      "CALM_DOWN": "SLEEPY",
+      "REVERSE": "SLEEPY"
+    }
+  },
+  "SAD": {
+    "range": {
+      "valence": { "min": 0.281, "max": 0.586 },
+      "energy": { "min": 0.0, "max": 0.415 }
+    },
+    "transitions": {
+      "MAINTAIN": "SAD",
+      "ELEVATE": "NEUTRAL",
+      "CALM_DOWN": "SAD",
+      "REVERSE": "JOY"
+    }
+  },
+  "NEUTRAL": {
+    "range": {
+      "valence": { "min": 0.281, "max": 0.586 },
+      "energy": { "min": 0.415, "max": 0.722 }
+    },
+    "transitions": {
+      "MAINTAIN": "NEUTRAL",
+      "ELEVATE": "FEAR",
+      "CALM_DOWN": "SAD",
+      "REVERSE": "SAD"
+    }
+  },
+  "FEAR": {
+    "range": {
+      "valence": { "min": 0.281, "max": 0.586 },
+      "energy": { "min": 0.722, "max": 1.0 }
+    },
+    "transitions": {
+      "MAINTAIN": "FEAR",
+      "ELEVATE": "EXCITED",
+      "CALM_DOWN": "NEUTRAL",
+      "REVERSE": "CALM"
+    }
+  },
+  "CALM": {
+    "range": {
+      "valence": { "min": 0.586, "max": 1.0 },
+      "energy": { "min": 0.0, "max": 0.415 }
+    },
+    "transitions": {
+      "MAINTAIN": "CALM",
+      "ELEVATE": "JOY",
+      "CALM_DOWN": "CALM",
+      "REVERSE": "FEAR"
+    }
+  },
+  "JOY": {
+    "range": {
+      "valence": { "min": 0.586, "max": 1.0 },
+      "energy": { "min": 0.415, "max": 0.722 }
+    },
+    "transitions": {
+      "MAINTAIN": "JOY",
+      "ELEVATE": "EXCITED",
+      "CALM_DOWN": "CALM",
+      "REVERSE": "SAD"
+    }
+  },
+  "EXCITED": {
+    "range": {
+      "valence": { "min": 0.586, "max": 1.0 },
+      "energy": { "min": 0.722, "max": 1.0 }
+    },
+    "transitions": {
+      "MAINTAIN": "EXCITED",
+      "ELEVATE": "EXCITED",
+      "CALM_DOWN": "JOY",
+      "REVERSE": "DEPRESSED"
+    }
+  }
+}
