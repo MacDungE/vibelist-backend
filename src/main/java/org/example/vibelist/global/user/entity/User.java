@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.example.vibelist.global.auth.entity.UserSocial;
+import org.example.vibelist.global.auth.entity.Auth;
 import org.example.vibelist.global.constants.Role;
 import org.example.vibelist.global.jpa.entity.BaseTime;
 
@@ -38,7 +38,7 @@ public class User extends BaseTime {
     private UserProfile userProfile;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private UserSocial userSocial;
+    private Auth auth;
 
     /**
      * 사용자명 업데이트

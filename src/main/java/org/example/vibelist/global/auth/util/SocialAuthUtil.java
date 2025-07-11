@@ -1,8 +1,8 @@
 package org.example.vibelist.global.auth.util;
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.global.auth.entity.UserSocial;
-import org.example.vibelist.global.auth.repository.UserSocialRepository;
+import org.example.vibelist.global.auth.entity.Auth;
+import org.example.vibelist.global.auth.repository.AuthRepository;
 import org.example.vibelist.global.constants.Role;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.user.entity.User;
@@ -17,7 +17,7 @@ import java.util.Optional;
 public class SocialAuthUtil {
     
     private final UserService userService;
-    private final UserSocialRepository userSocialRepository;
+    private final AuthRepository authRepository;
     private final UsernameGenerator usernameGenerator;
     
     /**
@@ -26,14 +26,14 @@ public class SocialAuthUtil {
     public User findOrCreateSocialUser(String provider, String providerUserId, 
                                      String email, String name, String refreshToken) {
         // 기존 소셜 계정 확인
-        Optional<UserSocial> existingSocial = userSocialRepository.findByProviderAndProviderUserId(provider, providerUserId);
+        Optional<Auth> existingSocial = authRepository.findByProviderAndProviderUserId(provider, providerUserId);
         
         if (existingSocial.isPresent()) {
             // 기존 사용자 로그인 - refresh token 업데이트
-            UserSocial userSocial = existingSocial.get();
-            userSocial.updateRefreshToken(refreshToken);
-            userSocialRepository.save(userSocial);
-            return userSocial.getUser();
+            Auth auth = existingSocial.get();
+            auth.updateRefreshToken(refreshToken);
+            authRepository.save(auth);
+            return auth.getUser();
         } else {
             // 신규 가입
             return createNewSocialUser(provider, providerUserId, email, name, refreshToken);
@@ -65,8 +65,8 @@ public class SocialAuthUtil {
         // UserProfile 생성
         userService.createUserProfile(savedUser, email, name, null);
         
-        // UserSocial 생성
-        UserSocial userSocial = UserSocial.builder()
+        // Auth 생성
+        Auth auth = Auth.builder()
                 .user(savedUser)
                 .provider(provider)
                 .providerUserId(providerUserId)
@@ -74,7 +74,7 @@ public class SocialAuthUtil {
                 .refreshTokenEnc(refreshToken)
                 .tokenType(TokenConstants.TOKEN_TYPE)
                 .build();
-        userSocialRepository.save(userSocial);
+        authRepository.save(auth);
         
         return savedUser;
     }
@@ -90,12 +90,12 @@ public class SocialAuthUtil {
         }
         
         // 이미 연동된 계정인지 확인
-        if (userSocialRepository.existsByProviderAndProviderUserId(provider, providerUserId)) {
+        if (authRepository.existsByProviderAndProviderUserId(provider, providerUserId)) {
             throw new IllegalArgumentException("이미 연동된 소셜 계정입니다.");
         }
         
         User user = userOpt.get();
-        UserSocial userSocial = UserSocial.builder()
+        Auth auth = Auth.builder()
                 .user(user)
                 .provider(provider)
                 .providerUserId(providerUserId)
@@ -103,6 +103,6 @@ public class SocialAuthUtil {
                 .refreshTokenEnc(refreshToken)
                 .tokenType(TokenConstants.TOKEN_TYPE)
                 .build();
-        userSocialRepository.save(userSocial);
+        authRepository.save(auth);
     }
 } 

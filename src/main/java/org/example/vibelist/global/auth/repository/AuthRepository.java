@@ -1,6 +1,6 @@
 package org.example.vibelist.global.auth.repository;
 
-import org.example.vibelist.global.auth.entity.UserSocial;
+import org.example.vibelist.global.auth.entity.Auth;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,27 +8,27 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserSocialRepository extends JpaRepository<UserSocial, Long> {
+public interface AuthRepository extends JpaRepository<Auth, Long> {
     
     /**
      * 소셜 제공자와 제공자 사용자 ID로 소셜 계정 조회
      */
-    Optional<UserSocial> findByProviderAndProviderUserId(String provider, String providerUserId);
+    Optional<Auth> findByProviderAndProviderUserId(String provider, String providerUserId);
     
     /**
      * 소셜 제공자와 제공자 이메일로 소셜 계정 조회
      */
-    Optional<UserSocial> findByProviderAndProviderEmail(String provider, String providerEmail);
+    Optional<Auth> findByProviderAndProviderEmail(String provider, String providerEmail);
     
     /**
      * 사용자 ID로 소셜 계정 목록 조회
      */
-    List<UserSocial> findByUserId(Long userId);
+    List<Auth> findByUserId(Long userId);
     
     /**
      * 소셜 제공자별 소셜 계정 목록 조회
      */
-    List<UserSocial> findByProvider(String provider);
+    List<Auth> findByProvider(String provider);
     
     /**
      * 특정 소셜 제공자 계정 존재 여부 확인
@@ -38,10 +38,10 @@ public interface UserSocialRepository extends JpaRepository<UserSocial, Long> {
     /**
      * 사용자 ID와 소셜 제공자로 소셜 계정 조회
      */
-    Optional<UserSocial> findByUserIdAndProvider(Long userId, String provider);
+    Optional<Auth> findByUserIdAndProvider(Long userId, String provider);
     
     /**
      * 사용자 ID로 일반 로그인 계정 조회 (provider가 null인 경우)
      */
-    Optional<UserSocial> findByUserIdAndProviderIsNull(Long userId);
+    Optional<Auth> findByUserIdAndProviderIsNull(Long userId);
 } 

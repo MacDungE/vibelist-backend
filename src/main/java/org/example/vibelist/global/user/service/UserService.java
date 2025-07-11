@@ -1,8 +1,8 @@
 package org.example.vibelist.global.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.global.auth.entity.UserSocial;
-import org.example.vibelist.global.auth.repository.UserSocialRepository;
+import org.example.vibelist.global.auth.entity.Auth;
+import org.example.vibelist.global.auth.repository.AuthRepository;
 import org.example.vibelist.global.constants.Role;
 
 import org.example.vibelist.global.user.dto.CreateUserRequest;
@@ -27,7 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
-    private final UserSocialRepository userSocialRepository;
+    private final AuthRepository authRepository;
 
     // User 관련 메소드 - 개선된 버전
     public Optional<User> findUserById(Long id) {
@@ -118,13 +118,13 @@ public class UserService {
         userProfileRepository.deleteById(userId);
     }
 
-    // UserSocial 관련 메소드 (소셜 계정 정보 조회용)
-    public List<UserSocial> findUserSocialsByUserId(Long userId) {
-        return userSocialRepository.findByUserId(userId);
+    // Auth 관련 메소드 (소셜 계정 정보 조회용)
+    public List<Auth> findAuthsByUserId(Long userId) {
+        return authRepository.findByUserId(userId);
     }
 
-    public Optional<UserSocial> findUserSocialByUserIdAndProvider(Long userId, String provider) {
-        return userSocialRepository.findByUserIdAndProvider(userId, provider);
+    public Optional<Auth> findAuthByUserIdAndProvider(Long userId, String provider) {
+        return authRepository.findByUserIdAndProvider(userId, provider);
     }
 
     // 복합 조회 메소드 - 개선된 버전
@@ -148,13 +148,13 @@ public class UserService {
                 .build();
     }
 
-    public SocialAccountResponse convertToSocialAccountResponse(UserSocial userSocial) {
+    public SocialAccountResponse convertToSocialAccountResponse(Auth auth) {
         return SocialAccountResponse.builder()
-                .id(userSocial.getId())
-                .provider(userSocial.getProvider())
-                .providerUserId(userSocial.getProviderUserId())
-                .providerEmail(userSocial.getProviderEmail())
-                .createdAt(userSocial.getCreatedAt())
+                .id(auth.getId())
+                .provider(auth.getProvider())
+                .providerUserId(auth.getProviderUserId())
+                .providerEmail(auth.getProviderEmail())
+                .createdAt(auth.getCreatedAt())
                 .build();
     }
 
@@ -186,7 +186,7 @@ public class UserService {
     }
 
     public List<SocialAccountResponse> findUserSocialAccounts(Long userId) {
-        List<UserSocial> socialAccounts = userSocialRepository.findByUserId(userId);
+        List<Auth> socialAccounts = authRepository.findByUserId(userId);
         return socialAccounts.stream()
                 .map(this::convertToSocialAccountResponse)
                 .collect(Collectors.toList());
