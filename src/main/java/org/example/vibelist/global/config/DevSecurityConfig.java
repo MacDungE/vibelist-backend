@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.oauth2.CustomAuthorizationCodeTokenResponseClient;
 import org.example.vibelist.global.oauth2.OAuth2LoginSuccessHandler;
 import org.example.vibelist.global.oauth2.OAuth2LogoutSuccessHandler;
 import org.example.vibelist.global.oauth2.OAuth2UserService;
@@ -32,6 +33,7 @@ public class DevSecurityConfig {
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
+    private final CustomAuthorizationCodeTokenResponseClient customTokenResponseClient;
 
 
     @Bean
@@ -93,6 +95,9 @@ public class DevSecurityConfig {
                         .loginPage("/index.html")
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)
+                        )
+                        .tokenEndpoint(token -> token
+                                .accessTokenResponseClient(customTokenResponseClient)
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                         .authorizationEndpoint(authorization -> authorization

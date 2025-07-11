@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'io.projectreactor:reactor-test'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     implementation 'org.postgresql:postgresql'
@@ -50,6 +51,13 @@ dependencies {
     //elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
 
+    // OpenTelemetry 의존성 추가
+    implementation 'io.opentelemetry:opentelemetry-api:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-sdk:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-exporter-logging:1.36.0'
+
+    // Swagger/OpenAPI 의존성
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
     //Elasticsearch와 Java 애플리케이션 간 통신을 위한 공식 클라이언트
     implementation 'co.elastic.clients:elasticsearch-java:8.12.2'
 

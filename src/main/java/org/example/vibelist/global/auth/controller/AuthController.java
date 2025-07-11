@@ -1,5 +1,11 @@
 package org.example.vibelist.global.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +14,8 @@ import org.example.vibelist.global.auth.dto.StatusResponse;
 import org.example.vibelist.global.auth.dto.TokenResponse;
 import org.example.vibelist.global.auth.service.AuthService;
 import org.example.vibelist.global.auth.util.CookieUtil;
-import org.example.vibelist.global.constants.SocialProvider;
+
+import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.user.dto.SocialAccountResponse;
 import org.example.vibelist.global.user.service.UserService;
@@ -27,17 +34,22 @@ import java.util.Map;
 @RequestMapping("/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "인증 관리", description = "사용자 인증 및 권한 관리 API")
 public class AuthController {
     private final AuthService authService;
     private final UserService userService;
     private final CookieUtil cookieUtil;
 
-
-
-    // 토큰 갱신
+    @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
+        @ApiResponse(responseCode = "401", description = "리프레시 토큰이 없거나 유효하지 않음")
+    })
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken, 
-                                         HttpServletResponse response) {
+    public ResponseEntity<?> refreshToken(
+            @Parameter(description = "리프레시 토큰 (쿠키)")
+            @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken, 
+            HttpServletResponse response) {
         try {
             if (refreshToken == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("리프레시 토큰이 없습니다.");
@@ -53,16 +65,23 @@ public class AuthController {
         }
     }
 
-
-
-    // 통합 로그아웃 (일반 로그인 및 OAuth2 로그인 모두 지원)
+    @Operation(summary = "로그아웃", description = "사용자를 로그아웃하고 토큰을 무효화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    })
+    @SecurityRequirement(name = "bearer-key")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         authService.logout(response);
         return ResponseEntity.ok("로그아웃 성공");
     }
 
-    // 현재 사용자 소셜 로그인 연동 정보 조회
+    @Operation(summary = "현재 사용자 소셜 계정 조회", description = "현재 인증된 사용자의 소셜 로그인 연동 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "소셜 계정 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
+    @SecurityRequirement(name = "bearer-key")
     @GetMapping("/me/social")
     public ResponseEntity<?> getCurrentUserSocialAccounts() {
         try {
@@ -76,16 +95,24 @@ public class AuthController {
         }
     }
 
-    // 소셜 로그인 연동 정보 조회 (관리자용)
+    @Operation(summary = "사용자 소셜 계정 조회", description = "특정 사용자의 소셜 로그인 연동 정보를 조회합니다. (관리자용)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "소셜 계정 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+    })
+    @SecurityRequirement(name = "bearer-key")
     @GetMapping("/{userId}/social")
-    public ResponseEntity<?> getUserSocialAccounts(@PathVariable Long userId) {
+    public ResponseEntity<?> getUserSocialAccounts(
+            @Parameter(description = "조회할 사용자 ID") @PathVariable Long userId) {
         List<SocialAccountResponse> socialAccounts = userService.findUserSocialAccounts(userId);
         return ResponseEntity.ok(socialAccounts);
     }
-    
 
-
-    // 소셜 회원가입 완료 (사용자명 설정)
+    @Operation(summary = "소셜 회원가입 완료", description = "소셜 로그인 후 사용자명을 설정하여 회원가입을 완료합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "회원가입 완료 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (중복된 사용자명 등)")
+    })
     @PostMapping("/social/complete-signup")
     public ResponseEntity<?> completeSocialSignup(@RequestBody CompleteSocialSignupRequest request) {
         try {
@@ -100,7 +127,10 @@ public class AuthController {
         }
     }
 
-    // 인증 상태 확인
+    @Operation(summary = "인증 상태 확인", description = "현재 사용자의 인증 상태와 정보를 확인합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "인증 상태 조회 성공")
+    })
     @GetMapping("/status")
     public ResponseEntity<StatusResponse> getAuthStatus() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -141,23 +171,29 @@ public class AuthController {
         return ResponseEntity.ok(StatusResponse.unauthenticated());
     }
 
-    // OAuth2 로그인 URL 제공
+    @Operation(summary = "소셜 로그인 URL 조회", description = "Google, Kakao, Spotify 등 소셜 로그인 URL을 제공합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로그인 URL 조회 성공")
+    })
     @GetMapping("/social-login-urls")
     public ResponseEntity<Map<String, String>> getLoginUrls() {
         Map<String, String> loginUrls = new HashMap<>();
         
         // Google 로그인 URL
-        loginUrls.put(SocialProvider.GOOGLE.name().toLowerCase(), "/oauth2/authorization/google");
+        loginUrls.put(SocialProviderConstants.GOOGLE_LOWER, SocialProviderConstants.getOAuth2LoginUrl(SocialProviderConstants.GOOGLE_LOWER));
         
         // Kakao 로그인 URL
-        loginUrls.put(SocialProvider.KAKAO.name().toLowerCase(), "/oauth2/authorization/kakao");
+        loginUrls.put(SocialProviderConstants.KAKAO_LOWER, SocialProviderConstants.getOAuth2LoginUrl(SocialProviderConstants.KAKAO_LOWER));
+        
+        // Spotify 로그인 URL
+        loginUrls.put(SocialProviderConstants.SPOTIFY_LOWER, SocialProviderConstants.getOAuth2LoginUrl(SocialProviderConstants.SPOTIFY_LOWER));
         
         return ResponseEntity.ok(loginUrls);
     }
 
     // 소셜 제공자 정보 추출
     private String getProviderFromAttributes(Map<String, Object> attributes) {
-        SocialProvider provider = SocialProvider.fromAttributes(attributes);
-        return provider != null ? provider.getLowerCaseName() : "unknown";
+        String provider = SocialProviderConstants.fromAttributes(attributes);
+        return provider != null ? SocialProviderConstants.getLowerCaseName(provider) : "unknown";
     }
 }

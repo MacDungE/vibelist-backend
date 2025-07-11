@@ -1,7 +1,7 @@
 package org.example.vibelist.global.user.dto;
 
 import lombok.*;
-import org.example.vibelist.global.constants.SocialProvider;
+
 
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ public class SocialAccountResponse {
     private Long id;
     
     /** 소셜 로그인 제공자 (GOOGLE, KAKAO, NAVER 등) */
-    private SocialProvider provider;
+    private String provider;
     
     /** 소셜 제공자에서 발급한 사용자 ID */
     private String providerUserId;

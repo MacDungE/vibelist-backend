@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Base64;
 import java.util.Collections;
@@ -20,16 +19,12 @@ import java.util.Map;
 @Slf4j
 public class SpotifyApiClient {
 
-    private final WebClient.Builder webClientBuilder;
-
-    //@Value("${spotify.clientId:}")
-    private String clientId = "";
-
-    //@Value("${spotify.clientSecret:null}")
-    private String clientSecret = "";
 
     private final RestTemplate restTemplate = new RestTemplate();
-
+    //@Value("${spotify.clientId:}")
+    private final String clientId = "";
+    //@Value("${spotify.clientSecret:null}")
+    private final String clientSecret = "";
 
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {
         try {
@@ -103,19 +98,6 @@ public class SpotifyApiClient {
         return response.getBody().getAccess_token();
     }
 
-    // 내부 클래스: 토큰 응답 파싱용
-    static class SpotifyTokenResponse {
-        private String access_token;
-
-        public String getAccess_token() {
-            return access_token;
-        }
-
-        public void setAccess_token(String access_token) {
-            this.access_token = access_token;
-        }
-    }
-
     public String getAccessTokenFromCode(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
@@ -142,6 +124,19 @@ public class SpotifyApiClient {
         System.out.println("refresh_token = " + refreshToken);
 
         return accessToken;
+    }
+
+    // 내부 클래스: 토큰 응답 파싱용
+    static class SpotifyTokenResponse {
+        private String access_token;
+
+        public String getAccess_token() {
+            return access_token;
+        }
+
+        public void setAccess_token(String access_token) {
+            this.access_token = access_token;
+        }
     }
 
 

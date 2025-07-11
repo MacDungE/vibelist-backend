@@ -5,13 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.auth.dto.LoginResponse;
 import org.example.vibelist.global.auth.dto.TokenResponse;
-import org.example.vibelist.global.auth.entity.UserSocial;
-import org.example.vibelist.global.auth.repository.UserSocialRepository;
+import org.example.vibelist.global.auth.entity.Auth;
+import org.example.vibelist.global.auth.repository.AuthRepository;
 import org.example.vibelist.global.auth.util.AuthUtil;
 import org.example.vibelist.global.auth.util.CookieUtil;
 import org.example.vibelist.global.auth.util.SocialAuthUtil;
 import org.example.vibelist.global.constants.Role;
-import org.example.vibelist.global.constants.SocialProvider;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
 import org.example.vibelist.global.security.jwt.JwtTokenType;
@@ -33,7 +32,7 @@ import java.util.Optional;
 public class AuthService {
     
     private final UserService userService;
-    private final UserSocialRepository userSocialRepository;
+    private final AuthRepository authRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -198,8 +197,8 @@ public class AuthService {
      * 소셜 로그인 연동 정보 조회
      */
     @Transactional(readOnly = true)
-    public List<UserSocial> getUserSocialAccounts(Long userId) {
-        return userService.findUserSocialsByUserId(userId);
+    public List<Auth> getAuthAccounts(Long userId) {
+        return userService.findAuthsByUserId(userId);
     }
     
 
@@ -214,54 +213,54 @@ public class AuthService {
         cookieUtil.removeAllAuthCookies(response);
     }
 
-    // UserSocial 관련 메소드들
+    // Auth 관련 메소드들
     /**
      * 소셜 제공자와 제공자 사용자 ID로 소셜 계정 조회
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findUserSocialByProviderAndProviderUserId(SocialProvider provider, String providerUserId) {
-        return userSocialRepository.findByProviderAndProviderUserId(provider, providerUserId);
+    public Optional<Auth> findAuthByProviderAndProviderUserId(String provider, String providerUserId) {
+        return authRepository.findByProviderAndProviderUserId(provider, providerUserId);
     }
 
     /**
      * 소셜 제공자와 제공자 이메일로 소셜 계정 조회
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findUserSocialByProviderAndProviderEmail(SocialProvider provider, String providerEmail) {
-        return userSocialRepository.findByProviderAndProviderEmail(provider, providerEmail);
+    public Optional<Auth> findAuthByProviderAndProviderEmail(String provider, String providerEmail) {
+        return authRepository.findByProviderAndProviderEmail(provider, providerEmail);
     }
 
     /**
      * 소셜 제공자별 소셜 계정 목록 조회
      */
     @Transactional(readOnly = true)
-    public List<UserSocial> findUserSocialsByProvider(SocialProvider provider) {
-        return userSocialRepository.findByProvider(provider);
+    public List<Auth> findAuthsByProvider(String provider) {
+        return authRepository.findByProvider(provider);
     }
 
     /**
      * 특정 소셜 제공자 계정 존재 여부 확인
      */
     @Transactional(readOnly = true)
-    public boolean existsByProviderAndProviderUserId(SocialProvider provider, String providerUserId) {
-        return userSocialRepository.existsByProviderAndProviderUserId(provider, providerUserId);
+    public boolean existsByProviderAndProviderUserId(String provider, String providerUserId) {
+        return authRepository.existsByProviderAndProviderUserId(provider, providerUserId);
     }
 
     /**
-     * UserSocial 저장
+     * Auth 저장
      */
     @Transactional
-    public UserSocial saveUserSocial(UserSocial userSocial) {
-        return userSocialRepository.save(userSocial);
+    public Auth saveAuth(Auth auth) {
+        return authRepository.save(auth);
     }
 
     /**
-     * Builder 패턴을 사용한 UserSocial 생성 및 저장 (소셜 로그인용)
+     * Builder 패턴을 사용한 Auth 생성 및 저장 (소셜 로그인용)
      */
     @Transactional
-    public UserSocial createUserSocial(User user, SocialProvider provider, String providerUserId, 
+    public Auth createAuth(User user, String provider, String providerUserId, 
                                      String providerEmail, String refreshTokenEnc) {
-        UserSocial userSocial = UserSocial.builder()
+        Auth auth = Auth.builder()
                 .user(user)
                 .provider(provider)
                 .providerUserId(providerUserId)
@@ -269,40 +268,40 @@ public class AuthService {
                 .refreshTokenEnc(refreshTokenEnc)
                 .tokenType(TokenConstants.TOKEN_TYPE)
                 .build();
-        return userSocialRepository.save(userSocial);
+        return authRepository.save(auth);
     }
 
     /**
-     * 일반 로그인용 UserSocial 생성 및 저장
+     * 일반 로그인용 Auth 생성 및 저장
      */
     @Transactional
-    public UserSocial createRegularUserSocial(User user, String refreshToken, String tokenType) {
-        UserSocial userSocial = new UserSocial(user, refreshToken, tokenType);
-        return userSocialRepository.save(userSocial);
+    public Auth createRegularAuth(User user, String refreshToken, String tokenType) {
+        Auth auth = new Auth(user, refreshToken, tokenType);
+        return authRepository.save(auth);
     }
 
     /**
-     * 사용자의 UserSocial 정보 조회 (일반 로그인용)
+     * 사용자의 Auth 정보 조회 (일반 로그인용)
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findRegularUserSocialByUserId(Long userId) {
-        return userSocialRepository.findByUserIdAndProviderIsNull(userId);
+    public Optional<Auth> findRegularAuthByUserId(Long userId) {
+        return authRepository.findByUserIdAndProviderIsNull(userId);
     }
 
     /**
-     * 사용자의 UserSocial 정보 조회 (소셜 로그인용)
+     * 사용자의 Auth 정보 조회 (소셜 로그인용)
      */
     @Transactional(readOnly = true)
-    public Optional<UserSocial> findSocialUserSocialByUserIdAndProvider(Long userId, SocialProvider provider) {
-        return userSocialRepository.findByUserIdAndProvider(userId, provider);
+    public Optional<Auth> findSocialAuthByUserIdAndProvider(Long userId, String provider) {
+        return authRepository.findByUserIdAndProvider(userId, provider);
     }
 
     /**
-     * UserSocial 삭제
+     * Auth 삭제
      */
     @Transactional
-    public void deleteUserSocial(Long id) {
-        userSocialRepository.deleteById(id);
+    public void deleteAuth(Long id) {
+        authRepository.deleteById(id);
     }
     
     /**
