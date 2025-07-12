@@ -13,7 +13,7 @@ public class ElasticsearchIndexInitializer {
 
     private final ElasticsearchOperations elasticsearchOperations;
 
-    //@PostConstruct
+    @PostConstruct
     public void init() {
         IndexOperations indexOps = elasticsearchOperations.indexOps(EsDoc.class);
         if (!indexOps.exists()) {

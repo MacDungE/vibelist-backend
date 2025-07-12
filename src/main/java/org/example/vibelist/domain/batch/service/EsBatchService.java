@@ -33,10 +33,10 @@ public class EsBatchService implements BatchService{
         Iterable<EsDoc> existingDocs = esRepository.findAll();
         Set<String> existingEsIds = new HashSet<>();
         for (EsDoc doc : existingDocs) {
-            existingEsIds.add(doc.getId()); // id는 AudioFeature의 id를 string으로 변환한 것
+            existingEsIds.add(doc.getTrackMetrics().getTrackId()); // es에 TrackMetrics.trackId 를 추출
         }
 
-        // 2. RDB에서 AudioFeature + Track이 연결된 전체 트랙을 가져오기
+        // 2. RDB에서 AudioFeature + Track이 연결된 전체 트랙을 가져오기 (fetch join)
         List<Track> tracks = trackRepository.findAllWithAudioFeature();
 
         List<EsDoc> missingDocs = new ArrayList<>();
@@ -95,7 +95,7 @@ public class EsBatchService implements BatchService{
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
         TrackMetrics trackMetrics = new TrackMetrics();
-        trackMetrics.setId(track.getId());
+        trackMetrics.setTrackId(track.getId().toString());
         trackMetrics.setAlbum(track.getAlbum());
         trackMetrics.setArtist(track.getArtist());
         trackMetrics.setTitle(track.getTitle());
