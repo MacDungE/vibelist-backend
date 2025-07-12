@@ -61,7 +61,7 @@ public class TrackBatchService implements BatchService {
                 if ("false".equals(res)) {
                     recordFailedAudioFeature(feature.getId());
                 } else if ("done".equals(res)) {
-                    System.exit(0);
+                    return;
                 }
             }
         } while (!afPage.isLast());
