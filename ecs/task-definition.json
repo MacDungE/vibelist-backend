@@ -1,11 +1,11 @@
 {
   "family": "vibelist-task-def",
   "networkMode": "awsvpc",
-  "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::257976284139:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "spring-backend",
-      "image": "IMAGE_PLACEHOLDER",
+      "image": "<IMAGE_URI>",
       "portMappings": [
         {
           "containerPort": 8080,
