@@ -25,9 +25,9 @@ public class SpotifyApiClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
     @Value("${spotify.clientId}")
-    private final String clientId;
+    private  String clientId;
     @Value("${spotify.clientSecret}")
-    private final String clientSecret;
+    private  String clientSecret;
 
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {
         try {
@@ -101,53 +101,7 @@ public class SpotifyApiClient {
         return response.getBody().getAccess_token();
     }
 
-    public String getAccessTokenFromCode(String code) {
-        String url = "https://accounts.spotify.com/api/token";
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.setBasicAuth(clientId, clientSecret); // Base64 자동 처리
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("code", code);
-        params.add("redirect_uri", "http://localhost:8080/callback"); // Spotify 앱에 등록된 redirect_uri
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-
-        Map<String, Object> tokenMap = response.getBody();
-
-        String accessToken = (String) tokenMap.get("access_token");
-        String refreshToken = (String) tokenMap.get("refresh_token");
-
-        // 🔐 저장 필요 시 DB나 Redis 등에 저장
-        System.out.println("access_token = " + accessToken);
-        System.out.println("refresh_token = " + refreshToken);
-
-        return accessToken;
-    }
-    /*
-    userid를 추출하는 메소드입니다.
-     */
-    public String getSpotifyUserId(String accessToken) throws Exception {
-        String url = "https://api.spotify.com/v1/me";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + accessToken);
-        headers.set("Content-Type", "application/json");
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-        RestTemplate restTemplate = new RestTemplate();
-
-        ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, String.class);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode root = objectMapper.readTree(response.getBody());
-
-        return root.get("id").asText(); // Spotify 유저 ID 반환
-    }
     // 내부 클래스: 토큰 응답 파싱용
     static class SpotifyTokenResponse {
         private String access_token;
