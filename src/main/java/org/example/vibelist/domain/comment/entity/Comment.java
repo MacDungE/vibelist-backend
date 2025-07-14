@@ -44,9 +44,6 @@ public class Comment extends BaseTime {
     private List<Comment> children = new ArrayList<>();
 
     @Column(nullable = false)
-    private String username;
-
-    @Column(nullable = false)
     private int likeCount = 0;
 
 }

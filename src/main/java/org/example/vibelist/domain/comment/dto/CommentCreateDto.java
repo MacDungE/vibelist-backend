@@ -7,6 +7,5 @@ import org.example.vibelist.global.user.entity.User;
 public class CommentCreateDto {
     private Long postId;
     private String content;
-    private User user;
     private Long parentId;
 }

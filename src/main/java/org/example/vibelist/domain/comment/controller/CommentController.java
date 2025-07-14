@@ -11,6 +11,7 @@ import org.example.vibelist.domain.comment.dto.CommentUpdateDto;
 import org.example.vibelist.domain.comment.service.CommentService;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.example.vibelist.global.user.entity.User;
 import org.example.vibelist.global.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,6 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
-    private final UserRepository userRepository;
 
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
     @ApiResponses(value = {
@@ -36,8 +36,8 @@ public class CommentController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
     @PostMapping
-    public ResponseEntity<Void> create(@RequestBody CommentCreateDto dto) {
-        commentService.create(dto);
+    public ResponseEntity<Void> create(@RequestBody CommentCreateDto dto, CustomUserDetails details) {
+        commentService.create(dto, 1L);//details.getId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -63,9 +63,8 @@ public class CommentController {
             @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto) {
-        User user = getCurrentUser();
-        commentService.update(id, dto, user.getId());
+    public ResponseEntity<Void> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, CustomUserDetails details) {
+        commentService.update(id, dto, 1L);//details.getId());
         return ResponseEntity.ok().build();
     }
 
@@ -76,9 +75,8 @@ public class CommentController {
             @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        User user = getCurrentUser();
-        commentService.delete(id, user.getId());
+    public ResponseEntity<Void> delete(@PathVariable Long id, CustomUserDetails details) {
+        commentService.delete(id, 1L);//details.getId());
         return ResponseEntity.noContent().build();
     }
 // 댓글 좋아요 / 취소
@@ -92,9 +90,4 @@ public class CommentController {
 //        return ResponseEntity.ok().build();
 //    }
 
-    private User getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
 }

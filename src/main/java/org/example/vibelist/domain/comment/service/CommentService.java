@@ -12,12 +12,14 @@ import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
 import org.example.vibelist.global.user.entity.User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CommentService {
 
     private final CommentRepository commentRepository;
@@ -25,7 +27,7 @@ public class CommentService {
 //    private final RedisTemplate<String, String> redisTemplate;
 
 
-    public void create(CommentCreateDto dto) {
+    public void create(CommentCreateDto dto, Long userId) {
         Post post = postRepository.findById(dto.getPostId())
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
@@ -37,7 +39,7 @@ public class CommentService {
 
         Comment comment = Comment.builder()
                 .content(dto.getContent())
-                .user(dto.getUser())
+                .user(User.builder().id(userId).build())
                 .post(post)
                 .parent(parent)
                 .build();
