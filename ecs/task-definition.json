@@ -1,5 +1,5 @@
 {
-  "family": "vibelist-task-def",
+  "family": "vibelist-backend",
   "networkMode": "awsvpc",
   "executionRoleArn": "arn:aws:iam::257976284139:role/ecsTaskExecutionRole",
   "containerDefinitions": [
