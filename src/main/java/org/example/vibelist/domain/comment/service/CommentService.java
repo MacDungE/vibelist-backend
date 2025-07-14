@@ -12,10 +12,8 @@ import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -91,6 +89,32 @@ public class CommentService {
     public List<CommentResponseDto> getSortedComments(Long postId, String sort) {
         List<Comment> allComments = commentRepository.findByPostId(postId);
 
+        List<Comment> parents = allComments.stream()
+                .filter(c -> c.getParent() == null)
+                .collect(Collectors.toList());
+
+        Comparator<Comment> comparator = switch (sort.toLowerCase()) {
+            case "oldest" -> Comparator.comparing(Comment::getCreatedAt);
+            case "likes" -> Comparator.comparing(Comment::getLikeCount).reversed();
+            case "latest" -> Comparator.comparing(Comment::getCreatedAt).reversed();
+            default ->  throw new CustomException(ErrorCode.BAD_REQUEST);
+        };
+        parents.sort(comparator);
+
+        Map<Long, List<Comment>> childMap = allComments.stream()
+                .filter(c -> c.getParent() != null)
+                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
+
+        List<CommentResponseDto> result = new ArrayList<>();
+        for (Comment parent : parents) {
+            CommentResponseDto dto = toDto(parent);
+            List<Comment> children = childMap.getOrDefault(parent.getId(), List.of());
+            for (Comment child : children) {
+                dto.getChildren().add(toDto(child));
+            }
+            result.add(dto);
+        }
+        return result;
     }
 
     // @todo 댓글 좋아요 w/ Redis

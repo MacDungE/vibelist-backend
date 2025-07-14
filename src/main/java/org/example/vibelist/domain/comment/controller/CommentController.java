@@ -32,7 +32,7 @@ public class CommentController {
             @RequestParam(defaultValue = "latest") String sort
     ) {
         List<CommentResponseDto> comments = commentService.getSortedComments(postId, sort);
-        return ResponseEntity.ok(commentService.getByPostId(postId));
+        return ResponseEntity.ok(comments);
     }
 
     @PutMapping("/{id}")
