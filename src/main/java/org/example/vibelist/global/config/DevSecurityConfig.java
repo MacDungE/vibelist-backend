@@ -75,6 +75,7 @@ public class DevSecurityConfig {
                         // 공개 API 엔드포인트 허용
                         .requestMatchers("/v1/public/**").permitAll()
                         // 사용자 관련 엔드포인트는 인증 필요
+                                .requestMatchers("v1/playlist/**").permitAll()
                         .requestMatchers("/v1/user/**").authenticated()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()

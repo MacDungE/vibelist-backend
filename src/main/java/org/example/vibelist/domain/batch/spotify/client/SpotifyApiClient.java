@@ -1,9 +1,12 @@
 package org.example.vibelist.domain.batch.spotify.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.batch.spotify.dto.SpotifyTrackMetaDto;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,10 +24,10 @@ public class SpotifyApiClient {
 
 
     private final RestTemplate restTemplate = new RestTemplate();
-    //@Value("${spotify.clientId:}")
-    private final String clientId = "";
-    //@Value("${spotify.clientSecret:null}")
-    private final String clientSecret = "";
+    @Value("${spotify.clientId}")
+    private final String clientId;
+    @Value("${spotify.clientSecret}")
+    private final String clientSecret;
 
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {
         try {
@@ -125,7 +128,26 @@ public class SpotifyApiClient {
 
         return accessToken;
     }
+    /*
+    userid를 추출하는 메소드입니다.
+     */
+    public String getSpotifyUserId(String accessToken) throws Exception {
+        String url = "https://api.spotify.com/v1/me";
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + accessToken);
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, String.class);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode root = objectMapper.readTree(response.getBody());
+
+        return root.get("id").asText(); // Spotify 유저 ID 반환
+    }
     // 내부 클래스: 토큰 응답 파싱용
     static class SpotifyTokenResponse {
         private String access_token;
