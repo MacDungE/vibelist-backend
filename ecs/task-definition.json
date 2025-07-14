@@ -13,6 +13,20 @@
           "protocol": "tcp"
         }
       ],
+      "environment": [
+        { "name": "DB_SERVER", "value": "REPLACE_ME" },
+        { "name": "DB_PORT", "value": "REPLACE_ME" },
+        { "name": "DB_NAME", "value": "REPLACE_ME" },
+        { "name": "DB_USERNAME", "value": "REPLACE_ME" },
+        { "name": "DB_PASSWORD", "value": "REPLACE_ME" },
+        { "name": "GOOGLE_CLIENT_ID", "value": "REPLACE_ME" },
+        { "name": "GOOGLE_CLIENT_SECRET", "value": "REPLACE_ME" },
+        { "name": "KAKAO_CLIENT_ID", "value": "REPLACE_ME" },
+        { "name": "KAKAO_CLIENT_SECRET", "value": "REPLACE_ME" },
+        { "name": "SPOTIFY_CLIENT_ID", "value": "REPLACE_ME" },
+        { "name": "SPOTIFY_CLIENT_SECRET", "value": "REPLACE_ME" },
+        { "name": "ES_HOST", "value": "REPLACE_ME" }
+      ],
       "essential": true
     }
   ],
