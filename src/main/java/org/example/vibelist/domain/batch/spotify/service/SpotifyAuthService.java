@@ -38,7 +38,7 @@ public class SpotifyAuthService {
     /**
      * 1. 사용자가 로그인할 수 있는 Spotify URL 반환
      */
-    public String getAuthorizationUrl() {
+    public synchronized String getAuthorizationUrl() {
         String scope = "user-read-private user-read-email playlist-modify-private";
         return UriComponentsBuilder.fromHttpUrl("https://accounts.spotify.com/authorize")
                 .queryParam("client_id", clientId)
@@ -51,7 +51,7 @@ public class SpotifyAuthService {
     /**
      * 2. Spotify에서 받은 code를 이용해 access_token과 refresh_token 교환
      */
-    public String  exchangeCodeForTokens(String code) {
+    public synchronized String  exchangeCodeForTokens(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
         String auth = clientId + ":" + clientSecret;
@@ -85,7 +85,7 @@ public class SpotifyAuthService {
     /**
      * 3. refresh token을 이용해 access_token 재발급
      */
-    public String refreshAccessToken() {
+    public synchronized String refreshAccessToken() {
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
 
         String url = "https://accounts.spotify.com/api/token";
@@ -116,7 +116,7 @@ public class SpotifyAuthService {
         }
     }
 
-    public String getSpotifyUserId(String accessToken) {
+    public synchronized String getSpotifyUserId(String accessToken) {
         String url = "https://api.spotify.com/v1/me";
 
         HttpHeaders headers = new HttpHeaders();
@@ -145,7 +145,11 @@ public class SpotifyAuthService {
         return accessToken;
     }
 
-    public String getRefreshToken() {
+    public synchronized String getRefreshToken() {
         return refreshToken;
+    }
+
+    public synchronized boolean isTokenAvailable() {
+        return accessToken != null && tokenExpiry != null && Instant.now().isBefore(tokenExpiry.minusSeconds(60));
     }
 }
