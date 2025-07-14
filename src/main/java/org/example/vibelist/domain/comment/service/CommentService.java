@@ -10,6 +10,7 @@ import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.repository.PostRepository;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.user.entity.User;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -36,7 +37,7 @@ public class CommentService {
 
         Comment comment = Comment.builder()
                 .content(dto.getContent())
-                .username(dto.getUsername())
+                .user(dto.getUser())
                 .post(post)
                 .parent(parent)
                 .build();
@@ -64,23 +65,23 @@ public class CommentService {
         return new ArrayList<>(map.values());
     }
 
-    public void update(Long id, CommentUpdateDto dto, String username) {
+    public void update(Long id, CommentUpdateDto dto, Long userId) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        if (!comment.getUsername().equals(username)) {
+        if (!comment.getUser().getId().equals(userId)) {
             throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
         }
 
         comment.setContent(dto.getContent());
     }
 
-    public void delete(Long id, String username) {
+    public void delete(Long id, Long userId) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        if (!comment.getUsername().equals(username)) {
-            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
         }
 
         commentRepository.delete(comment);
@@ -118,12 +119,12 @@ public class CommentService {
     }
 
     // @todo 댓글 좋아요 w/ Redis
-    public void likeComment(Long commentId, String username) {
+    public void likeComment(Long commentId, User user) {
 
     }
 
     // @todo 댓글 좋아요 취소 w/ Redis
-    public void unlikeComment(Long commentId, String username) {
+    public void unlikeComment(Long commentId, User user) {
 
     }
 
@@ -131,7 +132,7 @@ public class CommentService {
         return CommentResponseDto.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
-                .username(comment.getUsername())
+                .userId(comment.getUser().getId())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .createdAt(comment.getCreatedAt())
                 .children(new ArrayList<>())

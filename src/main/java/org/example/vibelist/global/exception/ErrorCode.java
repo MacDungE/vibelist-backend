@@ -44,7 +44,10 @@ public enum ErrorCode {
 
     // 📝 댓글(Comment) 에러
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_001", "존재하지 않는 댓글입니다."),
-    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "해당 댓글에 대한 권한이 없습니다.");
+    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "해당 댓글에 대한 권한이 없습니다."),
+
+    // 사용자(User) 에러
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
