@@ -141,7 +141,7 @@ public class EsService {
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
         TrackMetrics trackMetrics = new TrackMetrics();
-        trackMetrics.setId(track.getId());
+        trackMetrics.setTrackId(String.valueOf(track.getId()));
         trackMetrics.setAlbum(track.getAlbum());
         trackMetrics.setArtist(track.getArtist());
         trackMetrics.setTitle(track.getTitle());
