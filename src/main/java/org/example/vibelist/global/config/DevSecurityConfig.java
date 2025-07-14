@@ -4,10 +4,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.constants.TokenConstants;
-import org.example.vibelist.global.oauth2.CustomAuthorizationCodeTokenResponseClient;
-import org.example.vibelist.global.oauth2.OAuth2LoginSuccessHandler;
-import org.example.vibelist.global.oauth2.OAuth2LogoutSuccessHandler;
-import org.example.vibelist.global.oauth2.OAuth2UserService;
+import org.example.vibelist.domain.oauth2.CustomAuthorizationCodeTokenResponseClient;
+import org.example.vibelist.domain.oauth2.OAuth2LoginSuccessHandler;
+import org.example.vibelist.domain.oauth2.OAuth2LogoutSuccessHandler;
+import org.example.vibelist.domain.oauth2.OAuth2UserService;
 import org.example.vibelist.global.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,8 +74,10 @@ public class DevSecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         // 공개 API 엔드포인트 허용
                         .requestMatchers("/v1/public/**").permitAll()
+                        .requestMatchers("/v1/post/**").permitAll()
                         // 사용자 관련 엔드포인트는 인증 필요
                         .requestMatchers("/v1/user/**").authenticated()
+                        .requestMatchers("/v1/recommend").permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
