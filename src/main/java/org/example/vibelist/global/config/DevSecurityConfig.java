@@ -76,6 +76,7 @@ public class DevSecurityConfig {
                         .requestMatchers("/v1/public/**").permitAll()
                         .requestMatchers("/v1/post/**").permitAll()
                         // 사용자 관련 엔드포인트는 인증 필요
+                                .requestMatchers("v1/playlist/**").permitAll()
                         .requestMatchers("/v1/user/**").authenticated()
                         .requestMatchers("/v1/recommend").permitAll()
                         // 나머지는 인증 필요

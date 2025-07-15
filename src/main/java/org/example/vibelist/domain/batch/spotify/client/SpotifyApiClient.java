@@ -1,9 +1,12 @@
 package org.example.vibelist.domain.batch.spotify.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.batch.spotify.dto.SpotifyTrackMetaDto;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,10 +24,10 @@ public class SpotifyApiClient {
 
 
     private final RestTemplate restTemplate = new RestTemplate();
-    //@Value("${spotify.clientId:}")
-    private final String clientId = "";
-    //@Value("${spotify.clientSecret:null}")
-    private final String clientSecret = "";
+    @Value("${spotify.clientId}")
+    private  String clientId;
+    @Value("${spotify.clientSecret}")
+    private  String clientSecret;
 
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {
         try {
@@ -98,33 +101,6 @@ public class SpotifyApiClient {
         return response.getBody().getAccess_token();
     }
 
-    public String getAccessTokenFromCode(String code) {
-        String url = "https://accounts.spotify.com/api/token";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.setBasicAuth(clientId, clientSecret); // Base64 자동 처리
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("code", code);
-        params.add("redirect_uri", "http://localhost:8080/callback"); // Spotify 앱에 등록된 redirect_uri
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-
-        Map<String, Object> tokenMap = response.getBody();
-
-        String accessToken = (String) tokenMap.get("access_token");
-        String refreshToken = (String) tokenMap.get("refresh_token");
-
-        // 🔐 저장 필요 시 DB나 Redis 등에 저장
-        System.out.println("access_token = " + accessToken);
-        System.out.println("refresh_token = " + refreshToken);
-
-        return accessToken;
-    }
 
     // 내부 클래스: 토큰 응답 파싱용
     static class SpotifyTokenResponse {
