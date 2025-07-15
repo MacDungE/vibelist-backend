@@ -1,8 +1,10 @@
-package org.example.vibelist.domain.playlist.emotion;
+package org.example.vibelist.domain.playlist.emotion.profile;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
+import org.example.vibelist.domain.playlist.emotion.type.EmotionType;
 
 import java.util.Map;
 
