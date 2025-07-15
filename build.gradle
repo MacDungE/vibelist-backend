@@ -65,6 +65,8 @@ dependencies {
     //JSON ↔ Java 객체 간 직렬화/역직렬화를 수행하는 라이브러리
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
 
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
 
 }
 
