@@ -7,6 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
+import org.example.vibelist.domain.user.entity.User;
+import org.example.vibelist.domain.user.service.UserService;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -22,6 +25,9 @@ import java.util.Map;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     // 로그인 동작을 커스텀으로 구현하고 싶을때 사용하는 인터페이스
 
+    private final IntegrationTokenInfoService integrationTokenInfoService;
+    private final UserService userService;
+
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -34,114 +40,163 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("[OAuth2_LOG] Authentication: {}", authentication);
 
         try {
-            // state 파라미터 확인 (추가 연동 요청인지 판단)
-            String state = request.getParameter("state");
-            boolean isIntegrationRequest = false;
-            Long integrationUserId = null;
-            
-            if (state != null && state.startsWith("integration_")) {
-                isIntegrationRequest = true;
-                try {
-                    integrationUserId = Long.parseLong(state.substring("integration_".length()));
-                    log.info("[OAuth2_LOG] 기존 사용자의 추가 연동 요청 - userId: {}", integrationUserId);
-                } catch (NumberFormatException e) {
-                    log.warn("[OAuth2_LOG] state 파라미터에서 userId 파싱 실패: {}", state);
-                    isIntegrationRequest = false;
-                }
-            }
-            
             DefaultOAuth2User oAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
-
-            log.info("[OAuth2_LOG] OAuth2User attributes: {}", attributes);
-
-            String accessToken = (String) attributes.get(TokenConstants.ACCESS_TOKEN);
-            String refreshToken = (String) attributes.get(TokenConstants.REFRESH_TOKEN);
-            String name = (String) attributes.get("name");
-
-            log.info("[OAuth2_LOG] 소셜 로그인 시도한 이름 = {}", name);
-            log.info("[OAuth2_LOG] AccessToken 존재: {}", accessToken != null);
-            log.info("[OAuth2_LOG] RefreshToken 존재: {}", refreshToken != null);
-
-            // 사용자 ID를 안전하게 꺼내기 (null 체크 및 타입 캐스팅)
-            String id = null;
-            Object idObj = attributes.get("id");
-            if (idObj != null) {
-                // 소셜 플랫폼의 ID는 Long 범위를 초과할 수 있으므로 String으로 처리
-                id = idObj.toString();
-                log.info("[OAuth2_LOG] 사용자 ID: {}", id);
-            } else {
-                log.warn("[OAuth2_LOG] 사용자 ID가 없습니다!");
-            }
-
-            // 신규 사용자인지 확인
-            boolean isNewUser = Boolean.TRUE.equals(attributes.get("isNewUser"));
-            String tempUserId = null;
-            Object tempUserIdObj = attributes.get("tempUserId");
-            if (tempUserIdObj != null) {
-                tempUserId = tempUserIdObj.toString();
-            }
             String provider = (String) attributes.get("provider");
             
-            log.info("[OAuth2_LOG] 신규 사용자 여부: {}", isNewUser);
-            log.info("[OAuth2_LOG] 임시 사용자 ID: {}", tempUserId);
-            log.info("[OAuth2_LOG] Provider: {}", provider);
+            // OAuth2UserProcessor에서 설정한 isIntegrationRequest 값 확인
+            Object isIntegrationObj = attributes.get("isIntegrationRequest");
+            boolean isIntegrationRequest = Boolean.TRUE.equals(isIntegrationObj);
+            Long userId = (Long) attributes.get("userId");
+            boolean isNewUser = Boolean.TRUE.equals(attributes.get("isNewUser"));
+            
+            log.info("[OAuth2_LOG] 처리 모드 확인 - isIntegration: {} (원본: {}), userId: {}, provider: {}, isNewUser: {}", 
+                    isIntegrationRequest, isIntegrationObj, userId, provider, isNewUser);
+            log.info("[OAuth2_LOG] 전체 attributes 키: {}", attributes.keySet());
 
-            // 토큰이 없는 경우 처리
-            if (accessToken == null || refreshToken == null) {
-                log.error("[OAuth2_LOG] 토큰이 없습니다. accessToken: {}, refreshToken: {}", accessToken, refreshToken);
-                response.sendRedirect("/login.html?error=token_missing");
+            // 연동 요청인 경우 별도 처리
+            if (isIntegrationRequest && userId != null) {
+                handleIntegrationRequest(userId, provider, attributes, response);
                 return;
             }
 
-            // 토큰 전달방식 - HttpOnly 쿠키로 전달
-            Cookie accessTokenCookie = new Cookie(TokenConstants.ACCESS_TOKEN_COOKIE, accessToken);
-            accessTokenCookie.setHttpOnly(true);
-            accessTokenCookie.setPath("/");
-            accessTokenCookie.setMaxAge(60 * 30); // 30분짜리 액세스 토큰
-            response.addCookie(accessTokenCookie);
-
-            Cookie refreshTokenCookie = new Cookie(TokenConstants.REFRESH_TOKEN_COOKIE, refreshToken);
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7일짜리 리프레시 토큰
-            response.addCookie(refreshTokenCookie);
-
-            log.info("[OAuth2_LOG] 쿠키 설정 완료");
-
-            // 리다이렉트 URL 결정
-            String redirectUrl;
-            if (isIntegrationRequest) {
-                // 기존 사용자의 추가 연동: 메인 페이지로 바로 리다이렉트
-                redirectUrl = "/main.html?integration=success&provider=" + provider;
-                if (integrationUserId != null) {
-                    redirectUrl += "&userId=" + integrationUserId;
-                }
-                log.info("[OAuth2_LOG] 추가 연동 완료 - 메인 페이지로 리다이렉트: {}", redirectUrl);
-            } else if (isNewUser) {
-                // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
-                redirectUrl = "/social-signup.html";
-                if (tempUserId != null) {
-                    redirectUrl += "?tempUserId=" + tempUserId;
-                }
-                if (provider != null) {
-                    redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "provider=" + provider;
-                }
-                log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
-            } else {
-                // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
-                redirectUrl = "/main.html";
-                if (id != null) {
-                    redirectUrl += "?id=" + id;
-                }
-                log.info("[OAuth2_LOG] 기존 사용자 - 메인 페이지로 리다이렉트: {}", redirectUrl);
-            }
-            
-            response.sendRedirect(redirectUrl);
+            // 일반 로그인 처리 (기존 로직)
+            handleRegularLogin(attributes, response);
             
         } catch (Exception e) {
             log.error("[OAuth2_LOG] OAuth2 로그인 성공 처리 중 오류 발생", e);
             response.sendRedirect("/login.html?error=oauth2_error");
         }
+    }
+
+    /**
+     * 연동 요청 처리 - 토큰 정보만 저장하고 쿠키 설정하지 않음
+     */
+    private void handleIntegrationRequest(Long userId, String provider, Map<String, Object> attributes, HttpServletResponse response) 
+            throws IOException {
+        log.info("[OAuth2_LOG] 연동 요청 처리 시작 - userId: {}, provider: {}", userId, provider);
+
+        try {
+            // 사용자 조회
+            User user = userService.findUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+
+            // 토큰 정보 추출
+            String accessToken = (String) attributes.get(TokenConstants.ACCESS_TOKEN);
+            String refreshToken = (String) attributes.get(TokenConstants.REFRESH_TOKEN);
+            String tokenType = (String) attributes.get("tokenType");
+            Integer expiresIn = (Integer) attributes.get("expiresIn");
+            String scope = (String) attributes.get("scope");
+
+            log.info("[OAuth2_LOG] 연동 토큰 정보 - AccessToken 존재: {}, RefreshToken 존재: {}", 
+                    accessToken != null, refreshToken != null);
+
+            if (accessToken == null) {
+                log.error("[OAuth2_LOG] 연동 처리 실패: AccessToken이 없습니다");
+                response.sendRedirect("/main.html?integration=error&reason=no_token");
+                return;
+            }
+
+            // IntegrationTokenInfo에 토큰 정보 저장
+            integrationTokenInfoService.saveOrUpdateTokenInfo(
+                    user, provider, accessToken, refreshToken, tokenType, expiresIn, scope
+            );
+
+            log.info("[OAuth2_LOG] 연동 토큰 정보 저장 완료 - provider: {}", provider);
+
+            // 성공 리다이렉트 (쿠키 설정 없이)
+            String redirectUrl = "/main.html?integration=success&provider=" + provider + "&userId=" + userId;
+            log.info("[OAuth2_LOG] 연동 완료 - 메인 페이지로 리다이렉트: {}", redirectUrl);
+            response.sendRedirect(redirectUrl);
+
+        } catch (Exception e) {
+            log.error("[OAuth2_LOG] 연동 처리 중 오류 발생 - userId: {}, provider: {}", userId, provider, e);
+            response.sendRedirect("/main.html?integration=error&reason=save_failed");
+        }
+    }
+
+    /**
+     * 일반 로그인 처리 - 기존 로직 유지
+     */
+    private void handleRegularLogin(Map<String, Object> attributes, HttpServletResponse response) 
+            throws IOException {
+        log.info("[OAuth2_LOG] 일반 로그인 처리 시작");
+
+        String accessToken = (String) attributes.get(TokenConstants.ACCESS_TOKEN);
+        String refreshToken = (String) attributes.get(TokenConstants.REFRESH_TOKEN);
+        String name = (String) attributes.get("name");
+        String provider = (String) attributes.get("provider");
+
+        log.info("[OAuth2_LOG] 소셜 로그인 시도한 이름 = {}", name);
+        log.info("[OAuth2_LOG] AccessToken 존재: {}", accessToken != null);
+        log.info("[OAuth2_LOG] RefreshToken 존재: {}", refreshToken != null);
+
+        // 사용자 ID를 안전하게 꺼내기 (null 체크 및 타입 캐스팅)
+        String id = null;
+        Object idObj = attributes.get("id");
+        if (idObj != null) {
+            // 소셜 플랫폼의 ID는 Long 범위를 초과할 수 있으므로 String으로 처리
+            id = idObj.toString();
+            log.info("[OAuth2_LOG] 사용자 ID: {}", id);
+        } else {
+            log.warn("[OAuth2_LOG] 사용자 ID가 없습니다!");
+        }
+
+        // 신규 사용자인지 확인
+        boolean isNewUser = Boolean.TRUE.equals(attributes.get("isNewUser"));
+        String tempUserId = null;
+        Object tempUserIdObj = attributes.get("tempUserId");
+        if (tempUserIdObj != null) {
+            tempUserId = tempUserIdObj.toString();
+        }
+        
+        log.info("[OAuth2_LOG] 신규 사용자 여부: {}", isNewUser);
+        log.info("[OAuth2_LOG] 임시 사용자 ID: {}", tempUserId);
+        log.info("[OAuth2_LOG] Provider: {}", provider);
+
+        // 토큰이 없는 경우 처리
+        if (accessToken == null || refreshToken == null) {
+            log.error("[OAuth2_LOG] 토큰이 없습니다. accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+            response.sendRedirect("/login.html?error=token_missing");
+            return;
+        }
+
+        // 토큰 전달방식 - HttpOnly 쿠키로 전달
+        Cookie accessTokenCookie = new Cookie(TokenConstants.ACCESS_TOKEN_COOKIE, accessToken);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(60 * 30); // 30분짜리 액세스 토큰
+        response.addCookie(accessTokenCookie);
+
+        Cookie refreshTokenCookie = new Cookie(TokenConstants.REFRESH_TOKEN_COOKIE, refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7일짜리 리프레시 토큰
+        response.addCookie(refreshTokenCookie);
+
+        log.info("[OAuth2_LOG] 쿠키 설정 완료");
+
+        // 리다이렉트 URL 결정
+        String redirectUrl;
+        if (isNewUser) {
+            // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
+            redirectUrl = "/social-signup.html";
+            if (tempUserId != null) {
+                redirectUrl += "?tempUserId=" + tempUserId;
+            }
+            if (provider != null) {
+                redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "provider=" + provider;
+            }
+            log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
+        } else {
+            // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
+            redirectUrl = "/main.html";
+            if (id != null) {
+                redirectUrl += "?id=" + id;
+            }
+            log.info("[OAuth2_LOG] 기존 사용자 - 메인 페이지로 리다이렉트: {}", redirectUrl);
+        }
+        
+        response.sendRedirect(redirectUrl);
     }
 }

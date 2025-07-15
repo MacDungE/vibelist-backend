@@ -62,9 +62,9 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
                 additionalParameters.putAll(enrichedParams);
                 
                 if (tokenInfo.getRefreshToken() != null) {
-                    log.info("[OAUTH2_TOKEN] Spotify Refresh Token 획득 성공");
+                    log.info("[OAUTH2_TOKEN] ✅ Spotify Refresh Token 획득 성공");
                 } else {
-                    log.warn("[OAUTH2_TOKEN] Spotify Refresh Token이 없습니다. Spotify 앱 설정을 확인하세요.");
+                    log.warn("[OAUTH2_TOKEN] ⚠️ Spotify Refresh Token이 없습니다. 직접 호출을 시도합니다.");
                     
                     // Spotify에서 refresh token이 없는 경우 직접 호출 시도
                     SpotifyTokenResponse directResponse = getSpotifyTokenResponse(
@@ -75,7 +75,7 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
                     );
                     
                     if (directResponse != null && directResponse.getRefresh_token() != null) {
-                        log.info("[OAUTH2_TOKEN] Spotify 직접 호출로 Refresh Token 획득 성공");
+                        log.info("[OAUTH2_TOKEN] ✅ Spotify 직접 호출로 Refresh Token 획득 성공!");
                         additionalParameters.put(TokenManagementConstants.SPOTIFY_REFRESH_TOKEN_KEY, directResponse.getRefresh_token());
                         additionalParameters.put(TokenManagementConstants.SPOTIFY_ACCESS_TOKEN_KEY, directResponse.getAccess_token());
                         additionalParameters.put(TokenManagementConstants.SPOTIFY_EXPIRES_IN_KEY, directResponse.getExpires_in());
@@ -86,6 +86,12 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
                             directResponse.getRefresh_token() != null,
                             directResponse.getExpires_in(),
                             directResponse.getScope());
+                    } else {
+                        log.error("[OAUTH2_TOKEN] ❌ Spotify 직접 호출에서도 Refresh Token을 받지 못했습니다.");
+                        log.error("[OAUTH2_TOKEN] Spotify 앱 설정에서 다음을 확인하세요:");
+                        log.error("[OAUTH2_TOKEN] 1. Spotify Dashboard > App Settings");
+                        log.error("[OAUTH2_TOKEN] 2. Redirect URIs가 정확히 설정되어 있는지 확인");
+                        log.error("[OAUTH2_TOKEN] 3. App이 'Development Mode'가 아닌 'Extended Quota Mode'인지 확인");
                     }
                 }
                 

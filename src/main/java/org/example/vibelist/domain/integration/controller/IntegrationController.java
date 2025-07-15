@@ -19,6 +19,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -309,7 +311,7 @@ public class IntegrationController {
     })
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/spotify/connect")
-    public void connectSpotify(HttpServletResponse response) throws IOException {
+    public void connectSpotify(HttpServletResponse response, HttpServletRequest request) throws IOException {
         try {
             Long userId = getCurrentUserId();
             
@@ -323,9 +325,16 @@ public class IntegrationController {
                 return;
             }
             
+            // 세션에 integration 정보 저장
+            HttpSession session = request.getSession();
+            session.setAttribute("integration_request", true);
+            session.setAttribute("integration_user_id", userId);
+            session.setAttribute("integration_provider", "SPOTIFY");
+            
+            log.info("[INTEGRATION] 세션에 integration 정보 저장 완료 - userId: {}", userId);
+            
             // 스포티파이 OAuth2 인증 URL로 리다이렉트
-            // 연동 완료 후 돌아올 수 있도록 state 파라미터에 userId 포함
-            String spotifyAuthUrl = "/oauth2/authorization/spotify?state=integration_" + userId;
+            String spotifyAuthUrl = "/oauth2/authorization/spotify";
             log.info("[INTEGRATION] 스포티파이 OAuth2 페이지로 리다이렉트 - userId: {}, url: {}", userId, spotifyAuthUrl);
             
             response.sendRedirect(spotifyAuthUrl);
@@ -355,6 +364,69 @@ public class IntegrationController {
                 .expiresAt(tokenInfo.getTokenExpiresAt())
                 .scope(tokenInfo.getScope())
                 .build();
+    }
+
+    @Operation(summary = "스포티파이 토큰 디버그 정보", description = "스포티파이 토큰이 정상적으로 저장되었는지 확인합니다. (개발용)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "토큰 정보 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+        @ApiResponse(responseCode = "404", description = "스포티파이 토큰 정보 없음")
+    })
+    @SecurityRequirement(name = "bearer-key")
+    @GetMapping("/spotify/token-debug")
+    public ResponseEntity<?> getSpotifyTokenDebugInfo() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Long userId = Long.valueOf(authentication.getName());
+            
+            log.info("[INTEGRATION_DEBUG] 스포티파이 토큰 디버그 정보 조회 - userId: {}", userId);
+            
+            Optional<IntegrationTokenInfo> spotifyTokenOpt = integrationTokenInfoService.getActiveTokenInfo(userId, "SPOTIFY");
+            
+            if (spotifyTokenOpt.isEmpty()) {
+                log.warn("[INTEGRATION_DEBUG] 스포티파이 토큰 정보가 없습니다 - userId: {}", userId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "스포티파이 토큰 정보를 찾을 수 없습니다. 스포티파이 연동을 먼저 진행해주세요."));
+            }
+            
+            IntegrationTokenInfo spotifyToken = spotifyTokenOpt.get();
+            
+            // 디버그 정보 생성 (민감한 토큰 값은 제외)
+            Map<String, Object> debugInfo = new HashMap<>();
+            debugInfo.put("provider", spotifyToken.getProvider());
+            debugInfo.put("isActive", spotifyToken.getIsActive());
+            debugInfo.put("isValid", spotifyToken.isValid());
+            debugInfo.put("isExpired", spotifyToken.isExpired());
+            debugInfo.put("hasAccessToken", spotifyToken.getAccessToken() != null);
+            debugInfo.put("hasRefreshToken", spotifyToken.getRefreshToken() != null);
+            debugInfo.put("tokenType", spotifyToken.getTokenType());
+            debugInfo.put("expiresIn", spotifyToken.getExpiresIn());
+            debugInfo.put("scope", spotifyToken.getScope());
+            debugInfo.put("tokenIssuedAt", spotifyToken.getTokenIssuedAt());
+            debugInfo.put("tokenExpiresAt", spotifyToken.getTokenExpiresAt());
+            debugInfo.put("createdAt", spotifyToken.getCreatedAt());
+            debugInfo.put("updatedAt", spotifyToken.getUpdatedAt());
+            debugInfo.put("tokenResponseKeys", spotifyToken.getTokenResponse() != null ? 
+                spotifyToken.getTokenResponse().keySet() : null);
+            
+            log.info("[INTEGRATION_DEBUG] 스포티파이 토큰 디버그 정보:");
+            log.info("[INTEGRATION_DEBUG] - Provider: {}", spotifyToken.getProvider());
+            log.info("[INTEGRATION_DEBUG] - Access Token 존재: {}", spotifyToken.getAccessToken() != null);
+            log.info("[INTEGRATION_DEBUG] - Refresh Token 존재: {}", spotifyToken.getRefreshToken() != null);
+            log.info("[INTEGRATION_DEBUG] - 토큰 유효성: {}", spotifyToken.isValid());
+            log.info("[INTEGRATION_DEBUG] - 토큰 만료 여부: {}", spotifyToken.isExpired());
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "스포티파이 토큰 디버그 정보 조회 성공",
+                "debugInfo", debugInfo,
+                "timestamp", LocalDateTime.now()
+            ));
+            
+        } catch (Exception e) {
+            log.error("[INTEGRATION_DEBUG] 스포티파이 토큰 디버그 정보 조회 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "토큰 정보 조회 중 오류가 발생했습니다."));
+        }
     }
 
     /**
