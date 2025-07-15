@@ -120,6 +120,8 @@ public class PlaylistController {
     public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
         String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
         String refreshToken = spotifyAuthService.getRefreshToken();
-        return ResponseEntity.ok("Access token & Refresh token 발급 완료!");
+        return ResponseEntity.ok("Access token & Refresh token 발급 완료!" +
+                                        "\n access_token : " + accessToken +
+                                        "\n refresh_token :"+ refreshToken);
     }
 }
