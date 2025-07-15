@@ -1,6 +1,5 @@
 package org.example.vibelist.domain.playlist.controller;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,11 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.auth.service.DevAuthTokenService;
-import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
+import org.example.vibelist.domain.integration.service.SpotifyAuthService;
+import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.PlaylistService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -104,24 +102,9 @@ public class PlaylistController {
                                     "]"
                     )
             )
-    ) @RequestBody List<TrackRsDto> trackRsDtos) throws Exception {
-
-
-        playlistService.createPlaylist(trackRsDtos);
-            return ResponseEntity.ok().body(trackRsDtos);
-    }
-
-    @GetMapping("/login-dev")
-    public void redirectToSpotify(HttpServletResponse response) throws IOException {
-        response.sendRedirect(spotifyAuthService.getAuthorizationUrl());
-    }
-
-    @GetMapping("/callback")
-    public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
-        String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
-        String refreshToken = spotifyAuthService.getRefreshToken();
-        return ResponseEntity.ok("Access token & Refresh token 발급 완료!" +
-                                        "\n access_token : " + accessToken +
-                                        "\n refresh_token :"+ refreshToken);
+    )       @RequestBody Long id,
+            @RequestBody List<TrackRsDto> trackRsDtos) throws Exception {
+        SpotifyPlaylistDto playlistDto = playlistService.createPlaylist(id,trackRsDtos);
+        return ResponseEntity.ok().body(playlistDto);
     }
 }

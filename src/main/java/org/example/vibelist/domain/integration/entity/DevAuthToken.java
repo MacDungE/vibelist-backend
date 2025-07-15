@@ -1,16 +1,18 @@
-package org.example.vibelist.domain.auth.entity;
+package org.example.vibelist.domain.integration.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.example.vibelist.global.jpa.entity.BaseTime;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 
 @Entity
 @Getter
 @Setter
-public class DevAuthToken {
+public class DevAuthToken extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,6 +23,5 @@ public class DevAuthToken {
     @Column(columnDefinition = "text",nullable = false)
     private String refreshToken;
     @Column(nullable = false)
-    private Instant expiresIn;
-
+    private LocalDateTime tokenExpiresAt; // 토큰 만료 시간
 }

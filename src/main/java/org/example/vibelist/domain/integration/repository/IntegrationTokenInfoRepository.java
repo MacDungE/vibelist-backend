@@ -1,6 +1,7 @@
 package org.example.vibelist.domain.integration.repository;
 
 import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
+import org.example.vibelist.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -120,4 +121,6 @@ public interface IntegrationTokenInfoRepository extends JpaRepository<Integratio
      */
     @Query(value = "SELECT * FROM integration_token_info WHERE token_response -> :key @> :arrayElement::jsonb", nativeQuery = true)
     List<IntegrationTokenInfo> findByTokenResponseArrayContains(@Param("key") String key, @Param("arrayElement") String arrayElement);
-} 
+
+    Long user(User user);
+}

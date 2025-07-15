@@ -1,12 +1,10 @@
-package org.example.vibelist.domain.batch.spotify.service;
+package org.example.vibelist.domain.integration.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.auth.entity.DevAuthToken;
-import org.example.vibelist.domain.auth.service.DevAuthTokenService;
+import org.example.vibelist.domain.integration.entity.DevAuthToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -17,8 +15,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +34,7 @@ public class SpotifyAuthService {
     @Value("${spotify.redirectUri}")
     private String redirectUri;
 
-    private String name = /*"sung_1";*/ //여러분이 사용하실 admin user name을 입력해주시면 됩니다.
+    private String name = "sung_1"; //여러분이 사용하실 admin user name을 입력해주시면 됩니다.
     private final DevAuthTokenService devAuthTokenService;
     private final RestTemplate restTemplate= new RestTemplate();
     /**
@@ -83,7 +81,7 @@ public class SpotifyAuthService {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
             String accessToken = json.get("access_token").asText(); //access_token 추출
             String refreshToken = json.get("refresh_token").asText();//refresh_token 추출
-            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());//(현재시간 + expiry_time)값을 테이블에 저장
+            LocalDateTime tokenExpiry = LocalDateTime.now().plusSeconds(json.get("expires_in").asLong());//(현재시간 + expiry_time)값을 테이블에 저장
 
             log.info("Access token: {}", accessToken);
             log.info("refresh token: {}", refreshToken);
@@ -124,7 +122,7 @@ public class SpotifyAuthService {
             if (json.has("refresh_token")) {
                 refreshToken = json.get("refresh_token").asText(); // refresh_token 추출
             }
-            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong()); //(현재시간 + expiry_time)값을 테이블에 저장
+            LocalDateTime tokenExpiry = LocalDateTime.now().plusSeconds(json.get("expires_in").asLong()); //(현재시간 + expiry_time)값을 테이블에 저장
             devAuthTokenService.updateDev(name,accessToken,refreshToken,tokenExpiry); // 테이블 update
             return accessToken;
         } catch (Exception e) {
@@ -154,17 +152,17 @@ public class SpotifyAuthService {
         }
     }
 
-    public synchronized String getAccessToken() {
+    public  String getAccessToken() {
         DevAuthToken devAuthToken = devAuthTokenService.getDevAuth(name);
         String accessToken = devAuthToken.getAccessToken();
-        Instant tokenExpiry = devAuthToken.getExpiresIn();
-        if (tokenExpiry != null && Instant.now().isAfter(tokenExpiry.minusSeconds(60))) {
+        LocalDateTime tokenExpiry = devAuthToken.getTokenExpiresAt();
+        if (tokenExpiry != null && LocalDateTime.now().isAfter(tokenExpiry.minusSeconds(60))) {
             return refreshAccessToken(); //만료시 토큰 재발급
         }
         return accessToken;
     }
 
-    public synchronized String getRefreshToken() {
+    public  String getRefreshToken() {
         return devAuthTokenService.getDevAuth(name).getRefreshToken();
     }
 

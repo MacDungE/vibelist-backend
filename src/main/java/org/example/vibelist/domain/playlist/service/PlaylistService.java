@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.auth.service.DevAuthTokenService;
-import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
+import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
+import org.example.vibelist.domain.integration.repository.DevAuthTokenRepository;
+import org.example.vibelist.domain.integration.repository.IntegrationTokenInfoRepository;
+import org.example.vibelist.domain.integration.service.SpotifyAuthService;
+import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,9 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,15 +31,25 @@ import java.util.stream.Collectors;
 public class PlaylistService {
 
     private final SpotifyAuthService spotifyAuthService;
+    private final DevAuthTokenRepository devAuthTokenRepository;
+    private final IntegrationTokenInfoRepository integrationTokenInfoRepository;
     @Transactional
     /*
     PlayList를 생성 후, track들을 insert합니다.
      */
-    public void createPlaylist(List<TrackRsDto> trackRsDtos) throws Exception {
+    public SpotifyPlaylistDto createPlaylist(Long userid,List<TrackRsDto> tracks) throws Exception {
+        //이용자의 accesstoken 가져오기
+        Optional<IntegrationTokenInfo> optionalInfo =
+                integrationTokenInfoRepository.findByUserIdAndProvider(userid, "SPOTIFY");
+
         String accessToken;
-
-        accessToken = spotifyAuthService.getAccessToken();
-
+        if(optionalInfo.map(IntegrationTokenInfo::isExpired).orElse(false)) {
+            accessToken = spotifyAuthService.getAccessToken();
+        }
+        else {
+           accessToken = optionalInfo.map(IntegrationTokenInfo::getAccessToken).orElseThrow(()->new IllegalArgumentException("유효하지 않은 access_token입니다.."));
+        }
+        //여기서 로직 정리
         String userId = spotifyAuthService.getSpotifyUserId(accessToken);
 
         String url = "https://api.spotify.com/v1/users/" + userId + "/playlists";
@@ -61,10 +77,14 @@ public class PlaylistService {
         String responseBody = response.getBody();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode root = objectMapper.readTree(responseBody);
-        String playlistId = root.get("id").asText();
-        addTrack(trackRsDtos,playlistId,accessToken);
+        String spotifyId = root.get("id").asText();
+        addTrack(tracks,spotifyId,accessToken);
 
-        log.info("response: {}", response.getBody());
+        log.info("spotify playlist id : {}",spotifyId);
+
+        SpotifyPlaylistDto spotifyPlaylistDto = new SpotifyPlaylistDto();
+        spotifyPlaylistDto.setSpotifyId(spotifyId);
+        return spotifyPlaylistDto;
     }
     @Transactional
     public void addTrack(List<TrackRsDto> trackRsDtos,
