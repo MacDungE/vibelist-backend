@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.example.vibelist.domain.playlist.repository.PlaylistRepository;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
-import org.example.vibelist.domain.batch.spotify.client.SpotifyApiClient;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

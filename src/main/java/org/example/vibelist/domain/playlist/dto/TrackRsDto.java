@@ -28,7 +28,7 @@ public class TrackRsDto {
         return TrackRsDto.builder()
                 .spotifyId(doc.getSpotifyId())
                 .durationMs(doc.getDurationMs())
-                .trackId(String.valueOf(doc.getTrackMetrics().getId()))
+                .trackId(doc.getTrackMetrics().getTrackId())
                 .title(doc.getTrackMetrics().getTitle())
                 .artist(doc.getTrackMetrics().getArtist())
                 .album(doc.getTrackMetrics().getAlbum())
