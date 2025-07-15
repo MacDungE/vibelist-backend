@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.global.jpa.entity.BaseEntity;
 import org.example.vibelist.global.jpa.entity.BaseTime;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,8 +23,9 @@ import static jakarta.persistence.FetchType.LAZY;
 public class Post extends BaseTime {
 
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(columnDefinition = "text", nullable = false)
     private String content;
@@ -70,14 +72,17 @@ public class Post extends BaseTime {
         this.viewCnt ++;
     }
 
+    public void incLike()  { this.likeCnt++; }
+    public void decLike()  { this.likeCnt--; }
+
 
     @Builder
-    private Post(Long userId,
+    private Post(User user,
                  String content,
                  Boolean isPublic,
                  Playlist playlist
                  ) {
-        this.userId     = userId;
+        this.user       = user;
         this.content    = content;
         this.isPublic   = isPublic;
         this.playlist  = playlist;

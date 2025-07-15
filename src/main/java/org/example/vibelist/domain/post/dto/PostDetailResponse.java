@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 public record PostDetailResponse(
         Long                    id,
         Long                    userId,
+        String                  userName,
+        String                  userProfileName,
         String                  content,
         Boolean                 isPublic,
         Long                    likeCnt,

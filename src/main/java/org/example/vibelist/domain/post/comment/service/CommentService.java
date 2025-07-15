@@ -1,14 +1,15 @@
-package org.example.vibelist.domain.comment.service;
+package org.example.vibelist.domain.post.comment.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.comment.dto.CommentCreateDto;
-import org.example.vibelist.domain.comment.dto.CommentResponseDto;
-import org.example.vibelist.domain.comment.dto.CommentUpdateDto;
-import org.example.vibelist.domain.comment.entity.Comment;
-import org.example.vibelist.domain.comment.repository.CommentRepository;
+import org.example.vibelist.domain.post.comment.dto.CommentCreateDto;
+import org.example.vibelist.domain.post.comment.dto.CommentResponseDto;
+import org.example.vibelist.domain.post.comment.dto.CommentUpdateDto;
+import org.example.vibelist.domain.post.comment.entity.Comment;
+import org.example.vibelist.domain.post.comment.repository.CommentRepository;
 import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.repository.PostRepository;
 import org.example.vibelist.domain.user.entity.User;
+import org.example.vibelist.domain.user.repository.UserRepository;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -24,10 +25,14 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 //    private final RedisTemplate<String, String> redisTemplate;
 
 
     public void create(CommentCreateDto dto, Long userId) {
+
+        User user = userRepository.findById(userId).orElseThrow();
+
         Post post = postRepository.findById(dto.getPostId())
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
@@ -39,7 +44,7 @@ public class CommentService {
 
         Comment comment = Comment.builder()
                 .content(dto.getContent())
-                .user(User.builder().id(userId).build())
+                .user(user)
                 .post(post)
                 .parent(parent)
                 .build();
@@ -90,7 +95,7 @@ public class CommentService {
     }
 
     public List<CommentResponseDto> getSortedComments(Long postId, String sort) {
-        List<Comment> allComments = commentRepository.findByPostId(postId);
+        List<Comment> allComments = commentRepository.findAllByPostIdWithUser(postId);
 
         List<Comment> parents = allComments.stream()
                 .filter(c -> c.getParent() == null)
@@ -135,6 +140,8 @@ public class CommentService {
                 .id(comment.getId())
                 .content(comment.getContent())
                 .userId(comment.getUser().getId())
+                .username(comment.getUser().getUsername())
+                .userProfileName(comment.getUser().getUserProfile().getName())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .createdAt(comment.getCreatedAt())
                 .children(new ArrayList<>())

@@ -20,6 +20,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.MediaType;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/v1/post")
@@ -38,7 +40,9 @@ public class PostController {
     public Long createPost(@RequestBody @Valid PostCreateRequest request,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
 
-        return postService.createPost(1L,request);
+        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+
+        return postService.createPost(userIdOrTestId,request);
 
     }
 
@@ -47,7 +51,8 @@ public class PostController {
     public PostDetailResponse getPostDetail(@PathVariable Long id,
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
 
-        return postService.getPostDetail(id, 1L);
+        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+        return postService.getPostDetail(id, userIdOrTestId);
     }
 
     @Operation(summary = "게시글 수정", description = "게시글 내용과 공개 여부를 수정합니다.")
@@ -60,7 +65,9 @@ public class PostController {
     public void updatePost(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail,
                            @RequestBody @Valid PostUpdateRequest request) {
 
-        postService.updatePost(1L, request);
+
+        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+        postService.updatePost(userIdOrTestId, request);
     }
 
     @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다.")
@@ -73,8 +80,21 @@ public class PostController {
     public void deletePost(@PathVariable Long id,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
 
-        postService.deletePost(1L, id);
+
+        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+        postService.deletePost(userIdOrTestId, id);
     }
 
+
+    @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "현재 인증된 사용자가 좋아요한 게시글(+플레이리스트)을 최신순으로 반환합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
+    })
+    @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<PostDetailResponse> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
+        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+        return postService.getLikedPostsByUser(userIdOrTestId);
+    }
 
 }
