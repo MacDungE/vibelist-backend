@@ -31,7 +31,7 @@ public class EsBatchService implements BatchService{
 
         // 1. ES에 존재하는 모든 id를 가져오기
         Iterable<EsDoc> existingDocs = esRepository.findAll();
-        Set<String> existingEsIds = new HashSet<>();
+        Set<Long> existingEsIds = new HashSet<>();
         for (EsDoc doc : existingDocs) {
             existingEsIds.add(doc.getTrackMetrics().getTrackId()); // es에 TrackMetrics.trackId 를 추출
         }
@@ -95,7 +95,7 @@ public class EsBatchService implements BatchService{
         esDoc.setSpotifyId(audioFeature.getSpotifyId());
 
         TrackMetrics trackMetrics = new TrackMetrics();
-        trackMetrics.setTrackId(track.getId().toString());
+        trackMetrics.setTrackId(track.getId());
         trackMetrics.setAlbum(track.getAlbum());
         trackMetrics.setArtist(track.getArtist());
         trackMetrics.setTitle(track.getTitle());

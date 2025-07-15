@@ -7,7 +7,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import java.util.List;
 
 @Data
-@Document(indexName = "audio_feature_index", createIndex = true)
+@Document(indexName = "audio_feature_index")
 public class EsDoc {
     @Id
     private String id;

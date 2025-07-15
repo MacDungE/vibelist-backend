@@ -46,7 +46,7 @@ public class TrackBatchService implements BatchService {
         Set<Long> failedIds = loadFailedAudioFeatureIds();
         Page<AudioFeature> afPage;
         do {
-            Pageable pageable = PageRequest.of(0, 1000, Sort.by("id").ascending());
+            Pageable pageable = PageRequest.of(0, 3000, Sort.by("id").ascending());
             afPage = audioFeatureRepository.findByTrackIsNull(pageable);
             log.info("🔍 AudioFeature 조회 결과: {}건", afPage.getTotalElements());
 
