@@ -14,7 +14,16 @@
         }
       ],
       "environment": [],
-      "essential": true
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/vibelist-backend",
+          "awslogs-region": "ap-northeast-2",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
     }
   ],
   "requiresCompatibilities": ["FARGATE"],
