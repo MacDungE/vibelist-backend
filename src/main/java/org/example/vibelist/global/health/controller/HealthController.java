@@ -34,7 +34,6 @@ public class HealthController {
         response.put("timestamp", LocalDateTime.now());
         response.put("stage", activeProfile);
         response.put("message", applicationName + " 서버가 정상적으로 실행 중입니다.");
-        response.put("test", "요것은 테스트임둥");
         return ResponseEntity.ok(response);
     }
 } 
