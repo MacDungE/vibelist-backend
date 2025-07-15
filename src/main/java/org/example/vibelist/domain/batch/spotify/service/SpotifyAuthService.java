@@ -24,24 +24,24 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class SpotifyAuthService {
+    //application.properties에 명시된 비밀값
     @Value("${spotify.clientId}")
     private String clientId;
 
+    //application.properties에 명시된 비밀값
     @Value("${spotify.clientSecret}")
     private String clientSecret;
 
     //spotify dashboard에 명시한 redirect URI
-
     @Value("${spotify.redirectUri}")
     private String redirectUri;
 
-    private final RestTemplate restTemplate= new RestTemplate();
-
     private final DevAuthTokenService devAuthTokenService;
+    private final RestTemplate restTemplate= new RestTemplate();
     /**
      * 1. 사용자가 로그인할 수 있는 Spotify URL 반환
      */
-    public synchronized String getAuthorizationUrl() {
+    public String getAuthorizationUrl() {
         String scope = "user-read-private user-read-email playlist-modify-private";
         return UriComponentsBuilder.fromHttpUrl("https://accounts.spotify.com/authorize")
                 .queryParam("client_id", clientId)
@@ -54,33 +54,40 @@ public class SpotifyAuthService {
     /**
      * 2. Spotify에서 받은 code를 이용해 access_token과 refresh_token 교환
      */
-    public synchronized String exchangeCodeForTokens(String code) {
+    public  String exchangeCodeForTokens(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
         String auth = clientId + ":" + clientSecret;
+        //spotify를 auth는 UTF_8로 인코딩
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
 
+        //header 설정
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Basic " + encodedAuth);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
+        //body 설정
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("code", code);
         body.add("redirect_uri", redirectUri);
 
+        //요청 전송
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+        //응답 수신
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
+        //필요한 access_token, refresh_token,expiry_time을 추출
         try {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
-            String accessToken = json.get("access_token").asText();
-            String refreshToken = json.get("refresh_token").asText();
-            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
-            // 🟢 여기서 refreshToken은 DB에 저장할 것
+            String accessToken = json.get("access_token").asText(); //access_token 추출
+            String refreshToken = json.get("refresh_token").asText();//refresh_token 추출
+            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());//(현재시간 + expiry_time)값을 테이블에 저장
+
             log.info("Access token: {}", accessToken);
             log.info("refresh token: {}", refreshToken);
             log.info("만료 시간 : {}", tokenExpiry);
+
             devAuthTokenService.insertDev("sung_1",accessToken,refreshToken,tokenExpiry);
             return accessToken;
         } catch (Exception e) {
@@ -91,7 +98,7 @@ public class SpotifyAuthService {
     /**
      * 3. refresh token을 이용해 access_token 재발급
      */
-    public synchronized String refreshAccessToken() {
+    public  String refreshAccessToken() {
         String refreshToken = devAuthTokenService.getRefreshToken("sung_1");
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
 
@@ -124,7 +131,7 @@ public class SpotifyAuthService {
         }
     }
 
-    public synchronized String getSpotifyUserId(String accessToken) {
+    public  String getSpotifyUserId(String accessToken) {
         String url = "https://api.spotify.com/v1/me";
 
         HttpHeaders headers = new HttpHeaders();
