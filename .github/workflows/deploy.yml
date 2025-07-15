@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - feature/cicdtest
-  pull_request:
-    branches:
-      - feature/cicdtest
 
 jobs:
   deploy:
@@ -52,6 +49,20 @@ jobs:
           task-definition: ecs/task-definition.json
           container-name: spring-backend
           image: ${{ secrets.ECR_URI }}:latest
+          environment-variables: |
+            DB_SERVER=${{ secrets.DB_SERVER }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}
+            KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }}
+            SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }}
+            SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}
+            ES_HOST=${{ secrets.ES_HOST }}
+            EMOTION_PROFILE_PATH=${{ secrets.EMOTION_PROFILE_PATH }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
