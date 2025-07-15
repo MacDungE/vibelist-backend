@@ -9,4 +9,4 @@ COPY build/libs/VibeList-0.0.1-SNAPSHOT.jar /app/app.jar
 COPY config/emotion/emotion_profiles.json /app/config/emotion_profiles.json
 
 #컨테이너 실행시 기본으로 실행할 명령
-CMD ["java", "-jar", "/app/app.jar", "--server.address=0.0.0.0"]
+CMD ["java", "-jar", "/app/app.jar"]
