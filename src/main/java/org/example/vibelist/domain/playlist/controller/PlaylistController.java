@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.vibelist.domain.auth.service.DevAuthTokenService;
 import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.PlaylistService;
@@ -26,6 +27,7 @@ import java.util.List;
 public class PlaylistController {
     final private PlaylistService playlistService;
     final private SpotifyAuthService spotifyAuthService;
+    final private DevAuthTokenService devAuthTokenService;
 
     @Operation(summary = "Spotify에 Playlist 삽입", description = "유저가 선택한 Playlist를 Spotify에 삽입합니다. 개발자가 최초에 로그인을 하지 않았다면, login-dev 호출이 필요합니다.")
     @ApiResponses({
@@ -125,6 +127,8 @@ public class PlaylistController {
     @GetMapping("/callback")
     public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
         String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
+        String refreshToken = spotifyAuthService.getRefreshToken();
+        devAuthTokenService.saveRefreshToken("vibelist-dev", refreshToken);
         return ResponseEntity.ok("Access token & Refresh token 발급 완료!");
     }
 }
