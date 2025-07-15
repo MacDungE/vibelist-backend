@@ -41,6 +41,14 @@ public class SwaggerConfig {
                                         .bearerFormat("JWT")
                                         .in(SecurityScheme.In.HEADER)
                                         .name("Authorization"))
+
+                        // 2) AccessToken (Cookie: accessToken)
+                        .addSecuritySchemes("access-cookie",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.COOKIE)
+                                        .name("accessToken"))
+
                         .addSecuritySchemes("cookie-auth",
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.APIKEY)
@@ -48,6 +56,7 @@ public class SwaggerConfig {
                                         .name("refreshToken")))
                 .addSecurityItem(new SecurityRequirement()
                         .addList("bearer-key")
+                        .addList("access-cookie")
                         .addList("cookie-auth"));
     }
 } 
