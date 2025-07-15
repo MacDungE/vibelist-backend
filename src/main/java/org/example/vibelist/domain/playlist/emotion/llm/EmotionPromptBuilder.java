@@ -3,18 +3,14 @@ package org.example.vibelist.domain.playlist.emotion.llm;
 public class EmotionPromptBuilder {
     public static String build(String userText) {
         return """
-        아래는 사용자의 감정 묘사입니다.
-        이 감정을 숫자로 표현해주세요:
-        - valence (0.0 ~ 1.0): 감정의 긍정성
-        - energy (0.0 ~ 1.0): 감정의 활성도
+        아래 문장은 사용자의 감정 상태를 설명한 것입니다.
+        이 감정을 다음 중 하나로 분류하세요 (정확히 하나만 선택해서 한 단어로 출력하세요):
 
-        사용자가 입력한 감정: "%s"
+        DEPRESSED, SLEEPY, TENSE, SAD, NEUTRAL, FEAR, CALM, JOY, EXCITED
 
-        출력 형식:
-        {
-          "valence": 0.2,
-          "energy": 0.3
-        }
+        감정 설명: "%s"
+
+        답변 형식: DEPRESSED
         """.formatted(userText);
     }
 }

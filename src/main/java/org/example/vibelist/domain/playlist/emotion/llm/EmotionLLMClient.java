@@ -3,21 +3,18 @@ package org.example.vibelist.domain.playlist.emotion.llm;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 public class EmotionLLMClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final WebClient webClient = WebClient.builder().build();
 
     @Value("${llm.gemini.api-key}")
     private String apiKey;
@@ -25,30 +22,24 @@ public class EmotionLLMClient {
     @Value("${llm.gemini.url}")
     private String apiUrl;
 
-    public String requestEmotionAnalysis(String prompt) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    public Mono<String> requestEmotionAnalysis (String prompt){
+        Map<String, Object> body = Map.of(
+                "contents", List.of(
+                        Map.of("parts", List.of(Map.of("text", prompt)))
+                ),
+                "generationConfig", Map.of(
+                        "thinkingConfig", Map.of(
+                                "thinkingBudget", 0
+                        )
+                )
+        );
 
-        Map<String, Object> contentPart = Map.of("text", prompt);
-        Map<String, Object> content = Map.of("parts", List.of(contentPart));
-        Map<String, Object> requestBody = Map.of("contents", List.of(content));
-
-        String fullUrl = apiUrl + "?key=" + apiKey;
-
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-        try {
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(fullUrl, request, JsonNode.class);
-            return extractContent(response.getBody());
-        } catch (Exception e) {
-            throw new RuntimeException("Gemini API 호출 실패: " + e.getMessage(), e);
-        }
-    }
-
-    private String extractContent(JsonNode json) {
-        return json
-                .get("candidates").get(0)
-                .get("content").get("parts").get(0)
-                .get("text").asText();
+        return webClient.post()
+                .uri(apiUrl + "?key=" + apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(json -> json.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText());
     }
 }

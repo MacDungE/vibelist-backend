@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.RecommendRqDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
-import org.example.vibelist.domain.playlist.emotion.llm.EmotionCoordinate;
 import org.example.vibelist.domain.playlist.emotion.llm.EmotionTextManager;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
@@ -18,7 +17,6 @@ import org.example.vibelist.domain.playlist.emotion.profile.EmotionProfileManage
 import org.example.vibelist.domain.playlist.emotion.type.EmotionType;
 import org.example.vibelist.domain.playlist.es.document.AudioFeatureEsDocument;
 import org.example.vibelist.domain.playlist.es.builder.ESQueryBuilder;
-import org.example.vibelist.domain.playlist.repository.TrackRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,9 +38,20 @@ public class RecommendService {
     private final EmotionProfileManager profileManager;
     private final EmotionTextManager textManager;
 
+    // 입력값 구분
+    public List<TrackRsDto> recommend(RecommendRqDto request) throws JsonProcessingException {
+        if (request.getText() != null && !request.getText().isBlank()) {
+            return recommendByText(request.getText(), request.getMode());
+        } else if (request.getUserValence() != null && request.getUserEnergy() != null) {
+            return recommendByCoordinate(request.getUserValence(), request.getUserEnergy(), request.getMode());
+        } else {
+            throw new IllegalArgumentException("valence/energy 또는 감정 텍스트 중 하나는 반드시 입력해야 합니다.");
+        }
+    }
+
     // valence, energy -> 감정 매핑
     public List<TrackRsDto> recommendByCoordinate(double userValence, double userEnergy, EmotionModeType mode) {
-        log.info("🎯 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
+        log.info("🎯 좌표 기반 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
 
         EmotionType emotion = profileManager.classify(userValence, userEnergy);
         log.info("🧠 분류된 감정: {}", emotion);
@@ -51,10 +60,13 @@ public class RecommendService {
 
     // 자연어 -> 감정 매핑
     public List<TrackRsDto> recommendByText(String userText, EmotionModeType mode) throws JsonProcessingException {
-        EmotionCoordinate coord = textManager.getEmotionCoordinates(userText);
-        return recommendByCoordinate(coord.valence(), coord.energy(), mode); // 기존 로직 재사용
+        log.info("🎯 텍스트 기반 추천 요청 수신 - text: \"{}\", mode: {}", userText, mode);
+        EmotionType emotion = textManager.getEmotionType(userText);
+        log.info("🧠 분류된 감정: {}", emotion);
+        return recommendByEmotionType(emotion, mode);
     }
 
+    // 감정 -> 플레이리스트 추천
     public List<TrackRsDto> recommendByEmotionType(EmotionType emotion, EmotionModeType mode) {
         EmotionType transitioned = profileManager.getTransition(emotion, mode);
         log.info("🔁 전이된 감정: {}", transitioned);
@@ -88,16 +100,6 @@ public class RecommendService {
         } catch (IOException e) {
             log.error("❌ Elasticsearch 검색 실패", e);
             throw new RuntimeException("Failed to search Elasticsearch", e);
-        }
-    }
-
-    public List<TrackRsDto> recommend(RecommendRqDto request) throws JsonProcessingException {
-        if (request.getText() != null && !request.getText().isBlank()) {
-            return recommendByText(request.getText(), request.getMode());
-        } else if (request.getUserValence() != null && request.getUserEnergy() != null) {
-            return recommendByCoordinate(request.getUserValence(), request.getUserEnergy(), request.getMode());
-        } else {
-            throw new IllegalArgumentException("valence/energy 또는 감정 텍스트 중 하나는 반드시 입력해야 합니다.");
         }
     }
 
