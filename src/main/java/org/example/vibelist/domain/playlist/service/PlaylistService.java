@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.playlist.repository.PlaylistRepository;
+import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
-import org.example.vibelist.domain.batch.spotify.client.SpotifyApiClient;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -23,22 +22,24 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class PlaylistService {
-    private final PlaylistRepository playlistRepository;
-    private final SpotifyApiClient spotifyApiClient;
 
+    private final SpotifyAuthService spotifyAuthService;
     @Transactional
     /*
     PlayList를 생성 후, track들을 insert합니다.
      */
     public void createPlaylist(List<TrackRsDto> trackRsDtos) throws Exception {
-        String userId="31bsfolbgiksxcsa4o5dg2ofvmye"; //테스트용
+        String accessToken = spotifyAuthService.getAccessToken();
+        String userId = spotifyAuthService.getSpotifyUserId(accessToken);
+
+        //테스트용
         /*
         accessToken 또한 테스트용, spotify 로그인시 저장된 값을 복사해서 사용했습니다.
         유저가 Spotify로 로그인한 Case->유저 spotify로 로그인할때 넘어온 accesstoken 사용
         유저가 Spotify로 로그인 하지 않은 Case-> 개발자가 직접 accessToken 받아옴
 
         */
-        String accessToken = "BQAN9oKNYuRxuUPOOCEnQK8pfFgJ3DWfjAyFs7H0nRH4E66atmkRh2UnhU0sfwPWhk0B2ft3Pn-w2wcRajIgJSgJchEQQYRYo7rG8CDT4j5UNrNE-cPXHJk4oLDXwGTF-Ibm8ZGWZQNf_OTA0apmpOF0VZtps-3z4QP1SgfMT1mEf2d5Mj80xGnniT7gnwEM6OHHBh4M4ZrHEI0l4rHJ4C_OowZiwkeIrQZX8hf0NqYLta1a4e19jK-yyMYSzgNdL4ZVYPRrGeumbrxkMsbI8rY5wmGtXPHL7c0MgxwcO5RH_h64urF-C06hcZZb_CIo0PJTjej-LGj2RJhMD1IHWrwQDSsaGfzWVr4KGPk7xJMfkRN8jwtMX-xSKfiHixNXqQ";
+        //String accessToken = spotifyApiClient.getAccessTokenFromCode();
         String url = "https://api.spotify.com/v1/users/" + userId + "/playlists";
 
         RestTemplate restTemplate = new RestTemplate();

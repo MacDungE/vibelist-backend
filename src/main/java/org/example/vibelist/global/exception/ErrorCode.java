@@ -37,8 +37,17 @@ public enum ErrorCode {
     // ⚙️ 시스템/서버 에러
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYS_001", "서버 오류입니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "SYS_002", "잘못된 요청입니다."),
-    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "SYS_003", "허용되지 않은 HTTP 메서드입니다.");
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "SYS_003", "허용되지 않은 HTTP 메서드입니다."),
 
+    // 📮 게시글(Post) 에러
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_001", "존재하지 않는 게시글입니다."),
+
+    // 📝 댓글(Comment) 에러
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_001", "존재하지 않는 댓글입니다."),
+    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "해당 댓글에 대한 권한이 없습니다."),
+
+    // 사용자(User) 에러
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

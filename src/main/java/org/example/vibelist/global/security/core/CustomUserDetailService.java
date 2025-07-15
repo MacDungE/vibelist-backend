@@ -2,8 +2,8 @@ package org.example.vibelist.global.security.core;
 
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.global.user.entity.User;
-import org.example.vibelist.global.user.repository.UserRepository;
+import org.example.vibelist.domain.user.entity.User;
+import org.example.vibelist.domain.user.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

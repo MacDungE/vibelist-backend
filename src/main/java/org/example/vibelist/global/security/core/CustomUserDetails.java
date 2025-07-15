@@ -1,7 +1,7 @@
 package org.example.vibelist.global.security.core;
 
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.global.user.entity.User;
+import org.example.vibelist.domain.user.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
