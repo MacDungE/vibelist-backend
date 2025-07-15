@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 public class PlaylistService {
 
     private final SpotifyAuthService spotifyAuthService;
-    private final DevAuthTokenService devAuthTokenService;
     @Transactional
     /*
     PlayList를 생성 후, track들을 insert합니다.

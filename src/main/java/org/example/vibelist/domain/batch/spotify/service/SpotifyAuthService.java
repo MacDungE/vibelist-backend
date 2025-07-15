@@ -31,12 +31,11 @@ public class SpotifyAuthService {
     private String clientSecret;
 
     //spotify dashboard에 명시한 redirect URI
-    private String redirectUri = "http://127.0.0.1:8080/v1/playlist/callback";
+
+    @Value("${spotify.redirectUri}")
+    private String redirectUri;
 
     private final RestTemplate restTemplate= new RestTemplate();
-//    private String accessToken;
-//    private String refreshToken;
-//    private Instant tokenExpiry;
 
     private final DevAuthTokenService devAuthTokenService;
     /**

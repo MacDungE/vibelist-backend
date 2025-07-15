@@ -27,7 +27,6 @@ import java.util.List;
 public class PlaylistController {
     final private PlaylistService playlistService;
     final private SpotifyAuthService spotifyAuthService;
-    final private DevAuthTokenService devAuthTokenService;
 
     @Operation(summary = "Spotify에 Playlist 삽입", description = "유저가 선택한 Playlist를 Spotify에 삽입합니다. 개발자가 최초에 로그인을 하지 않았다면, login-dev 호출이 필요합니다.")
     @ApiResponses({

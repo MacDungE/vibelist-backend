@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.example.vibelist.domain.auth.entity.DevAuthToken;
 import org.example.vibelist.domain.auth.repository.DevAuthTokenRepository;
-import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,12 +13,6 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class DevAuthTokenService {
     private final DevAuthTokenRepository devAuthTokenRepository;
-
-    @Transactional
-    public String getAcessToken(String name){
-        DevAuthToken devAuthToken = devAuthTokenRepository.findByName(name);
-        return devAuthToken != null ? devAuthToken.getAccessToken() : null;
-    }
 
     @Transactional
     public String getRefreshToken(String name){
