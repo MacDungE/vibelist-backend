@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeList - 메인</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .main-content {
+            padding: 40px;
+            text-align: center;
+            color: white;
+        }
+        
+        .welcome-message {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .user-details {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-detail-item {
+            margin: 15px 0;
+            font-size: 1.1em;
+        }
+        
+        .provider-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .google-badge {
+            background: #4285f4;
+            color: white;
+        }
+        
+        .kakao-badge {
+            background: #fee500;
+            color: #000;
+        }
+        
+        .jwt-badge {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+        }
+        
+        .error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ffcccc;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">VibeList</div>
+        <div class="user-info">
+            <span id="userName">사용자</span>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="welcome-message">환영합니다!</div>
+        
+        <div id="loading" class="loading">
+            사용자 정보를 불러오는 중...
+        </div>
+        
+        <div id="userDetails" class="user-details" style="display: none;">
+            <h2>사용자 정보</h2>
+            <div class="user-detail-item">
+                <strong>이름:</strong> <span id="userDisplayName"></span>
+            </div>
+            <div class="user-detail-item">
+                <strong>이메일:</strong> <span id="userEmail"></span>
+            </div>
+            <div class="user-detail-item">
+                <strong>로그인 방식:</strong> <span id="userProvider"></span>
+            </div>
+        </div>
+        
+        <div id="error" class="error" style="display: none;">
+            사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.
+        </div>
+    </div>
+    
+    <script>
+        // URL에서 사용자 ID 파라미터 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+        
+        // 사용자 정보 로드
+        async function loadUserInfo() {
+            try {
+                console.log('사용자 정보 로드 시작...');
+                const response = await fetch('/v1/auth/status');
+                console.log('API 응답 상태:', response.status);
+                const data = await response.json();
+                console.log('API 응답 데이터:', data);
+                
+                if (data.authenticated) {
+                    // 로딩 숨기기
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // 사용자 정보 표시
+                    document.getElementById('userDetails').style.display = 'block';
+                    document.getElementById('userDisplayName').textContent = data.name || '이름 없음';
+                    document.getElementById('userEmail').textContent = data.email || '이메일 없음';
+                    
+                    // 제공자 배지 생성
+                    const providerSpan = document.getElementById('userProvider');
+                    const badge = document.createElement('span');
+                    badge.className = `provider-badge ${data.provider}-badge`;
+                    badge.textContent = data.provider === 'google' ? 'Google' : 
+                                      data.provider === 'kakao' ? 'Kakao' : 
+                                      data.provider === 'jwt' ? '일반 로그인' : 'Unknown';
+                    providerSpan.appendChild(badge);
+                    
+                    // 헤더의 사용자명 업데이트
+                    document.getElementById('userName').textContent = data.name || '사용자';
+                    
+                } else {
+                    // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+                    console.log('인증되지 않은 사용자 - 로그인 페이지로 리다이렉트');
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('사용자 정보 로드 실패:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        // 로그아웃
+        async function logout() {
+            try {
+                const response = await fetch('/v1/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    // 로그아웃 성공 시 로그인 페이지로 리다이렉트
+                    window.location.href = '/login.html';
+                } else {
+                    // 로그아웃 실패 시에도 로그인 페이지로 리다이렉트
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('로그아웃 실패:', error);
+                // 에러가 발생해도 로그인 페이지로 리다이렉트
+                window.location.href = '/login.html';
+            }
+        }
+        
+        // 페이지 로드 시 사용자 정보 로드
+        document.addEventListener('DOMContentLoaded', loadUserInfo);
+    </script>
+</body>
+</html> 
