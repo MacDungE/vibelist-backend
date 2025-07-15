@@ -8,9 +8,9 @@ import org.example.vibelist.domain.comment.entity.Comment;
 import org.example.vibelist.domain.comment.repository.CommentRepository;
 import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.repository.PostRepository;
+import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
-import org.example.vibelist.global.user.entity.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -127,5 +127,4 @@ public class PlaylistController {
         String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
         return ResponseEntity.ok("Access token & Refresh token 발급 완료!");
     }
-
 }

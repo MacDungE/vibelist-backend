@@ -2,7 +2,6 @@ package org.example.vibelist.domain.comment.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.example.vibelist.global.user.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.List;

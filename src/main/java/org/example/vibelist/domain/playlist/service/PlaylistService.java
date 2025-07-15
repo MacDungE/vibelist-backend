@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
-import org.example.vibelist.domain.playlist.repository.PlaylistRepository;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class PlaylistService {
-    private final PlaylistRepository playlistRepository;
+
     private final SpotifyAuthService spotifyAuthService;
     @Transactional
     /*

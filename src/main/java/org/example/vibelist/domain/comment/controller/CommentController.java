@@ -12,8 +12,6 @@ import org.example.vibelist.domain.comment.service.CommentService;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
 import org.example.vibelist.global.security.core.CustomUserDetails;
-import org.example.vibelist.global.user.entity.User;
-import org.example.vibelist.global.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

@@ -3,8 +3,8 @@ package org.example.vibelist.domain.comment.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.vibelist.domain.post.entity.Post;
+import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.global.jpa.entity.BaseTime;
-import org.example.vibelist.global.user.entity.User;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
