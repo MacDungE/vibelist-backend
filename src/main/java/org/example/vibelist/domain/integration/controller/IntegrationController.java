@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -298,6 +300,43 @@ public class IntegrationController {
                 .updatedAt(tokenInfo.getUpdatedAt())
                 .build();
     }
+
+    @Operation(summary = "스포티파이 연동 시작", description = "인증된 사용자가 스포티파이 연동을 시작합니다. 스포티파이 OAuth2 인증 페이지로 리다이렉트합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "302", description = "스포티파이 OAuth2 인증 페이지로 리다이렉트"),
+        @ApiResponse(responseCode = "400", description = "이미 연동된 경우"),
+        @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @SecurityRequirement(name = "bearer-key")
+    @GetMapping("/spotify/connect")
+    public void connectSpotify(HttpServletResponse response) throws IOException {
+        try {
+            Long userId = getCurrentUserId();
+            
+            log.info("[INTEGRATION] 스포티파이 연동 시작 - userId: {}", userId);
+            
+            // 이미 연동되어 있는지 확인
+            Optional<IntegrationTokenInfo> existingToken = integrationTokenInfoService.getValidTokenInfo(userId, "SPOTIFY");
+            if (existingToken.isPresent()) {
+                log.warn("[INTEGRATION] 이미 스포티파이가 연동되어 있음 - userId: {}", userId);
+                response.sendRedirect("/main.html?error=already_connected");
+                return;
+            }
+            
+            // 스포티파이 OAuth2 인증 URL로 리다이렉트
+            // 연동 완료 후 돌아올 수 있도록 state 파라미터에 userId 포함
+            String spotifyAuthUrl = "/oauth2/authorization/spotify?state=integration_" + userId;
+            log.info("[INTEGRATION] 스포티파이 OAuth2 페이지로 리다이렉트 - userId: {}, url: {}", userId, spotifyAuthUrl);
+            
+            response.sendRedirect(spotifyAuthUrl);
+            
+        } catch (Exception e) {
+            log.error("[INTEGRATION] 스포티파이 연동 시작 중 오류 발생", e);
+            response.sendRedirect("/main.html?error=connection_failed");
+        }
+    }
+
+
 
     /**
      * IntegrationTokenInfo를 IntegrationSummary로 변환

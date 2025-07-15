@@ -34,6 +34,22 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("[OAuth2_LOG] Authentication: {}", authentication);
 
         try {
+            // state 파라미터 확인 (추가 연동 요청인지 판단)
+            String state = request.getParameter("state");
+            boolean isIntegrationRequest = false;
+            Long integrationUserId = null;
+            
+            if (state != null && state.startsWith("integration_")) {
+                isIntegrationRequest = true;
+                try {
+                    integrationUserId = Long.parseLong(state.substring("integration_".length()));
+                    log.info("[OAuth2_LOG] 기존 사용자의 추가 연동 요청 - userId: {}", integrationUserId);
+                } catch (NumberFormatException e) {
+                    log.warn("[OAuth2_LOG] state 파라미터에서 userId 파싱 실패: {}", state);
+                    isIntegrationRequest = false;
+                }
+            }
+            
             DefaultOAuth2User oAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
@@ -93,9 +109,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             log.info("[OAuth2_LOG] 쿠키 설정 완료");
 
-            // 신규 사용자인지에 따라 다른 페이지로 리다이렉트
+            // 리다이렉트 URL 결정
             String redirectUrl;
-            if (isNewUser) {
+            if (isIntegrationRequest) {
+                // 기존 사용자의 추가 연동: 메인 페이지로 바로 리다이렉트
+                redirectUrl = "/main.html?integration=success&provider=" + provider;
+                if (integrationUserId != null) {
+                    redirectUrl += "&userId=" + integrationUserId;
+                }
+                log.info("[OAuth2_LOG] 추가 연동 완료 - 메인 페이지로 리다이렉트: {}", redirectUrl);
+            } else if (isNewUser) {
                 // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
                 redirectUrl = "/social-signup.html";
                 if (tempUserId != null) {
@@ -106,7 +129,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 }
                 log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
             } else {
-                // 기존 사용자: 메인 페이지로 리다이렉트
+                // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
                 redirectUrl = "/main.html";
                 if (id != null) {
                     redirectUrl += "?id=" + id;
