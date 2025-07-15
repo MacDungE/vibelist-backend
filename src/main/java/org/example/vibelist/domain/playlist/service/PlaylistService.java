@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.auth.service.DevAuthTokenService;
 import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.springframework.http.HttpEntity;
@@ -24,22 +25,18 @@ import java.util.stream.Collectors;
 public class PlaylistService {
 
     private final SpotifyAuthService spotifyAuthService;
+    private final DevAuthTokenService devAuthTokenService;
     @Transactional
     /*
     PlayList를 생성 후, track들을 insert합니다.
      */
     public void createPlaylist(List<TrackRsDto> trackRsDtos) throws Exception {
-        String accessToken = spotifyAuthService.getAccessToken();
+        String accessToken;
+
+        accessToken = spotifyAuthService.getAccessToken();
+
         String userId = spotifyAuthService.getSpotifyUserId(accessToken);
 
-        //테스트용
-        /*
-        accessToken 또한 테스트용, spotify 로그인시 저장된 값을 복사해서 사용했습니다.
-        유저가 Spotify로 로그인한 Case->유저 spotify로 로그인할때 넘어온 accesstoken 사용
-        유저가 Spotify로 로그인 하지 않은 Case-> 개발자가 직접 accessToken 받아옴
-
-        */
-        //String accessToken = spotifyApiClient.getAccessTokenFromCode();
         String url = "https://api.spotify.com/v1/users/" + userId + "/playlists";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -94,7 +91,6 @@ public class PlaylistService {
 
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
         log.info("Track add response: {}", response.getBody());
-
     }
 
 }

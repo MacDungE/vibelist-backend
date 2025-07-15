@@ -4,24 +4,62 @@ import lombok.RequiredArgsConstructor;
 
 import org.example.vibelist.domain.auth.entity.DevAuthToken;
 import org.example.vibelist.domain.auth.repository.DevAuthTokenRepository;
+import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class DevAuthTokenService {
     private final DevAuthTokenRepository devAuthTokenRepository;
-    public String getRefreshToken(){
-        DevAuthToken devAuthToken = devAuthTokenRepository.findById(1L).orElse(null);
+
+    @Transactional
+    public String getAcessToken(String name){
+        DevAuthToken devAuthToken = devAuthTokenRepository.findByName(name);
+        return devAuthToken != null ? devAuthToken.getAccessToken() : null;
+    }
+
+    @Transactional
+    public String getRefreshToken(String name){
+        DevAuthToken devAuthToken = devAuthTokenRepository.findByName(name);
         return devAuthToken != null ? devAuthToken.getRefreshToken() : null;
     }
-    public void saveRefreshToken(String name,String refreshToken){
+
+    @Transactional
+    public DevAuthToken getDevAuth(String name){
+        //DevAuthToken 테이블의 한 행 전체를 return 합니다.
         DevAuthToken devAuthToken = devAuthTokenRepository.findByName(name);
-        if(devAuthToken == null){ //아예 Table이 비어있을 때,
-            devAuthToken = new DevAuthToken();
-            devAuthToken.setId(1L);
-            devAuthToken.setName(name);
+        if(devAuthToken == null){
+            return null;
         }
+        return devAuthToken;
+    }
+
+    @Transactional
+    public void insertDev(String name, String accessToken, String refreshToken, Instant expiry){
+        //새로운 devloper 정보를 삽입합니다.
+        if(devAuthTokenRepository.findByName(name) != null){
+            throw new IllegalArgumentException("이미 존재하는 사용자입니다.");
+        }
+        DevAuthToken devAuthToken = new DevAuthToken();
+        devAuthToken.setName(name);
+        devAuthToken.setAccessToken(accessToken);
         devAuthToken.setRefreshToken(refreshToken);
+        devAuthToken.setExpiresIn(expiry);
+        devAuthTokenRepository.save(devAuthToken);
+    }
+
+    @Transactional
+    public void updateDev(String name, String accessToken, String refreshToken, Instant expiry) {
+        DevAuthToken devAuthToken = devAuthTokenRepository.findByName(name);
+        if(devAuthToken == null){
+            throw new IllegalArgumentException(" 존재하지 않는 사용자입니다.");
+        }
+        devAuthToken.setAccessToken(accessToken);
+        devAuthToken.setRefreshToken(refreshToken);
+        devAuthToken.setExpiresIn(expiry);
         devAuthTokenRepository.save(devAuthToken);
     }
 }

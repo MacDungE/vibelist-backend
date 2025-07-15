@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.auth.entity.DevAuthToken;
+import org.example.vibelist.domain.auth.service.DevAuthTokenService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,10 +34,11 @@ public class SpotifyAuthService {
     private String redirectUri = "http://127.0.0.1:8080/v1/playlist/callback";
 
     private final RestTemplate restTemplate= new RestTemplate();
-    private String accessToken;
-    private String refreshToken;
-    private Instant tokenExpiry;
+//    private String accessToken;
+//    private String refreshToken;
+//    private Instant tokenExpiry;
 
+    private final DevAuthTokenService devAuthTokenService;
     /**
      * 1. 사용자가 로그인할 수 있는 Spotify URL 반환
      */
@@ -51,7 +55,7 @@ public class SpotifyAuthService {
     /**
      * 2. Spotify에서 받은 code를 이용해 access_token과 refresh_token 교환
      */
-    public synchronized String  exchangeCodeForTokens(String code) {
+    public synchronized String exchangeCodeForTokens(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
         String auth = clientId + ":" + clientSecret;
@@ -71,11 +75,14 @@ public class SpotifyAuthService {
 
         try {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
-            accessToken = json.get("access_token").asText();
-            refreshToken = json.get("refresh_token").asText();
-            tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
+            String accessToken = json.get("access_token").asText();
+            String refreshToken = json.get("refresh_token").asText();
+            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
             // 🟢 여기서 refreshToken은 DB에 저장할 것
             log.info("Access token: {}", accessToken);
+            log.info("refresh token: {}", refreshToken);
+            log.info("만료 시간 : {}", tokenExpiry);
+            devAuthTokenService.insertDev("sung_1",accessToken,refreshToken,tokenExpiry);
             return accessToken;
         } catch (Exception e) {
             throw new RuntimeException("Token 파싱 실패", e);
@@ -86,6 +93,7 @@ public class SpotifyAuthService {
      * 3. refresh token을 이용해 access_token 재발급
      */
     public synchronized String refreshAccessToken() {
+        String refreshToken = devAuthTokenService.getRefreshToken("sung_1");
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
 
         String url = "https://accounts.spotify.com/api/token";
@@ -105,11 +113,12 @@ public class SpotifyAuthService {
 
         try {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
-            accessToken = json.get("access_token").asText();
+            String accessToken = json.get("access_token").asText();
             if (json.has("refresh_token")) {
                 refreshToken = json.get("refresh_token").asText();
             }
-            tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
+            Instant tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
+            devAuthTokenService.updateDev("sung_1",accessToken,refreshToken,tokenExpiry);
             return accessToken;
         } catch (Exception e) {
             throw new RuntimeException("Refresh 실패", e);
@@ -139,6 +148,9 @@ public class SpotifyAuthService {
     }
 
     public synchronized String getAccessToken() {
+        DevAuthToken devAuthToken = devAuthTokenService.getDevAuth("sung_1");
+        String accessToken = devAuthToken.getAccessToken();
+        Instant tokenExpiry = devAuthToken.getExpiresIn();
         if (tokenExpiry != null && Instant.now().isAfter(tokenExpiry.minusSeconds(60))) {
             return refreshAccessToken();
         }
@@ -146,10 +158,7 @@ public class SpotifyAuthService {
     }
 
     public synchronized String getRefreshToken() {
-        return refreshToken;
+        return devAuthTokenService.getDevAuth("sung_1").getRefreshToken();
     }
 
-    public synchronized boolean isTokenAvailable() {
-        return accessToken != null && tokenExpiry != null && Instant.now().isBefore(tokenExpiry.minusSeconds(60));
-    }
 }

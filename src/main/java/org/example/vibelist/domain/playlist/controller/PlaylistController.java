@@ -106,13 +106,6 @@ public class PlaylistController {
                     )
             )
     ) @RequestBody List<TrackRsDto> trackRsDtos) throws Exception {
-            if (!spotifyAuthService.isTokenAvailable()) {
-            // 클라이언트에 login-dev 리다이렉트를 알려줌
-            String redirectUrl = "/v1/playlist/login-dev?redirect=add";
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .header("X-Redirect-Url", redirectUrl)
-                    .body("Spotify 인증이 필요합니다. " + redirectUrl + " 로 이동하세요.");
-        }
 
 
         playlistService.createPlaylist(trackRsDtos);
@@ -128,7 +121,6 @@ public class PlaylistController {
     public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
         String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
         String refreshToken = spotifyAuthService.getRefreshToken();
-        devAuthTokenService.saveRefreshToken("vibelist-dev", refreshToken);
         return ResponseEntity.ok("Access token & Refresh token 발급 완료!");
     }
 }
