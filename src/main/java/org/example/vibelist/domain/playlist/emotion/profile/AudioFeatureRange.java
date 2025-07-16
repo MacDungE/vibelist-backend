@@ -1,9 +1,10 @@
 package org.example.vibelist.domain.playlist.emotion.profile;
 
-import lombok.Getter;
+import lombok.Data;
+
 import org.example.vibelist.domain.playlist.util.DoubleRange;
 
-@Getter
+@Data
 public class AudioFeatureRange {
     private DoubleRange danceability;
     private DoubleRange energy;
