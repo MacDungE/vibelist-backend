@@ -32,8 +32,11 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final PlaylistService playlistService;
+    private final UserRepository userRepository;
+    private final LikeService likeService;
     @Transactional
     public Long createPost(Long userId, PostCreateRequest dto) {
+        User user = userRepository.findById(userId).orElseThrow(NoSuchElementException::new);
         List<TrackRsDto> tracks = dto.getTracks();//track 정보 받아오기
         SpotifyPlaylistDto responseDto= new SpotifyPlaylistDto();
         try {
@@ -43,19 +46,6 @@ public class PostService {
             log.info("Spotify api 호출 중 에러가 발생했습니다.");
         }
         String spotifyUrl= responseDto.getSpotifyId();
-
-    private final UserRepository userRepository;
-    private final LikeService likeService;
-
-
-    @Transactional
-    public Long createPost(Long userId, PostCreateRequest dto) {
-
-        User user = userRepository.findById(userId).orElseThrow(NoSuchElementException::new);
-
-        String spotifyUrl="";
-
-
 
         // 2) 총 트랙 수·총 길이 계산
         int totalTracks     = dto.getTracks().size();
