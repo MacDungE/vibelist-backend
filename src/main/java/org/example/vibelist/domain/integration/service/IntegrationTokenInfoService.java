@@ -264,7 +264,13 @@ public class IntegrationTokenInfoService {
         
         return Optional.empty();
     }
-
+    /**
+     * userId와 provider 정보로만 조회
+     **/
+    @Transactional(readOnly = true)
+    public Optional<IntegrationTokenInfo> getTokenInfo(Long userId, String provider) {
+        return tokenInfoRepository.findByUserIdAndProvider(userId, provider.toUpperCase());
+    }
     /**
      * tokenResponse 필터링으로 토큰 조회
      */
