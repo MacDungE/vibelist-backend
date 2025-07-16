@@ -2,6 +2,7 @@ package org.example.vibelist.domain.post.service;
 
 
 import lombok.RequiredArgsConstructor;
+import org.example.vibelist.domain.explore.service.ExploreService;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.post.dto.PlaylistDetailResponse;
 import org.example.vibelist.domain.post.dto.PostCreateRequest;
@@ -29,6 +30,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final LikeService likeService;
+    private final ExploreService exploreService;
 
 
     @Transactional
@@ -62,7 +64,15 @@ public class PostService {
                 .playlist(playlist)      // 1:1 연결
                 .build();
 
-        postRepository.save(post);               // Playlist 가 함께 INSERT
+        postRepository.save(post);
+
+        // 💡 게시글 생성 후 Elasticsearch에 저장
+        // Post 엔티티를 PostDetailResponse DTO로 변환
+        PostDetailResponse postDetailResponse = toDto(post);
+        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환)
+        exploreService.saveToES(postDetailResponse);
+
+        // Playlist 가 함께 INSERT
         return post.getId();
     }
 
@@ -76,6 +86,11 @@ public class PostService {
 
         post.edit(dto.getContent(),dto.getIsPublic());
 
+        // 💡 게시글 수정 후 Elasticsearch에 반영
+        // 수정된 Post 엔티티를 PostDetailResponse DTO로 변환
+        PostDetailResponse postDetailResponse = toDto(post);
+        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환 및 업데이트)
+        exploreService.saveToES(postDetailResponse);
     }
 
     @Transactional
@@ -85,6 +100,9 @@ public class PostService {
         if (!post.getUser().getId().equals(userId))
             throw new RuntimeException("Post id mismatch");
         post.markDeleted();
+
+        // 💡 Elasticsearch에서도 해당 게시글 문서를 물리적으로 삭제
+        exploreService.deleteFromES(postId);
     }
 
     public PostDetailResponse getPostDetail(Long postId, Long viewerId) {
@@ -98,6 +116,9 @@ public class PostService {
         }
 
         post.addViewCnt();
+
+        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환 및 업데이트)
+        exploreService.saveToES(toDto(post));
 
         return toDto(post);
     }
