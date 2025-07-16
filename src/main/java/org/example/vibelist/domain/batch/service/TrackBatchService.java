@@ -43,13 +43,13 @@ public class TrackBatchService implements BatchService {
     @Override
     public void executeBatch() {
         int count = 0;
-        Set<Long> failedIds = loadFailedAudioFeatureIds();
         Page<AudioFeature> afPage;
         do {
             Pageable pageable = PageRequest.of(0, 3000, Sort.by("id").ascending());
             afPage = audioFeatureRepository.findByTrackIsNull(pageable);
             log.info("🔍 AudioFeature 조회 결과: {}건", afPage.getTotalElements());
 
+            Set<Long> failedIds = loadFailedAudioFeatureIds();
             for (AudioFeature feature : afPage.getContent()) {
                 if (failedIds.contains(feature.getId())) {
                     log.info("⏭️ [건너뜀] 이전 실패: {}", feature.getId());
