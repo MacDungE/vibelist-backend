@@ -28,7 +28,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> {
 
-    private final AuthRepository authRepository;
     
     // RestClientAuthorizationCodeTokenResponseClient는 의존성 주입이 아닌 직접 생성
     private final RestClientAuthorizationCodeTokenResponseClient defaultClient = new RestClientAuthorizationCodeTokenResponseClient();

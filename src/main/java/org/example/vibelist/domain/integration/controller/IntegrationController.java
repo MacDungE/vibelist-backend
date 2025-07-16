@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -311,7 +310,7 @@ public class IntegrationController {
     })
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/spotify/connect")
-    public void connectSpotify(HttpServletResponse response, HttpServletRequest request) throws IOException {
+    public void connectSpotify(HttpServletResponse response) throws IOException {
         try {
             Long userId = getCurrentUserId();
             
@@ -325,16 +324,9 @@ public class IntegrationController {
                 return;
             }
             
-            // 세션에 integration 정보 저장
-            HttpSession session = request.getSession();
-            session.setAttribute("integration_request", true);
-            session.setAttribute("integration_user_id", userId);
-            session.setAttribute("integration_provider", "SPOTIFY");
+            // 간소화된 방식: URL 파라미터로 userId 전달
+            String spotifyAuthUrl = "/oauth2/authorization/spotify?integration_user_id=" + userId;
             
-            log.info("[INTEGRATION] 세션에 integration 정보 저장 완료 - userId: {}", userId);
-            
-            // 스포티파이 OAuth2 인증 URL로 리다이렉트
-            String spotifyAuthUrl = "/oauth2/authorization/spotify";
             log.info("[INTEGRATION] 스포티파이 OAuth2 페이지로 리다이렉트 - userId: {}, url: {}", userId, spotifyAuthUrl);
             
             response.sendRedirect(spotifyAuthUrl);

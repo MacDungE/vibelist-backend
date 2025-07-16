@@ -13,7 +13,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Spotify OAuth2에서 Refresh Token을 확실히 받기 위한 커스텀 Authorization Request Resolver
+ * OAuth2 Authorization Request 커스터마이징
+ * - Spotify refresh token 확보 최적화
+ * - Integration 요청 처리 간소화
  */
 @Slf4j
 @Component
@@ -47,41 +49,26 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
         }
 
         String registrationId = extractRegistrationId(authorizationRequest);
+        OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.from(authorizationRequest);
         
+        // Spotify 전용 설정
         if (SocialProviderConstants.SPOTIFY_LOWER.equals(registrationId)) {
-            return customizeSpotifyAuthorizationRequest(authorizationRequest, request);
+            Map<String, Object> additionalParameters = new HashMap<>(authorizationRequest.getAdditionalParameters());
+            additionalParameters.put("show_dialog", "true");
+            additionalParameters.put("access_type", "offline");
+            builder.additionalParameters(additionalParameters);
+            
+            log.info("[OAUTH2_RESOLVER] Spotify 파라미터 추가 - show_dialog: true, access_type: offline");
         }
-
-        return authorizationRequest;
-    }
-
-    /**
-     * Spotify용 Authorization Request 커스터마이징
-     * - show_dialog=true: 사용자가 매번 동의하도록 강제 (refresh token 확률 증가)
-     * - access_type=offline: 오프라인 액세스를 위한 refresh token 요청
-     * - state: 사용자 정의 state 파라미터 처리 (integration 요청 구분)
-     */
-    private OAuth2AuthorizationRequest customizeSpotifyAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest, HttpServletRequest request) {
-        log.info("[OAUTH2_RESOLVER] Spotify Authorization Request 커스터마이징 시작");
-
-        Map<String, Object> additionalParameters = new HashMap<>(authorizationRequest.getAdditionalParameters());
         
-        // Spotify에서 refresh token을 확실히 받기 위한 파라미터 추가
-        additionalParameters.put("show_dialog", "true");
-        additionalParameters.put("access_type", "offline");
-        
-        log.info("[OAUTH2_RESOLVER] Spotify 추가 파라미터 설정 완료 - show_dialog: true, access_type: offline");
-
-        // HttpServletRequest에서 state 파라미터 확인 (integration 요청인지 판단)
-        String customState = request.getParameter("state");
-        OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.from(authorizationRequest)
-                .additionalParameters(additionalParameters);
-                
-        if (customState != null && customState.startsWith("integration")) {
-            // 기존 Spring Security state와 사용자 정의 state를 결합
-            String combinedState = authorizationRequest.getState() + ":" + customState;
-            builder.state(combinedState);
-            log.info("[OAUTH2_RESOLVER] Integration state 감지 - 결합된 state: {}", combinedState);
+        // Integration 요청 처리 (간소화)
+        String integrationUserId = request.getParameter("integration_user_id");
+        if (integrationUserId != null) {
+            // state에 integration 정보 직접 포함
+            String newState = authorizationRequest.getState() + ":integration:" + integrationUserId;
+            builder.state(newState);
+            
+            log.info("[OAUTH2_RESOLVER] Integration 요청 감지 - userId: {}, newState: {}", integrationUserId, newState);
         }
 
         return builder.build();
@@ -91,7 +78,6 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
      * Authorization Request에서 registration ID 추출
      */
     private String extractRegistrationId(OAuth2AuthorizationRequest authorizationRequest) {
-        // clientId나 authorizationUri에서 registration ID를 추정
         String authorizationUri = authorizationRequest.getAuthorizationUri();
         
         if (authorizationUri.contains("accounts.spotify.com")) {
@@ -104,7 +90,6 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
             return SocialProviderConstants.GOOGLE_LOWER;
         }
         
-        // 기본값으로 빈 문자열 반환
         return "";
     }
 } 

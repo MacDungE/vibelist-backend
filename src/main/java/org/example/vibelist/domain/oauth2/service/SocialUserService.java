@@ -9,35 +9,38 @@ import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.entity.UserProfile;
 import org.example.vibelist.domain.user.repository.UserProfileRepository;
 import org.example.vibelist.domain.user.repository.UserRepository;
-import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.util.UsernameGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.Random;
 
 /**
- * 소셜 사용자 생성 및 관리 서비스
+ * 소셜 로그인 사용자 관리 서비스
+ * 소셜 로그인 사용자의 생성, 조회, Auth 정보 관리를 담당합니다.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SocialUserService {
     
-    private final UserService userService;
     private final AuthRepository authRepository;
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UsernameGenerator usernameGenerator;
     
     /**
      * 새로운 소셜 사용자 생성
+     * User, UserProfile, Auth를 한 번에 생성합니다.
      */
     @Transactional
     public User createNewSocialUser(String providerUserId, String username, String email, String provider) {
-        // 임시 사용자명 생성 (나중에 사용자가 변경할 수 있음)
-        String tempUsername = generateTempUsername(provider);
-
-        // User 생성
+        log.info("[SOCIAL_USER] 신규 소셜 사용자 생성 시작 - provider: {}, providerUserId: {}", provider, providerUserId);
+        
+        // 1. User 생성 (임시 사용자명 사용)
+        String tempUsername = usernameGenerator.generateUniqueUsername(
+            userRepository::existsByUsername
+        );
         User user = User.builder()
                 .username(tempUsername)
                 .password("") // 소셜 로그인은 패스워드 없음
@@ -45,7 +48,7 @@ public class SocialUserService {
                 .build();
         user = userRepository.save(user);
 
-        // UserProfile 생성
+        // 2. UserProfile 생성
         UserProfile userProfile = UserProfile.builder()
                 .user(user)
                 .email(email)
@@ -54,44 +57,21 @@ public class SocialUserService {
                 .build();
         userProfileRepository.save(userProfile);
 
-        // Auth 생성
-        Auth newAuth = Auth.builder()
+        // 3. Auth 생성
+        Auth auth = Auth.builder()
                 .user(user)
-                .provider(provider)
+                .provider(provider.toUpperCase())
                 .providerUserId(providerUserId)
                 .providerEmail(email)
                 .build();
-        authRepository.save(newAuth);
+        authRepository.save(auth);
 
-        log.info("[SOCIAL_USER] 신규 소셜 사용자 생성 완료 - userId: {}, provider: {}, providerUserId: {}", 
-                user.getId(), provider, providerUserId);
-
+        log.info("[SOCIAL_USER] 신규 소셜 사용자 생성 완료 - userId: {}, tempUsername: {}", user.getId(), tempUsername);
         return user;
     }
     
     /**
-     * Auth 정보 업데이트 또는 생성 (Upsert)
-     */
-    @Transactional
-    public void upsertAuth(User user, String provider, String providerUserId, String email, String refreshToken) {
-        Optional<Auth> authOpt = userService.findAuthByUserIdAndProvider(user.getId(), provider);
-
-        Auth auth = authOpt.orElseGet(() -> Auth.builder()
-                .user(user)
-                .provider(provider)
-                .providerUserId(providerUserId)
-                .providerEmail(email)
-                .build());
-
-        // refresh token만 업데이트
-        auth.updateRefreshToken(refreshToken);
-        authRepository.save(auth);
-        
-        log.info("[SOCIAL_USER] Auth 정보 업데이트 완료 - userId: {}, provider: {}", user.getId(), provider);
-    }
-    
-    /**
-     * 기존 소셜 사용자 찾기
+     * 기존 소셜 사용자 조회
      */
     public Optional<User> findExistingSocialUser(String provider, String providerUserId) {
         return authRepository.findByProviderAndProviderUserId(provider.toUpperCase(), providerUserId)
@@ -99,12 +79,29 @@ public class SocialUserService {
     }
     
     /**
-     * 임시 사용자명 생성
+     * Auth 정보 업데이트 (JWT 리프레시 토큰 저장용)
+     * 일반 로그인 시에만 사용됩니다.
      */
-    private String generateTempUsername(String provider) {
-        String[] prefixes = {"temp", "new", "user"};
-        String prefix = prefixes[new Random().nextInt(prefixes.length)];
-        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8); // 마지막 4자리
-        return prefix + "_" + timestamp;
+    @Transactional
+    public void updateAuthRefreshToken(User user, String provider, String refreshToken) {
+        Optional<Auth> authOpt = authRepository.findByUserIdAndProvider(user.getId(), provider.toUpperCase());
+        
+        if (authOpt.isPresent()) {
+            Auth auth = authOpt.get();
+            auth.updateRefreshToken(refreshToken);
+            authRepository.save(auth);
+            log.info("[SOCIAL_USER] Auth 리프레시 토큰 업데이트 완료 - userId: {}, provider: {}", user.getId(), provider);
+        } else {
+            log.warn("[SOCIAL_USER] Auth 정보를 찾을 수 없습니다 - userId: {}, provider: {}", user.getId(), provider);
+        }
     }
-} 
+    
+    /**
+     * 소셜 계정 연동 중복 검증
+     * Integration 요청 시 해당 소셜 계정이 이미 다른 사용자에게 연동되어 있는지 확인합니다.
+     */
+    public boolean isAlreadyLinkedToOtherUser(String provider, String providerUserId, Long currentUserId) {
+        Optional<User> existingUser = findExistingSocialUser(provider, providerUserId);
+        return existingUser.isPresent() && !existingUser.get().getId().equals(currentUserId);
+    }
+}
