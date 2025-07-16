@@ -9,7 +9,7 @@ public class EmotionPromptBuilder {
         사용될 Audio Feature: 
         - danceability (0.0~1.0, 주로 0.2~0.9)
         - energy       (0.0~1.0, 주로 0.1~1.0)
-        - speechiness  (0.0~0.97, 주로 0.0~0.3)
+        - speechiness  (0.1~1.0, 주로 0.2 이상)
         - acousticness (0.0~1.0, 양극 분포)
         - liveness     (0.0~1.0, 주로 0.1~0.4)
         - valence      (0.0~1.0, 고르게 분포, 주로 0.1~0.8)
@@ -29,7 +29,7 @@ public class EmotionPromptBuilder {
             "liveness": { "min": 0.1, "max": 0.3 },
             "valence": { "min": 0.2, "max": 0.7 },
             "loudness": { "min": -25, "max": -6 },
-            "tempo": { "min": 80, "max": 140 }
+            "tempo": { "min": 80, "max": 140 },
         }                                       
         """.formatted(userText, mode.name());
     }

@@ -22,6 +22,12 @@ public class ESQueryBuilder {
         Query innerQuery = BoolQuery.of(b -> {
             addRangeQuery(b, "energy", energy);
             addRangeQuery(b, "valence", valence);
+            b.must(queryBuilder -> queryBuilder
+                    .range(rq -> rq
+                            .field("trackMetrics.popularity")
+                            .gte(JsonData.of(30))
+                    )
+            );
             return b;
         })._toQuery();
 
@@ -39,6 +45,12 @@ public class ESQueryBuilder {
             addRangeQuery(b, "valence", range.getValence());
             addRangeQuery(b, "loudness", range.getLoudness());
             addRangeQuery(b, "tempo", range.getTempo());
+            b.must(queryBuilder -> queryBuilder
+                    .range(rq -> rq
+                            .field("trackMetrics.popularity")
+                            .gte(JsonData.of(30))
+                    )
+            );
             return b;
         })._toQuery();
 
