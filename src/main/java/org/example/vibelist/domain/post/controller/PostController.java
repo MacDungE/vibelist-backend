@@ -1,6 +1,7 @@
 package org.example.vibelist.domain.post.controller;
 
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,9 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/v1/post")
+@SecurityRequirement(name = "bearer-key")
+@SecurityRequirement(name = "access-cookie")
+@SecurityRequirement(name = "cookie-auth")
 @RequiredArgsConstructor
 public class PostController {
 
@@ -42,7 +46,9 @@ public class PostController {
 
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
 
-        return postService.createPost(1L,request);
+
+        return postService.createPost(userDetail.getId(),request);
+
 
     }
 
@@ -52,7 +58,7 @@ public class PostController {
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
 
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
-        return postService.getPostDetail(id, userIdOrTestId);
+        return postService.getPostDetail(id, userDetail.getId());
     }
 
     @Operation(summary = "게시글 수정", description = "게시글 내용과 공개 여부를 수정합니다.")
@@ -67,10 +73,11 @@ public class PostController {
 
 
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
-        postService.updatePost(userIdOrTestId, request);
+        postService.updatePost(userDetail.getId(), request);
     }
 
-    @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다.")
+    @Operation( summary = "게시글 삭제",
+                description = "게시글을 소프트 삭제합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "삭제 성공"),
         @ApiResponse(responseCode = "403", description = "삭제 권한 없음", content = @Content)
@@ -82,7 +89,7 @@ public class PostController {
 
 
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
-        postService.deletePost(userIdOrTestId, id);
+        postService.deletePost(userDetail.getId(), id);
     }
 
 
@@ -94,7 +101,7 @@ public class PostController {
     @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<PostDetailResponse> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
-        return postService.getLikedPostsByUser(userIdOrTestId);
+        return postService.getLikedPostsByUser(userDetail.getId());
     }
 
 }
