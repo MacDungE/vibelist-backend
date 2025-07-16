@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.RecommendRqDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.emotion.llm.EmotionTextManager;
+import org.example.vibelist.domain.playlist.emotion.profile.AudioFeatureRange;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionProfileManager;
@@ -52,7 +53,6 @@ public class RecommendService {
     // valence, energy -> 감정 매핑
     public List<TrackRsDto> recommendByCoordinate(double userValence, double userEnergy, EmotionModeType mode) {
         log.info("🎯 좌표 기반 추천 요청 수신 - valence: {}, energy: {}, mode: {}", userValence, userEnergy, mode);
-
         EmotionType emotion = profileManager.classify(userValence, userEnergy);
         log.info("🧠 분류된 감정: {}", emotion);
         return recommendByEmotionType(emotion, mode);
@@ -61,9 +61,14 @@ public class RecommendService {
     // 자연어 -> 감정 매핑
     public List<TrackRsDto> recommendByText(String userText, EmotionModeType mode) throws JsonProcessingException {
         log.info("🎯 텍스트 기반 추천 요청 수신 - text: \"{}\", mode: {}", userText, mode);
-        EmotionType emotion = textManager.getEmotionType(userText);
-        log.info("🧠 분류된 감정: {}", emotion);
-        return recommendByEmotionType(emotion, mode);
+
+        AudioFeatureRange featureRange = textManager.getAudioFeatureRange(userText, mode);
+        log.info("📊 LLM 기반 검색 범위: {}", featureRange);
+
+        Query emotionQuery = ESQueryBuilder.build(featureRange);
+        log.info("🔍 Elasticsearch 쿼리 생성 완료");
+
+        return searchTracks(emotionQuery);
     }
 
     // 감정 -> 플레이리스트 추천
@@ -79,9 +84,14 @@ public class RecommendService {
         Query emotionQuery = ESQueryBuilder.build(profile);
         log.info("🔍 Elasticsearch 쿼리 생성 완료");
 
+        return searchTracks(emotionQuery);
+        }
+
+    // **공통화된 ES 검색/변환 메서드**
+    private List<TrackRsDto> searchTracks(Query query) {
         SearchRequest request = SearchRequest.of(s -> s
                 .index("audio_feature_index")
-                .query(emotionQuery)
+                .query(query)
                 .size(20)
                 .sort(sort -> sort
                         .score(scoreSort -> scoreSort.order(SortOrder.Desc))
@@ -94,7 +104,7 @@ public class RecommendService {
 
             return response.hits().hits().stream()
                     .map(Hit::source)
-                    .map(TrackRsDto::from)  // ES document -> DTO
+                    .map(TrackRsDto::from)
                     .collect(Collectors.toList());
 
         } catch (IOException e) {
