@@ -30,7 +30,7 @@ public class PostService {
     private final PlaylistService playlistService;
     @Transactional
     public Long createPost(Long userId, PostCreateRequest dto) {
-        List<TrackRsDto> tracks = dto.getTracks();
+        List<TrackRsDto> tracks = dto.getTracks();//track 정보 받아오기
         SpotifyPlaylistDto responseDto= new SpotifyPlaylistDto();
         try {
             responseDto = playlistService.createPlaylist(userId,tracks);

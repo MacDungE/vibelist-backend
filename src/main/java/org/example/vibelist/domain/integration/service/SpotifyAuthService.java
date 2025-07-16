@@ -14,9 +14,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,7 @@ public class SpotifyAuthService {
     private String redirectUri;
 
     private String name = "sung_1"; //여러분이 사용하실 admin user name을 입력해주시면 됩니다.
-    private final DevAuthTokenService devAuthTokenService;
+    //private final DevAuthTokenService devAuthTokenService;
     private final RestTemplate restTemplate= new RestTemplate();
     /**
      * 1. 사용자가 로그인할 수 있는 Spotify URL 반환
@@ -53,7 +54,7 @@ public class SpotifyAuthService {
     /**
      * 2. Spotify에서 받은 code를 이용해 access_token과 refresh_token 교환
      */
-    public  String exchangeCodeForTokens(String code) {
+    public Map<String,String> exchangeCodeForTokens(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
         String auth = clientId + ":" + clientSecret;
@@ -87,8 +88,11 @@ public class SpotifyAuthService {
             log.info("refresh token: {}", refreshToken);
             log.info("만료 시간 : {}", tokenExpiry);
 
-            devAuthTokenService.insertDev(name,accessToken,refreshToken,tokenExpiry);
-            return accessToken;
+            Map<String,String> tokenMap = new HashMap<>();
+            tokenMap.put("access_token",accessToken);
+            tokenMap.put("refresh_token",refreshToken);
+            tokenMap.put("expires_in",tokenExpiry.toString());//나중에 LocalDateTime으로 catsting
+            return tokenMap;
         } catch (Exception e) {
             throw new RuntimeException("Token 파싱 실패", e);
         }
@@ -96,9 +100,12 @@ public class SpotifyAuthService {
 
     /**
      * 3. refresh token을 이용해 access_token 재발급
+     * return type : Map Object
+     * "access_token" : access_token,
+     * "refresh_token" : refresh_token
+     * "expires_in " : expires_in
      */
-    public  String refreshAccessToken() {
-        String refreshToken = devAuthTokenService.getRefreshToken(name);
+    public  Map<String,String> refreshAccessToken(String refreshToken) {
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
 
         String url = "https://accounts.spotify.com/api/token";
@@ -122,9 +129,12 @@ public class SpotifyAuthService {
             if (json.has("refresh_token")) {
                 refreshToken = json.get("refresh_token").asText(); // refresh_token 추출
             }
-            LocalDateTime tokenExpiry = LocalDateTime.now().plusSeconds(json.get("expires_in").asLong()); //(현재시간 + expiry_time)값을 테이블에 저장
-            devAuthTokenService.updateDev(name,accessToken,refreshToken,tokenExpiry); // 테이블 update
-            return accessToken;
+            Integer expiresIn = json.get("expires_in").asInt(); //(현재시간 + expiry_time)값을 테이블에 저장
+            Map<String,String> tokenMap = new HashMap<>();
+            tokenMap.put("access_token",accessToken);
+            tokenMap.put("refresh_token",refreshToken);
+            tokenMap.put("expires_in",expiresIn.toString());
+            return tokenMap;
         } catch (Exception e) {
             throw new RuntimeException("Refresh 실패", e);
         }
@@ -150,20 +160,6 @@ public class SpotifyAuthService {
             log.error("Failed to extract user ID from Spotify response", e);
             throw new RuntimeException("Failed to get Spotify user id", e);
         }
-    }
-
-    public  String getAccessToken() {
-        DevAuthToken devAuthToken = devAuthTokenService.getDevAuth(name);
-        String accessToken = devAuthToken.getAccessToken();
-        LocalDateTime tokenExpiry = devAuthToken.getTokenExpiresAt();
-        if (tokenExpiry != null && LocalDateTime.now().isAfter(tokenExpiry.minusSeconds(60))) {
-            return refreshAccessToken(); //만료시 토큰 재발급
-        }
-        return accessToken;
-    }
-
-    public  String getRefreshToken() {
-        return devAuthTokenService.getDevAuth(name).getRefreshToken();
     }
 
 }
