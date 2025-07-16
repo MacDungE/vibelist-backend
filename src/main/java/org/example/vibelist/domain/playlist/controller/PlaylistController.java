@@ -1,6 +1,5 @@
 package org.example.vibelist.domain.playlist.controller;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,10 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
+import org.example.vibelist.domain.integration.service.SpotifyAuthService;
+import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.PlaylistService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +24,6 @@ import java.util.List;
 @Tag(name = "Spotify Playlist 삽입")
 public class PlaylistController {
     final private PlaylistService playlistService;
-    final private SpotifyAuthService spotifyAuthService;
 
     @Operation(summary = "Spotify에 Playlist 삽입", description = "유저가 선택한 Playlist를 Spotify에 삽입합니다. 개발자가 최초에 로그인을 하지 않았다면, login-dev 호출이 필요합니다.")
     @ApiResponses({
@@ -103,28 +101,9 @@ public class PlaylistController {
                                     "]"
                     )
             )
-    ) @RequestBody List<TrackRsDto> trackRsDtos) throws Exception {
-            if (!spotifyAuthService.isTokenAvailable()) {
-            // 클라이언트에 login-dev 리다이렉트를 알려줌
-            String redirectUrl = "/v1/playlist/login-dev?redirect=add";
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .header("X-Redirect-Url", redirectUrl)
-                    .body("Spotify 인증이 필요합니다. " + redirectUrl + " 로 이동하세요.");
-        }
-
-
-        playlistService.createPlaylist(trackRsDtos);
-            return ResponseEntity.ok().body(trackRsDtos);
-    }
-
-    @GetMapping("/login-dev")
-    public void redirectToSpotify(HttpServletResponse response) throws IOException {
-        response.sendRedirect(spotifyAuthService.getAuthorizationUrl());
-    }
-
-    @GetMapping("/callback")
-    public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
-        String accessToken = spotifyAuthService.exchangeCodeForTokens(code);
-        return ResponseEntity.ok("Access token & Refresh token 발급 완료!");
+    )       @RequestBody Long id,
+            @RequestBody List<TrackRsDto> tracks) throws Exception {
+        SpotifyPlaylistDto playlistDto = playlistService.createPlaylist(id,tracks);
+        return ResponseEntity.ok().body(playlistDto);
     }
 }
