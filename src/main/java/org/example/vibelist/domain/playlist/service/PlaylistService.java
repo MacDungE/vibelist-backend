@@ -44,51 +44,7 @@ public class PlaylistService {
      */
     public SpotifyPlaylistDto createPlaylist(Long userid,List<TrackRsDto> tracks) throws Exception {
         //이용자의 accesstoken 가져오기
-//        Optional<IntegrationTokenInfo> optionalInfo =
-//                integrationTokenInfoService.getValidTokenInfo(userid,"SPOTIFY");//userId와 SPOTIFY 가입 계정 찾기
-        String accessToken = "";
-//        if(optionalInfo.isPresent()) { //user가 spotify회원일때
-//            accessToken = optionalInfo.map(IntegrationTokenInfo::getAccessToken).orElseThrow(() -> new IllegalArgumentException("유효하지 않은 access_token입니다."));
-//            if (optionalInfo.map(IntegrationTokenInfo::isExpired).orElse(false)) {
-//                //access_token refresh해주기
-//                log.info("access_token이 만료되었습니다. refresh 진행..");
-//                String refreshToken = optionalInfo.map(IntegrationTokenInfo::getRefreshToken).orElseThrow(
-//                        ()-> new IllegalArgumentException("해당 User의 refresh_token이 존재하지 않습니다."));
-//
-//                Map<String,String> tokenMap = spotifyAuthService.refreshAccessToken(refreshToken);
-//                String newAccessToken = tokenMap.get("access_token"); //새로 발급받은 access_token
-//                Integer expiresIn = Integer.parseInt(tokenMap.get("expires_in"));
-//                if(!refreshToken.equals(tokenMap.get("refresh_token"))){ // DB에 저장되어있는 토큰과 동일하지 확인
-//                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
-//                }
-//                integrationTokenInfoService.updateAccessToken(userid,"SPOTIFY",accessToken,expiresIn);
-//            }
-//        }
-//        else{ //user가 spotify회원이 아니고 개발자 계정을 이용해야할때
-            DevAuthToken devAuthToken = devAuthTokenService.getDevAuth("sung_1");
-            LocalDateTime expiresAt = devAuthToken.getTokenExpiresAt(); // DB에 저장된 만료시간
-            LocalDateTime now = LocalDateTime.now();
-
-            // 현재 시각이 expiresAt 이후라면 토큰 만료된 것
-            if (expiresAt == null || now.isAfter(expiresAt.minusSeconds(60))) {
-                // access token이 만료되었음 (또는 거의 만료 직전)
-                log.info("Access token 만료됨. Refresh 필요.");
-                String refreshToken = devAuthToken.getRefreshToken();
-                Map<String,String>tokenMap = spotifyAuthService.refreshAccessToken(refreshToken);
-                String newAccessToken = tokenMap.get("access_token");
-                expiresAt =LocalDateTime.now().plusSeconds(Integer.parseInt(tokenMap.get("expires_in"))); //만료 시간 갱신
-                if(!refreshToken.equals(tokenMap.get("refresh_token"))){ // DB에 저장되어있는 토큰과 동일하지 확인
-                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
-                }
-                devAuthTokenService.updateDev("sung_1",newAccessToken,refreshToken,expiresAt);
-            } else {
-                log.info("Access token 아직 유효함.");
-                accessToken = devAuthToken.getAccessToken();
-            }
-
-            //devAuthToken에 저장되어있는 LocalDataTime expires_at을 사용해 이 accessToken이 유효한지 검사
-
-        //}
+        String accessToken = resolveValidAccessToken(userid);
         //여기서 로직 정리
         String userId = spotifyAuthService.getSpotifyUserId(accessToken);
 
@@ -125,6 +81,49 @@ public class PlaylistService {
         SpotifyPlaylistDto spotifyPlaylistDto = new SpotifyPlaylistDto();
         spotifyPlaylistDto.setSpotifyId(spotifyId);
         return spotifyPlaylistDto;
+    }
+    private String resolveValidAccessToken(Long userid) {
+        Optional<IntegrationTokenInfo> optionalInfo = integrationTokenInfoService.getValidTokenInfo(userid, "SPOTIFY");
+
+        if (optionalInfo.isPresent()) {
+            IntegrationTokenInfo info = optionalInfo.get();
+
+            if (info.isExpired()) {
+                log.info("사용자의 Access Token이 만료됨. Refresh 진행..");
+                Map<String, String> tokenMap = spotifyAuthService.refreshAccessToken(info.getRefreshToken());
+
+                if (!info.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                int expiresIn = Integer.parseInt(tokenMap.get("expires_in"));
+
+                integrationTokenInfoService.updateAccessToken(userid, "SPOTIFY", newAccessToken, expiresIn);
+                return newAccessToken;
+            }
+
+            return info.getAccessToken();
+        } else {
+            DevAuthToken dev = devAuthTokenService.getDevAuth("sung_1");
+            if (dev.getTokenExpiresAt() == null || LocalDateTime.now().isAfter(dev.getTokenExpiresAt().minusSeconds(60))) {
+                log.info("개발자의 Access Token 만료됨. Refresh 진행..");
+
+                Map<String, String> tokenMap = spotifyAuthService.refreshAccessToken(dev.getRefreshToken());
+
+                if (!dev.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                LocalDateTime newExpires = LocalDateTime.now().plusSeconds(Integer.parseInt(tokenMap.get("expires_in")));
+
+                devAuthTokenService.updateDev("sung_1", newAccessToken, dev.getRefreshToken(), newExpires);
+                return newAccessToken;
+            }
+
+            return dev.getAccessToken();
+        }
     }
     @Transactional
     public void addTrack(List<TrackRsDto> trackRsDtos,
