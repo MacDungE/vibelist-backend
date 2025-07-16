@@ -1,7 +1,9 @@
-package org.example.vibelist.domain.playlist.emotion;
+package org.example.vibelist.domain.playlist.emotion.profile;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
+import org.example.vibelist.domain.playlist.emotion.type.EmotionType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

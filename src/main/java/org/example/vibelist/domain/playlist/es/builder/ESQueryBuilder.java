@@ -2,8 +2,8 @@ package org.example.vibelist.domain.playlist.es.builder;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
-import org.example.vibelist.domain.playlist.emotion.DoubleRange;
-import org.example.vibelist.domain.playlist.emotion.EmotionFeatureProfile;
+import org.example.vibelist.domain.playlist.util.DoubleRange;
+import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 
 import java.util.List;
 

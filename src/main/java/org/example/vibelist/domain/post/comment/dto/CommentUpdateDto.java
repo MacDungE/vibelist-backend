@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.comment.dto;
+package org.example.vibelist.domain.post.comment.dto;
 
 import lombok.Getter;
 

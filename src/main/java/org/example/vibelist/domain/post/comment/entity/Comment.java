@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.comment.entity;
+package org.example.vibelist.domain.post.comment.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,7 +8,6 @@ import org.example.vibelist.global.jpa.entity.BaseTime;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,5 +44,8 @@ public class Comment extends BaseTime {
 
     @Column(nullable = false)
     private int likeCount = 0;
+
+    public void incLike() { this.likeCount++; }
+    public void decLike() { this.likeCount--; }
 
 }

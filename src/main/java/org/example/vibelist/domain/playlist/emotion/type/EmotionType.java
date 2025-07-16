@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.playlist.emotion;
+package org.example.vibelist.domain.playlist.emotion.type;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
