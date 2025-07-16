@@ -3,7 +3,10 @@ package org.example.vibelist.domain.post.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.explore.service.ExploreService;
+import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
+import org.example.vibelist.domain.playlist.service.PlaylistService;
 import org.example.vibelist.domain.post.dto.PlaylistDetailResponse;
 import org.example.vibelist.domain.post.dto.PostCreateRequest;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
@@ -18,28 +21,34 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PlaylistService playlistService;
     private final UserRepository userRepository;
     private final LikeService likeService;
     private final ExploreService exploreService;
 
-
     @Transactional
     public Long createPost(Long userId, PostCreateRequest dto) {
-
         User user = userRepository.findById(userId).orElseThrow(NoSuchElementException::new);
-
-        String spotifyUrl="";
-
+        List<TrackRsDto> tracks = dto.getTracks();//track 정보 받아오기
+        SpotifyPlaylistDto responseDto= new SpotifyPlaylistDto();
+        try {
+            responseDto = playlistService.createPlaylist(userId,tracks);
+        }
+        catch (Exception e) {
+            log.info("Spotify api 호출 중 에러가 발생했습니다.");
+        }
+        String spotifyUrl= responseDto.getSpotifyId();
 
         // 2) 총 트랙 수·총 길이 계산
         int totalTracks     = dto.getTracks().size();

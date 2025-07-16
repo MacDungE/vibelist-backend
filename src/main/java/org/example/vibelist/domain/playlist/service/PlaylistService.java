@@ -4,7 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.batch.spotify.service.SpotifyAuthService;
+import org.example.vibelist.domain.integration.entity.DevAuthToken;
+import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
+import org.example.vibelist.domain.integration.repository.DevAuthTokenRepository;
+import org.example.vibelist.domain.integration.repository.IntegrationTokenInfoRepository;
+import org.example.vibelist.domain.integration.service.DevAuthTokenService;
+import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
+import org.example.vibelist.domain.integration.service.SpotifyAuthService;
+import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -13,9 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,22 +34,20 @@ import java.util.stream.Collectors;
 public class PlaylistService {
 
     private final SpotifyAuthService spotifyAuthService;
+
+    private final IntegrationTokenInfoService integrationTokenInfoService;
+
+    private final DevAuthTokenService devAuthTokenService;
     @Transactional
     /*
     PlayList를 생성 후, track들을 insert합니다.
      */
-    public void createPlaylist(List<TrackRsDto> trackRsDtos) throws Exception {
-        String accessToken = spotifyAuthService.getAccessToken();
+    public SpotifyPlaylistDto createPlaylist(Long userid,List<TrackRsDto> tracks) throws Exception {
+        //이용자의 accesstoken 가져오기
+        String accessToken = resolveValidAccessToken(userid);
+        //여기서 로직 정리
         String userId = spotifyAuthService.getSpotifyUserId(accessToken);
 
-        //테스트용
-        /*
-        accessToken 또한 테스트용, spotify 로그인시 저장된 값을 복사해서 사용했습니다.
-        유저가 Spotify로 로그인한 Case->유저 spotify로 로그인할때 넘어온 accesstoken 사용
-        유저가 Spotify로 로그인 하지 않은 Case-> 개발자가 직접 accessToken 받아옴
-
-        */
-        //String accessToken = spotifyApiClient.getAccessTokenFromCode();
         String url = "https://api.spotify.com/v1/users/" + userId + "/playlists";
 
         RestTemplate restTemplate = new RestTemplate();
@@ -65,10 +73,57 @@ public class PlaylistService {
         String responseBody = response.getBody();
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode root = objectMapper.readTree(responseBody);
-        String playlistId = root.get("id").asText();
-        addTrack(trackRsDtos,playlistId,accessToken);
+        String spotifyId = root.get("id").asText();
+        addTrack(tracks,spotifyId,accessToken);
 
-        log.info("response: {}", response.getBody());
+        log.info("spotify playlist id : {}",spotifyId);
+
+        SpotifyPlaylistDto spotifyPlaylistDto = new SpotifyPlaylistDto();
+        spotifyPlaylistDto.setSpotifyId(spotifyId);
+        return spotifyPlaylistDto;
+    }
+    private String resolveValidAccessToken(Long userid) {
+        Optional<IntegrationTokenInfo> optionalInfo = integrationTokenInfoService.getTokenInfo(userid, "SPOTIFY");
+
+        if (optionalInfo.isPresent()) {
+            IntegrationTokenInfo info = optionalInfo.get();
+
+            if (info.isExpired()) {
+                log.info("사용자의 Access Token이 만료됨. Refresh 진행..");
+                Map<String, String> tokenMap = spotifyAuthService.refreshAccessToken(info.getRefreshToken());
+
+                if (!info.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                int expiresIn = Integer.parseInt(tokenMap.get("expires_in"));
+
+                integrationTokenInfoService.updateAccessToken(userid, "SPOTIFY", newAccessToken, expiresIn);
+                return newAccessToken;
+            }
+
+            return info.getAccessToken();
+        } else {
+            DevAuthToken dev = devAuthTokenService.getDevAuth("sung_1");
+            if (dev.getTokenExpiresAt() == null || LocalDateTime.now().isAfter(dev.getTokenExpiresAt().minusSeconds(60))) {
+                log.info("개발자의 Access Token 만료됨. Refresh 진행..");
+
+                Map<String, String> tokenMap = spotifyAuthService.refreshAccessToken(dev.getRefreshToken());
+
+                if (!dev.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                LocalDateTime newExpires = LocalDateTime.now().plusSeconds(Integer.parseInt(tokenMap.get("expires_in")));
+
+                devAuthTokenService.updateDev("sung_1", newAccessToken, dev.getRefreshToken(), newExpires);
+                return newAccessToken;
+            }
+
+            return dev.getAccessToken();
+        }
     }
     @Transactional
     public void addTrack(List<TrackRsDto> trackRsDtos,
@@ -94,7 +149,6 @@ public class PlaylistService {
 
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
         log.info("Track add response: {}", response.getBody());
-
     }
 
 }

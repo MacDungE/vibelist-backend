@@ -1,10 +1,10 @@
-package org.example.vibelist.domain.batch.spotify.service;
+package org.example.vibelist.domain.integration.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.integration.entity.DevAuthToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -14,31 +14,34 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SpotifyAuthService {
+    //application.properties에 명시된 비밀값
     @Value("${spotify.clientId}")
     private String clientId;
 
+    //application.properties에 명시된 비밀값
     @Value("${spotify.clientSecret}")
     private String clientSecret;
 
     //spotify dashboard에 명시한 redirect URI
-    private String redirectUri = "http://127.0.0.1:8080/v1/playlist/callback";
+    @Value("${spotify.redirectUri}")
+    private String redirectUri;
 
+    private String name = "sung_1"; //여러분이 사용하실 admin user name을 입력해주시면 됩니다.
+    //private final DevAuthTokenService devAuthTokenService;
     private final RestTemplate restTemplate= new RestTemplate();
-    private String accessToken;
-    private String refreshToken;
-    private Instant tokenExpiry;
-
     /**
      * 1. 사용자가 로그인할 수 있는 Spotify URL 반환
      */
-    public synchronized String getAuthorizationUrl() {
+    public String getAuthorizationUrl() {
         String scope = "user-read-private user-read-email playlist-modify-private";
         return UriComponentsBuilder.fromHttpUrl("https://accounts.spotify.com/authorize")
                 .queryParam("client_id", clientId)
@@ -51,32 +54,45 @@ public class SpotifyAuthService {
     /**
      * 2. Spotify에서 받은 code를 이용해 access_token과 refresh_token 교환
      */
-    public synchronized String  exchangeCodeForTokens(String code) {
+    public Map<String,String> exchangeCodeForTokens(String code) {
         String url = "https://accounts.spotify.com/api/token";
 
         String auth = clientId + ":" + clientSecret;
+        //spotify를 auth는 UTF_8로 인코딩
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
 
+        //header 설정
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Basic " + encodedAuth);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
+        //body 설정
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("code", code);
         body.add("redirect_uri", redirectUri);
 
+        //요청 전송
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+        //응답 수신
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
+        //필요한 access_token, refresh_token,expiry_time을 추출
         try {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
-            accessToken = json.get("access_token").asText();
-            refreshToken = json.get("refresh_token").asText();
-            tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
-            // 🟢 여기서 refreshToken은 DB에 저장할 것
+            String accessToken = json.get("access_token").asText(); //access_token 추출
+            String refreshToken = json.get("refresh_token").asText();//refresh_token 추출
+            LocalDateTime tokenExpiry = LocalDateTime.now().plusSeconds(json.get("expires_in").asLong());//(현재시간 + expiry_time)값을 테이블에 저장
+
             log.info("Access token: {}", accessToken);
-            return accessToken;
+            log.info("refresh token: {}", refreshToken);
+            log.info("만료 시간 : {}", tokenExpiry);
+
+            Map<String,String> tokenMap = new HashMap<>();
+            tokenMap.put("access_token",accessToken);
+            tokenMap.put("refresh_token",refreshToken);
+            tokenMap.put("expires_in",tokenExpiry.toString());//나중에 LocalDateTime으로 catsting
+            return tokenMap;
         } catch (Exception e) {
             throw new RuntimeException("Token 파싱 실패", e);
         }
@@ -84,18 +100,22 @@ public class SpotifyAuthService {
 
     /**
      * 3. refresh token을 이용해 access_token 재발급
+     * return type : Map Object
+     * "access_token" : access_token,
+     * "refresh_token" : refresh_token
+     * "expires_in " : expires_in
      */
-    public synchronized String refreshAccessToken() {
+    public  Map<String,String> refreshAccessToken(String refreshToken) {
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
 
         String url = "https://accounts.spotify.com/api/token";
         String auth = clientId + ":" + clientSecret;
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
-
+        //header 설정
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Basic " + encodedAuth);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
+        //body 설정
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "refresh_token");
         body.add("refresh_token", refreshToken);
@@ -105,18 +125,22 @@ public class SpotifyAuthService {
 
         try {
             JsonNode json = new ObjectMapper().readTree(response.getBody());
-            accessToken = json.get("access_token").asText();
+            String accessToken = json.get("access_token").asText(); //access_token 추출
             if (json.has("refresh_token")) {
-                refreshToken = json.get("refresh_token").asText();
+                refreshToken = json.get("refresh_token").asText(); // refresh_token 추출
             }
-            tokenExpiry = Instant.now().plusSeconds(json.get("expires_in").asLong());
-            return accessToken;
+            Integer expiresIn = json.get("expires_in").asInt(); //(현재시간 + expiry_time)값을 테이블에 저장
+            Map<String,String> tokenMap = new HashMap<>();
+            tokenMap.put("access_token",accessToken);
+            tokenMap.put("refresh_token",refreshToken);
+            tokenMap.put("expires_in",expiresIn.toString());
+            return tokenMap;
         } catch (Exception e) {
             throw new RuntimeException("Refresh 실패", e);
         }
     }
 
-    public synchronized String getSpotifyUserId(String accessToken) {
+    public  String getSpotifyUserId(String accessToken) {
         String url = "https://api.spotify.com/v1/me";
 
         HttpHeaders headers = new HttpHeaders();
@@ -131,25 +155,11 @@ public class SpotifyAuthService {
         );
         try {
             JsonNode root = new ObjectMapper().readTree(response.getBody());
-            return root.get("id").asText();
+            return root.get("id").asText(); //spotify상의 user_id 추출
         } catch (Exception e) {
             log.error("Failed to extract user ID from Spotify response", e);
             throw new RuntimeException("Failed to get Spotify user id", e);
         }
     }
 
-    public synchronized String getAccessToken() {
-        if (tokenExpiry != null && Instant.now().isAfter(tokenExpiry.minusSeconds(60))) {
-            return refreshAccessToken();
-        }
-        return accessToken;
-    }
-
-    public synchronized String getRefreshToken() {
-        return refreshToken;
-    }
-
-    public synchronized boolean isTokenAvailable() {
-        return accessToken != null && tokenExpiry != null && Instant.now().isBefore(tokenExpiry.minusSeconds(60));
-    }
 }
