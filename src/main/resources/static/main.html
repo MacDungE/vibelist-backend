@@ -115,6 +115,115 @@
             margin: 20px auto;
             max-width: 600px;
         }
+        
+        .integration-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px auto;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .integration-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .service-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .spotify-icon {
+            background: #1DB954;
+        }
+        
+        .service-name {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        .service-status {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .connect-btn {
+            background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+        
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(29, 185, 84, 0.4);
+        }
+        
+        .disconnect-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .disconnect-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .status-connected {
+            color: #1DB954;
+            font-weight: bold;
+        }
+        
+        .status-disconnected {
+            color: #ffcccc;
+        }
+        
+        .success-message {
+            background: rgba(29, 185, 84, 0.2);
+            border: 1px solid rgba(29, 185, 84, 0.5);
+            color: #90ff90;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -149,12 +258,38 @@
         <div id="error" class="error" style="display: none;">
             사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.
         </div>
+        
+        <!-- 연동 성공 메시지 -->
+        <div id="successMessage" class="success-message" style="display: none;">
+            <strong>🎉 스포티파이 연동이 완료되었습니다!</strong>
+            <p>이제 VibeList에서 스포티파이 플레이리스트를 관리할 수 있습니다.</p>
+        </div>
+        
+        <!-- 외부 서비스 연동 섹션 -->
+        <div id="integrationSection" class="integration-section" style="display: none;">
+            <h2 class="integration-title">🎵 음악 서비스 연동</h2>
+            
+            <div class="service-item">
+                <div class="service-info">
+                    <div class="service-icon spotify-icon">♪</div>
+                    <div>
+                        <div class="service-name">Spotify</div>
+                        <div class="service-status" id="spotifyStatus">연동 상태 확인 중...</div>
+                    </div>
+                </div>
+                <div id="spotifyButton">
+                    <!-- 버튼이 동적으로 생성됩니다 -->
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
-        // URL에서 사용자 ID 파라미터 가져오기
+        // URL에서 파라미터 가져오기
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('id');
+        const integration = urlParams.get('integration');
+        const provider = urlParams.get('provider');
         
         // 사용자 정보 로드
         async function loadUserInfo() {
@@ -185,6 +320,10 @@
                     
                     // 헤더의 사용자명 업데이트
                     document.getElementById('userName').textContent = data.name || '사용자';
+                    
+                    // 연동 섹션 표시 및 연동 상태 로드
+                    document.getElementById('integrationSection').style.display = 'block';
+                    loadIntegrationStatus();
                     
                 } else {
                     // 인증되지 않은 경우 로그인 페이지로 리다이렉트
@@ -222,8 +361,135 @@
             }
         }
         
-        // 페이지 로드 시 사용자 정보 로드
-        document.addEventListener('DOMContentLoaded', loadUserInfo);
+        // 연동 상태 로드
+        async function loadIntegrationStatus() {
+            try {
+                console.log('연동 상태 확인 중...');
+                const response = await fetch('/v1/integrations/status');
+                console.log('연동 상태 API 응답:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('연동 상태 데이터:', data);
+                    updateSpotifyStatus(data);
+                } else {
+                    console.error('연동 상태 로드 실패:', response.status);
+                    updateSpotifyStatus(null);
+                }
+            } catch (error) {
+                console.error('연동 상태 로드 에러:', error);
+                updateSpotifyStatus(null);
+            }
+        }
+        
+        // 스포티파이 연동 상태 업데이트
+        function updateSpotifyStatus(data) {
+            const statusElement = document.getElementById('spotifyStatus');
+            const buttonElement = document.getElementById('spotifyButton');
+            
+            // 스포티파이 연동 상태 확인
+            let spotifyIntegration = null;
+            if (data && data.integrations) {
+                spotifyIntegration = data.integrations.find(item => 
+                    item.provider.toUpperCase() === 'SPOTIFY'
+                );
+            }
+            
+            if (spotifyIntegration && spotifyIntegration.isValid) {
+                // 연동됨
+                statusElement.innerHTML = '<span class="status-connected">✓ 연동됨</span>';
+                statusElement.innerHTML += `<br><small>마지막 업데이트: ${formatDate(spotifyIntegration.lastUpdated)}</small>`;
+                
+                buttonElement.innerHTML = `
+                    <button class="disconnect-btn" onclick="disconnectSpotify()">
+                        연동 해제
+                    </button>
+                `;
+            } else {
+                // 연동되지 않음
+                statusElement.innerHTML = '<span class="status-disconnected">✗ 연동되지 않음</span>';
+                statusElement.innerHTML += '<br><small>스포티파이와 연동하여 플레이리스트를 관리하세요</small>';
+                
+                buttonElement.innerHTML = `
+                    <button class="connect-btn" onclick="connectSpotify()">
+                        스포티파이 연동
+                    </button>
+                `;
+            }
+        }
+        
+        // 스포티파이 연동 시작
+        function connectSpotify() {
+            console.log('스포티파이 연동 시작...');
+            window.location.href = '/v1/integrations/spotify/connect';
+        }
+        
+        // 스포티파이 연동 해제
+        async function disconnectSpotify() {
+            if (!confirm('스포티파이 연동을 해제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                console.log('스포티파이 연동 해제 중...');
+                const response = await fetch('/v1/integrations/spotify', {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    console.log('스포티파이 연동 해제 성공');
+                    alert('스포티파이 연동이 해제되었습니다.');
+                    loadIntegrationStatus(); // 상태 다시 로드
+                } else {
+                    console.error('스포티파이 연동 해제 실패:', response.status);
+                    alert('연동 해제에 실패했습니다. 다시 시도해주세요.');
+                }
+            } catch (error) {
+                console.error('스포티파이 연동 해제 에러:', error);
+                alert('연동 해제 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            if (!dateString) return '알 수 없음';
+            
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffMins < 1) return '방금 전';
+            if (diffMins < 60) return `${diffMins}분 전`;
+            if (diffHours < 24) return `${diffHours}시간 전`;
+            if (diffDays < 7) return `${diffDays}일 전`;
+            
+            return date.toLocaleDateString('ko-KR');
+        }
+        
+        // 연동 성공 메시지 표시
+        function showIntegrationSuccessMessage() {
+            if (integration === 'success' && provider === 'spotify') {
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // 5초 후 메시지 자동 숨김
+                setTimeout(() => {
+                    document.getElementById('successMessage').style.display = 'none';
+                }, 5000);
+                
+                // URL에서 파라미터 제거 (브라우저 히스토리 업데이트)
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            showIntegrationSuccessMessage();
+        });
     </script>
 </body>
 </html> 
