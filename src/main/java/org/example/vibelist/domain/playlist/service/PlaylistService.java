@@ -83,7 +83,7 @@ public class PlaylistService {
         return spotifyPlaylistDto;
     }
     private String resolveValidAccessToken(Long userid) {
-        Optional<IntegrationTokenInfo> optionalInfo = integrationTokenInfoService.getValidTokenInfo(userid, "SPOTIFY");
+        Optional<IntegrationTokenInfo> optionalInfo = integrationTokenInfoService.getTokenInfo(userid, "SPOTIFY");
 
         if (optionalInfo.isPresent()) {
             IntegrationTokenInfo info = optionalInfo.get();
