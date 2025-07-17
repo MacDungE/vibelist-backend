@@ -64,6 +64,7 @@ jobs:
             ES_HOST=${{ secrets.ES_HOST }}
             EMOTION_PROFILE_PATH=${{ secrets.EMOTION_PROFILE_PATH }}
             PROFILE=${{ secrets.PROFILE }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
