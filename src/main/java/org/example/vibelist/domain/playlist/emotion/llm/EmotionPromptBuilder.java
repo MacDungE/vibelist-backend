@@ -10,9 +10,9 @@ public class EmotionPromptBuilder {
         
         - 감정 설명: 사용자의 현재 감정 상태를 의미하는 자유로운 텍스트
         - 모드: maintain, elevate, calm-down, reverse 중 하나, 감정 유지/상승/진정/역전
-                
+        
         ❗️모드에 따라 emotionType과 각 feature 범위를 변화시키세요. 예를 들어 '슬픔', 'elevate'라면 슬픔에서 더 긍정적인 감정으로 feature를 조정해야 합니다.
-                
+        
         사용될 Audio Feature:
         - danceability (0.0~1.0, 주로 0.2~0.9)
         - energy       (0.0~1.0, 주로 0.1~1.0)
@@ -23,13 +23,13 @@ public class EmotionPromptBuilder {
         - loudness     (-60~0 dB, 주로 -30~-5 dB)
         - tempo        (0~250, 주로 60~180)
         실제 곡이 존재할 수 있는 범위로 산출하세요.
-                
+        
         감정 타입(emotionType)은 아래 중 하나만 선택해서 반드시 포함:
         [DEPRESSED, SLEEPY, TENSE, SAD, NEUTRAL, FEAR, CALM, JOY, EXCITED]
         
         감정 설명: "%s"
         모드: "%s"
-                
+        
         JSON 출력 예시 (슬픔에서 elevate 모드일 때):
         {
             "emotionType": "JOY",
@@ -41,7 +41,7 @@ public class EmotionPromptBuilder {
             "valence": { "min": 0.4, "max": 0.8 },
             "loudness": { "min": -20, "max": -6 },
             "tempo": { "min": 100, "max": 150 }
-        }                                                        
+        }
         """.formatted(userText, mode.name());
     }
 }
