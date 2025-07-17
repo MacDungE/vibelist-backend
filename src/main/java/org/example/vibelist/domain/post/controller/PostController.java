@@ -47,7 +47,7 @@ public class PostController {
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
 
 
-        return postService.createPost(userDetail.getId(),request);
+        return postService.createPost(userIdOrTestId,request);
 
 
     }
