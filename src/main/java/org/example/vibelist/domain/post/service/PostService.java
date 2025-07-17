@@ -46,7 +46,7 @@ public class PostService {
             responseDto = playlistService.createPlaylist(userId,tracks);
         }
         catch (Exception e) {
-            log.info("Spotify api 호출 중 에러가 발생했습니다.");
+            log.info("Spotify api 호출 중 에러가 발생했습니다."+e.getMessage());
         }
         String spotifyUrl= responseDto.getSpotifyId();
 

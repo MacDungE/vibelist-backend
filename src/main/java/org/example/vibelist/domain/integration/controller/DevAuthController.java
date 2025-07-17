@@ -20,21 +20,21 @@ import java.util.Map;
 public class DevAuthController {
     private final SpotifyAuthService spotifyAuthService;
     private final DevAuthTokenService devAuthTokenService;
-    @GetMapping("/login")
-    public void redirectToSpotify(HttpServletResponse response) throws IOException {
-        response.sendRedirect(spotifyAuthService.getAuthorizationUrl());
-    }
-
-    @GetMapping("/callback")
-    public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
-        Map<String,String> tokenMap = spotifyAuthService.exchangeCodeForTokens(code);
-        String name ="sung_1";
-        String accessToken = tokenMap.get("access_token");
-        String refreshToken = tokenMap.get("refresh_token");
-        LocalDateTime expiresIn = LocalDateTime.parse(tokenMap.get("expires_in"));
-        devAuthTokenService.insertDev(name,accessToken,refreshToken,expiresIn);
-        return ResponseEntity.ok("Access token & Refresh token 발급 완료!" +
-                "\n access_token : " + accessToken +
-                "\n refresh_token :"+ refreshToken);
-    }
+//    @GetMapping("/login")
+//    public void redirectToSpotify(HttpServletResponse response) throws IOException {
+//        //
+//    }
+//
+//    @GetMapping("/callback")
+//    public ResponseEntity<String> handleCallback(@RequestParam("code") String code) {
+//        Map<String,String> tokenMap = spotifyAuthService.exchangeCodeForTokens(code);
+//        String name ="sung_1";
+//        String accessToken = tokenMap.get("access_token");
+//        String refreshToken = tokenMap.get("refresh_token");
+//        LocalDateTime expiresIn = LocalDateTime.parse(tokenMap.get("expires_in"));
+//        devAuthTokenService.insertDev(name,accessToken,refreshToken,expiresIn);
+//        return ResponseEntity.ok("Access token & Refresh token 발급 완료!" +
+//                "\n access_token : " + accessToken +
+//                "\n refresh_token :"+ refreshToken);
+//    }
 }

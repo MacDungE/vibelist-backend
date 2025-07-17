@@ -46,9 +46,9 @@ public class PlaylistService {
         //이용자의 accesstoken 가져오기
         String accessToken = resolveValidAccessToken(userid);
         //여기서 로직 정리
-        String userId = spotifyAuthService.getSpotifyUserId(accessToken);
+        String spotifyUserId = spotifyAuthService.getSpotifyUserId(accessToken);
 
-        String url = "https://api.spotify.com/v1/users/" + userId + "/playlists";
+        String url = "https://api.spotify.com/v1/users/" + spotifyUserId + "/playlists";
 
         RestTemplate restTemplate = new RestTemplate();
         //header 설정
