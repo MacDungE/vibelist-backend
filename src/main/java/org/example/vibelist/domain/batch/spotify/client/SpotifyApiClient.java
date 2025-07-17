@@ -24,9 +24,9 @@ public class SpotifyApiClient {
 
 
     private final RestTemplate restTemplate = new RestTemplate();
-    @Value("${spotify.clientId}")
+    @Value("${spring.security.oauth2.client.registration.spotify.client-id}")
     private  String clientId;
-    @Value("${spotify.clientSecret}")
+    @Value("${spring.security.oauth2.client.registration.spotify.client-secret}")
     private  String clientSecret;
 
     public SpotifyTrackMetaDto getTrackMeta(String spotifyId) {

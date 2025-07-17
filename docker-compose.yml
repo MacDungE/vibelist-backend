@@ -1,0 +1,53 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - node.name=es_root
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+        - ./volumes/esdata:/usr/share/elasticsearch/data
+    networks:
+      - prod_server
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_SSL_ENABLED=false
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./volumes/kibana-data:/usr/share/kibana/data
+    depends_on:
+      - elasticsearch
+    networks:
+      - prod_server
+  postgres:
+    image: postgres:16
+    container_name: postgressql
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: vibelist
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../postgres-data:/var/lib/postgresql/data
+    networks:
+      - prod_server
+networks:
+  prod_server:
+    driver: bridge
+
+
+

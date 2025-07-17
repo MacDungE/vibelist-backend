@@ -134,7 +134,9 @@ public class IntegrationTokenInfoService {
             IntegrationTokenInfo tokenInfo = tokenOpt.get();
             tokenInfo.updateAccessToken(accessToken, expiresIn);
             IntegrationTokenInfo savedToken = tokenInfoRepository.save(tokenInfo);
+            tokenInfoRepository.flush(); // 강제 DB 반영
             log.info("[INTEGRATION_TOKEN] Access Token 업데이트 완료 - tokenId: {}", savedToken.getId());
+            log.info("[INTEGRATION_TOKEN] 만료된 Acess Token : {}\n 갱신된 Acess Token :" ,tokenInfo.getAccessToken(),savedToken.getAccessToken());
             return Optional.of(savedToken);
         } else {
             log.warn("[INTEGRATION_TOKEN] 토큰 정보를 찾을 수 없음 - userId: {}, provider: {}", userId, provider);
