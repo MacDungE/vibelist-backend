@@ -25,7 +25,7 @@ public class ESQueryBuilder {
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
                             .field("trackMetrics.popularity")
-                            .gte(JsonData.of(30))
+//                            .gte(JsonData.of(10))
                     )
             );
             return b;
@@ -48,7 +48,7 @@ public class ESQueryBuilder {
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
                             .field("trackMetrics.popularity")
-                            .gte(JsonData.of(30))
+//                            .gte(JsonData.of(10))
                     )
             );
             return b;

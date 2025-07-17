@@ -3,14 +3,21 @@ package org.example.vibelist.domain.playlist.emotion.llm;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.vibelist.domain.playlist.emotion.profile.AudioFeatureRange;
+import org.example.vibelist.global.exception.CustomException;
+import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 @Component
 public class EmotionLLMClient {
@@ -41,14 +48,29 @@ public class EmotionLLMClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
                 .retrieve()
+                // 1. HTTP 에러/외부 API 장애 감지
+                .onStatus(HttpStatusCode::isError, clientResponse ->
+                        clientResponse.bodyToMono(String.class)
+                                .flatMap(errorBody -> Mono.error(
+                                        new CustomException(ErrorCode.LLM_API_ERROR)
+                                ))
+
+                )
                 .bodyToMono(JsonNode.class)
+                // 2. 타임아웃 / 통신장애 처리
+                .timeout(Duration.ofSeconds(5))
+                .onErrorMap(TimeoutException.class, e ->
+                        new CustomException(ErrorCode.LLM_TIMEOUT))
+                .onErrorMap(WebClientRequestException.class, e ->
+                        new CustomException(ErrorCode.LLM_API_ERROR))
+                // 3. JSON 파싱
                 .map(json -> json.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText())
                 .map(this::extractJsonFromText)
                 .map(jsonStr -> {
                     try {
                         return objectMapper.readValue(jsonStr, AudioFeatureRange.class);
                     } catch (Exception e) {
-                        throw new RuntimeException("JSON 파싱 실패: " + jsonStr, e);
+                        throw new CustomException(ErrorCode.LLM_PARSE_ERROR);
                     }
                 });
     }
@@ -59,6 +81,6 @@ public class EmotionLLMClient {
         if (start != -1 && end != -1 && end > start) {
             return text.substring(start, end + 1);
         }
-        throw new IllegalArgumentException("JSON 포맷이 아님: " + text);
+        throw new CustomException(ErrorCode.LLM_INVALID_FORMAT);
     }
 }

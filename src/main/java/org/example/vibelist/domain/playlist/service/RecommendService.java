@@ -26,6 +26,9 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 
 import java.io.IOException;
+import org.example.vibelist.global.exception.CustomException;
+import org.example.vibelist.global.exception.ErrorCode;
+
 
 @Service
 @RequiredArgsConstructor
@@ -46,8 +49,7 @@ public class RecommendService {
         } else if (request.getUserValence() != null && request.getUserEnergy() != null) {
             return recommendByCoordinate(request.getUserValence(), request.getUserEnergy(), request.getMode());
         } else {
-            throw new IllegalArgumentException("valence/energy 또는 감정 텍스트 중 하나는 반드시 입력해야 합니다.");
-        }
+            throw new CustomException(ErrorCode.RECOMMEND_INVALID_INPUT);        }
     }
 
     // valence, energy -> 감정 매핑
@@ -109,7 +111,7 @@ public class RecommendService {
 
         } catch (IOException e) {
             log.error("❌ Elasticsearch 검색 실패", e);
-            throw new RuntimeException("Failed to search Elasticsearch", e);
+            throw new CustomException(ErrorCode.ES_SEARCH_FAILED);
         }
     }
 
