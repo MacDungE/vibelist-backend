@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.vibelist.domain.integration.entity.DevAuthToken;
+import org.example.vibelist.domain.integration.entity.DevIntegrationTokenInfo;
+import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -12,13 +13,13 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +33,10 @@ public class SpotifyAuthService {
     @Value("${spring.security.oauth2.client.registration.spotify.client-secret}")
     private String clientSecret;
 
-    private String name = "sung_1"; //여러분이 사용하실 admin user name을 입력해주시면 됩니다.
-    //private final DevAuthTokenService devAuthTokenService;
     private final RestTemplate restTemplate= new RestTemplate();
+
+    private final IntegrationTokenInfoService integrationTokenInfoService;
+    private final DevIntegrationTokenInfoService devIntegrationTokenInfoService;
 
     public  Map<String,String> refreshAccessToken(String refreshToken) {
         if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
@@ -72,7 +74,9 @@ public class SpotifyAuthService {
             throw new RuntimeException("Refresh 실패", e);
         }
     }
-
+/*
+*
+ */
     public  String getSpotifyUserId(String accessToken) {
         String url = "https://api.spotify.com/v1/me";
 
@@ -120,6 +124,53 @@ public class SpotifyAuthService {
                 return false;
             }
             throw e; // 다른 에러는 위임
+        }
+    }
+
+    /*
+       userId를 통해 accesstoken을 반환합니다.
+     */
+    public String resolveValidAccessToken(Long userid) {
+        Optional<IntegrationTokenInfo> optionalInfo = integrationTokenInfoService.getTokenInfo(userid, "SPOTIFY");
+
+        if (optionalInfo.isPresent()) {
+            IntegrationTokenInfo info = optionalInfo.get();
+
+            if (info.isExpired()) {
+                log.info("사용자의 Access Token이 만료됨. Refresh 진행..");
+                Map<String, String> tokenMap = refreshAccessToken(info.getRefreshToken());
+
+                if (!info.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                int expiresIn = Integer.parseInt(tokenMap.get("expires_in"));
+
+                integrationTokenInfoService.updateAccessToken(userid, "SPOTIFY", newAccessToken, expiresIn);
+                return newAccessToken;
+            }
+
+            return info.getAccessToken();
+        } else {
+            DevIntegrationTokenInfo dev = devIntegrationTokenInfoService.getDevAuth("sung_1");
+            if (dev.getTokenExpiresAt() == null || LocalDateTime.now().isAfter(dev.getTokenExpiresAt().minusSeconds(60))) {
+                log.info("개발자의 Access Token 만료됨. Refresh 진행..");
+
+                Map<String, String> tokenMap = refreshAccessToken(dev.getRefreshToken());
+
+                if (!dev.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
+                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                }
+
+                String newAccessToken = tokenMap.get("access_token");
+                LocalDateTime newExpires = LocalDateTime.now().plusSeconds(Integer.parseInt(tokenMap.get("expires_in")));
+
+                devIntegrationTokenInfoService.updateDev("sung_1", newAccessToken, dev.getRefreshToken(), newExpires);
+                return newAccessToken;
+            }
+
+            return dev.getAccessToken();
         }
     }
 }
