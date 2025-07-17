@@ -5,14 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 import org.example.vibelist.global.jpa.entity.BaseTime;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 
 @Entity
 @Getter
 @Setter
-public class DevAuthToken extends BaseTime {
+public class DevIntegrationTokenInfo extends BaseTime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -24,8 +24,10 @@ public class ESQueryBuilder {
             addRangeQuery(b, "valence", valence);
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
-                            .field("trackMetrics.popularity")
-                            .gte(JsonData.of(10))
+                            .untyped(u -> u
+                                    .field("trackMetrics.popularity")
+                                    .gte(JsonData.of(10)))
+
                     )
             );
             return b;
@@ -47,8 +49,10 @@ public class ESQueryBuilder {
             addRangeQuery(b, "tempo", range.getTempo());
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
-                            .field("trackMetrics.popularity")
-                            .gte(JsonData.of(10))
+                            .untyped(u -> u
+                                    .field("trackMetrics.popularity")
+                                            .gte(JsonData.of(10)))
+
                     )
             );
             return b;
@@ -73,15 +77,16 @@ public class ESQueryBuilder {
         );
     }
 
-    private static void addRangeQuery(BoolQuery.Builder b, String field, DoubleRange range) {
+    private static void addRangeQuery(BoolQuery.Builder bool, String field, DoubleRange range) {
         if (range == null) return;
-        b.must(queryBuilder -> queryBuilder
-                .range(rangeQueryBuilder -> rangeQueryBuilder
-                        .field(field)
-                        .gte(JsonData.of(range.getMin()))
-                        .lte(JsonData.of(range.getMax()))
+
+        bool.must(q -> q.range(r -> r
+                .untyped(u -> u
+                        .field(field)                         // ← 필드명
+                        .gte(JsonData.of(range.getMin()))     // 최소값
+                        .lte(JsonData.of(range.getMax()))     // 최대값
                 )
-        );
+        ));
     }
 
 }

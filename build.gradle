@@ -51,7 +51,6 @@ dependencies {
 
     //elasticsearch
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-
     // OpenTelemetry 의존성 추가
     implementation 'io.opentelemetry:opentelemetry-api:1.36.0'
     implementation 'io.opentelemetry:opentelemetry-sdk:1.36.0'
@@ -59,13 +58,12 @@ dependencies {
 
     // Swagger/OpenAPI 의존성
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
-    //Elasticsearch와 Java 애플리케이션 간 통신을 위한 공식 클라이언트
-    implementation 'co.elastic.clients:elasticsearch-java:8.12.2'
+////    //Elasticsearch와 Java 애플리케이션 간 통신을 위한 공식 클라이언트
+//    implementation 'co.elastic.clients:elasticsearch-java'
 
     //JSON ↔ Java 객체 간 직렬화/역직렬화를 수행하는 라이브러리
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
 
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 
 }
