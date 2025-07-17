@@ -2,11 +2,10 @@ package org.example.vibelist.domain.playlist.emotion.llm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.vibelist.domain.playlist.emotion.profile.AudioFeatureRange;
+import org.example.vibelist.domain.playlist.emotion.profile.EmotionAnalysis;
 import org.example.vibelist.global.exception.CustomException;
 import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -31,7 +30,7 @@ public class EmotionLLMClient {
     @Value("${llm.gemini.url}")
     private String apiUrl;
 
-    public Mono<AudioFeatureRange> requestEmotionAnalysis (String prompt){
+    public Mono<EmotionAnalysis> requestEmotionAnalysis (String prompt){
         Map<String, Object> body = Map.of(
                 "contents", List.of(
                         Map.of("parts", List.of(Map.of("text", prompt)))
@@ -68,7 +67,7 @@ public class EmotionLLMClient {
                 .map(this::extractJsonFromText)
                 .map(jsonStr -> {
                     try {
-                        return objectMapper.readValue(jsonStr, AudioFeatureRange.class);
+                        return objectMapper.readValue(jsonStr, EmotionAnalysis.class);
                     } catch (Exception e) {
                         throw new CustomException(ErrorCode.LLM_PARSE_ERROR);
                     }

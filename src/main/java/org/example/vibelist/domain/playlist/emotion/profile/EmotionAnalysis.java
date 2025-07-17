@@ -5,7 +5,9 @@ import lombok.Data;
 import org.example.vibelist.domain.playlist.util.DoubleRange;
 
 @Data
-public class AudioFeatureRange {
+public class EmotionAnalysis {
+    private String emotionType;
+
     private DoubleRange danceability;
     private DoubleRange energy;
     private DoubleRange speechiness;

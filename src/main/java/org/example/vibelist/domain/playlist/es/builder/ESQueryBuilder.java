@@ -2,7 +2,7 @@ package org.example.vibelist.domain.playlist.es.builder;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
-import org.example.vibelist.domain.playlist.emotion.profile.AudioFeatureRange;
+import org.example.vibelist.domain.playlist.emotion.profile.EmotionAnalysis;
 import org.example.vibelist.domain.playlist.util.DoubleRange;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 
@@ -25,7 +25,7 @@ public class ESQueryBuilder {
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
                             .field("trackMetrics.popularity")
-//                            .gte(JsonData.of(10))
+                            .gte(JsonData.of(10))
                     )
             );
             return b;
@@ -35,7 +35,7 @@ public class ESQueryBuilder {
     }
 
     // 새로운 AudioFeatureRange(여러 feature) 지원
-    public static Query build(AudioFeatureRange range) {
+    public static Query build(EmotionAnalysis range) {
         Query innerQuery = BoolQuery.of(b -> {
             addRangeQuery(b, "danceability", range.getDanceability());
             addRangeQuery(b, "energy", range.getEnergy());
@@ -48,7 +48,7 @@ public class ESQueryBuilder {
             b.must(queryBuilder -> queryBuilder
                     .range(rq -> rq
                             .field("trackMetrics.popularity")
-//                            .gte(JsonData.of(10))
+                            .gte(JsonData.of(10))
                     )
             );
             return b;
