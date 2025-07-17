@@ -63,6 +63,7 @@ jobs:
             SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}
             ES_HOST=${{ secrets.ES_HOST }}
             EMOTION_PROFILE_PATH=${{ secrets.EMOTION_PROFILE_PATH }}
+            PROFILE=${{ secrets.PROFILE }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
