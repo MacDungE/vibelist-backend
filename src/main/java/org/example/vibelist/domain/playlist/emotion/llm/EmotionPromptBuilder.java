@@ -5,26 +5,32 @@ import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
 public class EmotionPromptBuilder {
     public static String build(String userText, EmotionModeType mode) {
         return """
-        아래 텍스트와 모드를 바탕으로 검색에 사용할 Audio Feature의 범위와 감정 분류(emotionType)를 모두 JSON 형식으로만 출력하세요.
-        사용될 Audio Feature: 
+        아래 텍스트는 사용자의 감정 설명이며, 모드는 감정 전이(유지/변화)의 방향성을 나타냅니다.
+        반드시 두 입력값을 모두 고려해 검색에 사용할 Audio Feature의 범위와, 최종 감정 분류(emotionType)를 모두 JSON 형식으로만 출력하세요.
+        
+        - 감정 설명: 사용자의 현재 감정 상태를 의미하는 자유로운 텍스트
+        - 모드: maintain, elevate, calm-down, reverse 중 하나, 감정 유지/상승/진정/역전
+                
+        ❗️모드에 따라 emotionType과 각 feature 범위를 변화시키세요. 예를 들어 '슬픔', 'elevate'라면 슬픔에서 더 긍정적인 감정으로 feature를 조정해야 합니다.
+                
+        사용될 Audio Feature:
         - danceability (0.0~1.0, 주로 0.2~0.9)
         - energy       (0.0~1.0, 주로 0.1~1.0)
         - speechiness  (0.1~1.0, 주로 0.2 이상)
         - acousticness (0.0~1.0, 양극 분포)
         - liveness     (0.0~1.0, 주로 0.1~0.4)
-        - valence      (0.0~1.0, 고르게 분포, 주로 0.1~0.8)
+        - valence      (0.0~1.0, 주로 0.1~0.8)
         - loudness     (-60~0 dB, 주로 -30~-5 dB)
         - tempo        (0~250, 주로 60~180)
-        각 범위는 해당 분포를 고려해 실제 곡이 존재하는 값으로 지정하세요.
-        
-        감정 타입(emotionType)은 아래 중 하나로 분류해 함께 JSON에 포함시키세요:
-        [DEPRESSED, SLEEPY, TENSE, SAD, NEUTRAL, FEAR, CALM, JOY, EXCITED]
+        실제 곡이 존재할 수 있는 범위로 산출하세요.
                 
-
+        감정 타입(emotionType)은 아래 중 하나만 선택해서 반드시 포함:
+        [DEPRESSED, SLEEPY, TENSE, SAD, NEUTRAL, FEAR, CALM, JOY, EXCITED]
+        
         감정 설명: "%s"
         모드: "%s"
-
-        JSON 출력 예시:
+                
+        JSON 출력 예시 (슬픔에서 elevate 모드일 때):
         {
             "emotionType": "JOY",
             "danceability": { "min": 0.3, "max": 0.8 },
@@ -32,10 +38,10 @@ public class EmotionPromptBuilder {
             "speechiness": { "min": 0.0, "max": 0.25 },
             "acousticness": { "min": 0.0, "max": 0.2 },
             "liveness": { "min": 0.1, "max": 0.3 },
-            "valence": { "min": 0.2, "max": 0.7 },
-            "loudness": { "min": -25, "max": -6 },
-            "tempo": { "min": 80, "max": 140 },
-        }                                       
+            "valence": { "min": 0.4, "max": 0.8 },
+            "loudness": { "min": -20, "max": -6 },
+            "tempo": { "min": 100, "max": 150 }
+        }                                                        
         """.formatted(userText, mode.name());
     }
 }
