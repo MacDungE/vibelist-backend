@@ -7,17 +7,22 @@
 ```
 src/main/java/org/example/vibelist/global/integration/
 ├── controller/
-│   └── IntegrationController.java      # RESTful API 컨트롤러
+│   └── IntegrationController.java      # RESTful API 컨트롤러(일반 사용자들을 위한)
+│    └── DevIntegrationController.java   # RESTful API 컨트롤러(관리자들을 위한)
 ├── dto/
 │   ├── IntegrationTokenResponse.java   # 토큰 정보 응답 DTO
 │   ├── IntegrationStatusResponse.java  # 연동 상태 응답 DTO
 │   └── RefreshTokenRequest.java        # 토큰 갱신 요청 DTO
 ├── entity/
 │   └── IntegrationTokenInfo.java       # 토큰 정보 엔티티
+│   └── DevIntegrationTokenInfo.java    # 토큰 정보 엔티티
 ├── repository/
 │   └── IntegrationTokenInfoRepository.java # 데이터 접근 레이어
+│   └── DevIntegrationTokenInfoRepository.java # 데이터 접근 레이어
 ├── service/
 │   └── IntegrationTokenInfoService.java    # 비즈니스 로직 서비스
+│   └── DevIntegrationTokenInfoService.java # 비즈니스 로직 서비스
+│   └── SpotifyAuthService.java             # Spotify 연동 비즈니스 로직 서비스
 └── README.md                           # 이 문서
 ```
 

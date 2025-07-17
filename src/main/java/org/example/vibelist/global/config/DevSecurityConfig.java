@@ -67,7 +67,9 @@ public class DevSecurityConfig {
                 // OAuth2 관련 엔드포인트 허용
                 .requestMatchers("/login/oauth2/**", "/oauth2/**", "/v1/oauth2/**").permitAll()
                 // 헬스체크 및 모니터링 엔드포인트 허용
-                        .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
+                .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
+                //로그 수집 엔드포인트 허용
+                .requestMatchers("/auth-logs/_doc/**").permitAll()
                         // 웹소켓 엔드포인트 허용
                         .requestMatchers("/ws/**", "/websocket/**").permitAll()
                         // API 문서 허용
@@ -79,7 +81,7 @@ public class DevSecurityConfig {
                         .requestMatchers("/v3/api-docs").permitAll()
                         .requestMatchers("/v1/dev_auth/**").permitAll()
                         // 사용자 관련 엔드포인트는 인증 필요
-                                .requestMatchers("v1/playlist/**").permitAll()
+                        .requestMatchers("v1/playlist/**").permitAll()
                         .requestMatchers("/v1/user/**").authenticated()
                         .requestMatchers("/v1/recommend").permitAll()
 

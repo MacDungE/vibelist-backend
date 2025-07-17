@@ -169,7 +169,6 @@ public class SpotifyAuthService {
                 devIntegrationTokenInfoService.updateDev("sung_1", newAccessToken, dev.getRefreshToken(), newExpires);
                 return newAccessToken;
             }
-
             return dev.getAccessToken();
         }
     }

@@ -38,3 +38,9 @@ out/
 
 # Environment variables
 .env
+
+#Docker-compose
+docker-compose.yml
+
+#Volume
+volumes/
