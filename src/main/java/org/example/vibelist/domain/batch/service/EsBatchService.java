@@ -9,6 +9,8 @@ import org.example.vibelist.domain.elasticsearch.dto.TrackMetrics;
 import org.example.vibelist.domain.elasticsearch.repository.EsRepository;
 import org.example.vibelist.domain.track.entity.Track;
 import org.example.vibelist.domain.track.repository.TrackRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -28,39 +30,51 @@ public class EsBatchService implements BatchService{
 
     @Override
     public void executeBatch() {
+        // 1. ES에 저장된 가장 큰 trackId 가져오기
+        PageRequest firstPage = PageRequest.of(0, 1, Sort.by(Sort.Order.desc("trackMetrics.trackId")));
+        EsDoc esDoc = esRepository.findAll(firstPage)
+                .stream()
+                .findFirst()
+                .orElse(null);
 
-        // 1. ES에 존재하는 모든 id를 가져오기
-        Iterable<EsDoc> existingDocs = esRepository.findAll();
-        Set<Long> existingEsIds = new HashSet<>();
-        for (EsDoc doc : existingDocs) {
-            existingEsIds.add(doc.getTrackMetrics().getTrackId()); // es에 TrackMetrics.trackId 를 추출
-        }
+        long lastTrackId = esDoc != null && esDoc.getTrackMetrics() != null
+                ? esDoc.getTrackMetrics().getTrackId()
+                : 0L;
 
-        // 2. RDB에서 AudioFeature + Track이 연결된 전체 트랙을 가져오기 (fetch join)
-        List<Track> tracks = trackRepository.findAllWithAudioFeature();
+        log.info("📌 Elasticsearch 마지막 trackId: {}", lastTrackId);
 
-        List<EsDoc> missingDocs = new ArrayList<>();
+        final int CHUNK_SIZE = 1000;
+        boolean hasMore = true;
 
-        // 3. ES에 없는 것만 추출
-        for (Track track : tracks) {
-            String afId = String.valueOf(track.getId());
-            if (existingEsIds.contains(afId)) {
-                continue; // 이미 인덱싱됨
+        while (hasMore) {
+            PageRequest pageRequest = PageRequest.of(0, CHUNK_SIZE, Sort.by("id").ascending());
+            List<Track> tracks = trackRepository.findByTrackIdAfter(lastTrackId, pageRequest);
+
+            if (tracks.isEmpty()) {
+                hasMore = false;
+                break;
             }
 
-            AudioFeature af = track.getAudioFeature();
-            if (af == null) {
-                log.warn("🔍 AudioFeature 없음 - trackId: {}", track.getId());
-                continue;
+            List<EsDoc> docsToSave = new ArrayList<>();
+
+            for (Track track : tracks) {
+                AudioFeature af = track.getAudioFeature();
+                if (af == null) {
+                    log.warn("🔍 AudioFeature 없음 - trackId: {}", track.getId());
+                    continue;
+                }
+
+                docsToSave.add(convertToEs(af, track));
             }
 
-            missingDocs.add(convertToEs(af, track));
+            esRepository.saveAll(docsToSave);
+            log.info("📦 인덱싱 완료 - {}건 저장", docsToSave.size());
+
+            // 다음 커서 포인트로 이동
+            lastTrackId = tracks.get(tracks.size() - 1).getId();
         }
 
-        // 4. 저장
-        esRepository.saveAll(missingDocs);
-        log.info("✅ 누락된 트랙 {}개 저장 완료", missingDocs.size());
-        System.exit(0);
+        log.info("🎉 Elasticsearch 인덱싱 전체 완료");
     }
 
 
