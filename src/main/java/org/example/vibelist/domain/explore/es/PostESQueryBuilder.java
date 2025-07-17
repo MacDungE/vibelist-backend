@@ -47,35 +47,27 @@ public class PostESQueryBuilder {
      * @param since 조회 시작 시간
      * @return Elasticsearch Query 객체
      */
+    /** deletedAt 이 null 이고, createdAt 또는 updatedAt 이 `since` 이후인 글만 검색  */
     public static Query buildActivePostsSince(LocalDateTime since) {
-        return Query.of(q -> q
-                .bool(b -> b
-                        .filter(f -> f
-                                .bool(fb -> fb
-                                        .mustNot(mn -> mn
-                                                .exists(e -> e.field("deletedAt"))
-                                        )
-                                )
-                        )
-                        .filter(f -> f
-                                .bool(b2 -> b2
-                                        .should(s -> s
-                                                .range(r -> r
-                                                        .field("createdAt")
-                                                        .gte(JsonData.of(since.format(ISO_DATE_TIME_FORMATTER)))
-                                                )
-                                        )
-                                        .should(s -> s
-                                                .range(r -> r
-                                                        .field("updatedAt")
-                                                        .gte(JsonData.of(since.format(ISO_DATE_TIME_FORMATTER)))
-                                                )
-                                        )
-                                        .minimumShouldMatch("1")
-                                )
-                        )
-                )
-        );
+        String iso = since.format(ISO_DATE_TIME_FORMATTER);   // ES 는 ISO-8601 문자열을 받음
+
+        return Query.of(q -> q.bool(b -> b
+                // ① deletedAt 존재 여부
+                .filter(f -> f.bool(fb -> fb.mustNot(mn -> mn.exists(e -> e.field("deletedAt")))))
+
+                // ② createdAt ≥ since  OR  updatedAt ≥ since  (최소 1개 조건 만족)
+                .filter(f -> f.bool(b2 -> b2
+                        .should(s -> s.range(r -> r.untyped(u -> u
+                                .field("createdAt")
+                                .gte(JsonData.of(iso))
+                        )))
+                        .should(s -> s.range(r -> r.untyped(u -> u
+                                .field("updatedAt")
+                                .gte(JsonData.of(iso))
+                        )))
+                        .minimumShouldMatch("1")      // should 절 둘 중 하나 이상
+                ))
+        ));
     }
 
     /**
@@ -85,59 +77,48 @@ public class PostESQueryBuilder {
      * @return Elasticsearch Query 객체
      */
     public static Query buildScoredAndSortedActivePosts(LocalDateTime since) {
-        // 기본 쿼리: 활성 게시글 (deletedAt == null) 이면서 최근 24시간 내 생성/업데이트된 게시글
-        Query baseQuery = Query.of(q -> q
-                .bool(b -> b
-                        .filter(f -> f // 활성 문서 필터링 (deletedAt이 없거나 null)
-                                .bool(fb -> fb
-                                        .mustNot(mn -> mn
-                                                .exists(e -> e.field("deletedAt"))
-                                        )
-                                )
-                        )
-                        .filter(f -> f // createdAt 또는 updatedAt이 since 이후인 문서 필터링
-                                .bool(b2 -> b2
-                                        .should(s -> s
-                                                .range(r -> r
-                                                        .field("createdAt")
-                                                        .gte(JsonData.of(since.format(ISO_DATE_TIME_FORMATTER)))
-                                                )
-                                        )
-                                        .should(s -> s
-                                                .range(r -> r
-                                                        .field("updatedAt")
-                                                        .gte(JsonData.of(since.format(ISO_DATE_TIME_FORMATTER)))
-                                                )
-                                        )
-                                        .minimumShouldMatch("1")
-                                )
-                        )
-                )
-        );
+        String iso = since.format(ISO_DATE_TIME_FORMATTER);
 
-        // function_score 쿼리를 사용하여 좋아요와 조회수 기반으로 스코어링
-        return Query.of(q -> q
-                .functionScore(fs -> fs
-                        .query(baseQuery) // 기본 쿼리를 적용
-                        .functions(f -> f
-                                .fieldValueFactor(fvf -> fvf // 좋아요 수 기반 스코어
-                                        .field("likeCnt")
-                                        .factor(2.0) // 좋아요 수에 가중치 2.0
-                                        .missing(0.0) // 필드가 없으면 0으로 간주
-                                )
-                                .weight(1.0) // 이 함수의 가중치 (전체 스코어에 미치는 영향)
-                        )
-                        .functions(f -> f
-                                .fieldValueFactor(fvf -> fvf // 조회수 기반 스코어
-                                        .field("viewCnt")
-                                        .factor(1.0) // 조회수에 가중치 1.0
-                                        .missing(0.0)
-                                )
-                                .weight(1.0)
-                        )
-                        .scoreMode(FunctionScoreMode.Sum) // 모든 함수 스코어의 합을 최종 스코어로 사용
-                )
-        );
+        /* ── 1. 활성 + 최근 글 필터 ───────────────────────────── */
+        Query baseQuery = Query.of(q -> q.bool(b -> b
+
+                // deletedAt 이 null 인 문서만
+                .filter(f -> f.bool(fb -> fb.mustNot(mn -> mn.exists(e -> e.field("deletedAt")))))
+
+                // createdAt ≥ since  OR  updatedAt ≥ since  (둘 중 하나 이상)
+                .filter(f -> f.bool(b2 -> b2
+                        .should(s -> s.range(r -> r.untyped(u -> u
+                                .field("createdAt")
+                                .gte(JsonData.of(iso))
+                        )))
+                        .should(s -> s.range(r -> r.untyped(u -> u
+                                .field("updatedAt")
+                                .gte(JsonData.of(iso))
+                        )))
+                        .minimumShouldMatch("1")
+                ))
+        ));
+
+        /* ── 2. 좋아요·조회수 기반 function_score ───────────────── */
+        return Query.of(q -> q.functionScore(fs -> fs
+                .query(baseQuery)
+
+                // 좋아요 수
+                .functions(f -> f.fieldValueFactor(fvf -> fvf
+                        .field("likeCnt")
+                        .factor(2.0)
+                        .missing(0.0)
+                ).weight(1.0))
+
+                // 조회수
+                .functions(f -> f.fieldValueFactor(fvf -> fvf
+                        .field("viewCnt")
+                        .factor(1.0)
+                        .missing(0.0)
+                ).weight(1.0))
+
+                .scoreMode(FunctionScoreMode.Sum)
+        ));
     }
 
     /**
