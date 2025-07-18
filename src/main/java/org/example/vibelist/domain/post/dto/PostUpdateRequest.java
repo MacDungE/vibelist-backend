@@ -16,6 +16,7 @@ public class PostUpdateRequest {
 
     private Long id;
     private String content;
+    private List<String> tags;
     private Boolean isPublic;
 
 

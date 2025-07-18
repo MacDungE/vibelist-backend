@@ -18,6 +18,10 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -109,14 +113,20 @@ public class ExploreService {
                 doc.getUserName(),
                 doc.getUserProfileName(),
                 doc.getContent(),
+                doc.getTags(),
                 doc.getIsPublic(),
                 doc.getLikeCnt(),
                 doc.getViewCnt(),
-                doc.getCreatedAt(),
-                doc.getUpdatedAt(),
+                fromUTC(doc.getCreatedAt()),
+                fromUTC(doc.getUpdatedAt()),
                 playlistDto
         );
     }
-
+    private static LocalDateTime fromUTC(OffsetDateTime odt) {
+        return odt
+                .withOffsetSameInstant(ZoneOffset.UTC)   // 다른 오프셋이더라도 UTC 기준으로 환산
+                .truncatedTo(ChronoUnit.MICROS)          // 6-µs 정밀도 통일
+                .toLocalDateTime();                      // Offset 제거
+    }
 
 }
