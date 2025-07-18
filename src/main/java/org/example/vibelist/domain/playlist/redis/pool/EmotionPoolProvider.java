@@ -18,7 +18,9 @@ import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -30,10 +32,10 @@ public class EmotionPoolProvider {
     /**
      * 감정+모드+pool 크기 기준 pool 생성 (ES 쿼리→결과→DTO 리스트)
      */
-    public List<TrackRsDto> createPool(EmotionType emotion, EmotionFeatureProfile profile, int poolSize) {
+    public Set<TrackRsDto> createPool(EmotionType emotion, EmotionFeatureProfile profile, int poolSize) {
         log.info("🔨 Pool 생성 요청: emotion={}, poolSize={}", emotion, poolSize);
         Query emotionQuery = ESQueryBuilder.build(profile);
-        List<TrackRsDto> pool = searchTracks(emotionQuery, poolSize);
+        Set<TrackRsDto> pool = new HashSet<>(searchTracks(emotionQuery, poolSize));
         log.info("✅ Pool 생성 완료: emotion={}, pool size={}", emotion, pool.size());
         return pool;
     }

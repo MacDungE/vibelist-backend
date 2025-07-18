@@ -15,7 +15,6 @@ import org.example.vibelist.domain.playlist.provider.TrackQueryProvider;
 import org.example.vibelist.domain.playlist.redis.pool.RecommendPoolService;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -100,21 +99,19 @@ public class RecommendService {
 
         String key = "recommendPool:" + transitioned;
 
-        List<TrackRsDto> pool = poolService.getPool(key);
+        List<TrackRsDto> randTracks = poolService.recommendFromPool(key, 20);
 
         // ES 직접 검색: 비교용
-        if (pool == null || pool.isEmpty()) {
+        if (randTracks == null || randTracks.isEmpty()) {
             log.info("❌ Pool MISS - ES 직접 검색만 수행 (pool 저장 안함): key={}", key);
             List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20); // 20곡 직접 ES에서 가져옴
             long end = System.currentTimeMillis();
             log.info("🎯 추천 결과 반환: 분기=ES직접검색, 곡수={}, 시간={}ms", result.size(), (end - start));
             return result;
         }
-        Collections.shuffle(pool);
 
-        List<TrackRsDto> result = pool.subList(0, Math.min(20, pool.size()));
         long end = System.currentTimeMillis();
-        log.info("🎯 추천 결과 반환: 분기=캐시, 곡수={}, 시간={}ms", result.size(), (end - start));
-        return result;
+        log.info("🎯 추천 결과 반환: 분기=캐시, 곡수={}, 시간={}ms", randTracks.size(), (end - start));
+        return randTracks;
         }
 }

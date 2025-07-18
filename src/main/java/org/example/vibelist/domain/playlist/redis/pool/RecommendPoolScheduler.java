@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -35,7 +36,7 @@ public class RecommendPoolScheduler {
         for (EmotionType emotion : EmotionType.values()) {
             String key = "recommendPool:" + emotion;
             EmotionFeatureProfile profile = profileManager.getProfile(emotion);
-            List<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 1000);
+            Set<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 1000);
             poolService.savePool(key, pool, 65, TimeUnit.MINUTES);
             log.info("🔁 Pool 새로 갱신: key={}, size={}", key, pool.size());
         }
