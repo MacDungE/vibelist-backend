@@ -291,42 +291,139 @@
         const integration = urlParams.get('integration');
         const provider = urlParams.get('provider');
         
+        // SessionStorage 키 상수
+        const ACCESS_TOKEN_KEY = 'vibelist_access_token';
+        
+        // 토큰 관리 유틸리티 함수들
+        function saveAccessToken(token) {
+            if (token) {
+                sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+                console.log('Access token이 sessionStorage에 저장되었습니다.');
+            }
+        }
+        
+        function getAccessToken() {
+            return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+        }
+        
+        function clearAccessToken() {
+            sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+            console.log('Access token이 sessionStorage에서 제거되었습니다.');
+        }
+        
+        function isTokenValid() {
+            const token = getAccessToken();
+            return token && token.trim() !== '';
+        }
+        
         // 사용자 정보 로드
         async function loadUserInfo() {
             try {
                 console.log('사용자 정보 로드 시작...');
-                const response = await fetch('/v1/auth/status');
+                
+                // 먼저 sessionStorage에서 기존 토큰 확인
+                let accessToken = getAccessToken();
+                
+                if (!accessToken) {
+                    console.log('SessionStorage에 토큰이 없음. 새로 획득 시도...');
+                    
+                    // OAuth2 로그인 후 access token 획득 시도
+                    try {
+                        console.log('OAuth2 access token 획득 시도...');
+                        const tokenResponse = await fetch('/v1/auth/oauth2/token', {
+                            method: 'POST',
+                            credentials: 'include' // 쿠키 포함
+                        });
+                        
+                        if (tokenResponse.ok) {
+                            const tokenData = await tokenResponse.json();
+                            accessToken = tokenData.accessToken;
+                            saveAccessToken(accessToken);
+                            console.log('OAuth2 access token 획득 성공');
+                        } else {
+                            console.log('OAuth2 token API 실패, refresh token으로 시도...');
+                            // OAuth2 토큰 획득 실패 시 refresh token으로 재시도
+                            const refreshResponse = await fetch('/v1/auth/refresh', {
+                                method: 'POST',
+                                credentials: 'include'
+                            });
+                            
+                            if (refreshResponse.ok) {
+                                const refreshData = await refreshResponse.json();
+                                accessToken = refreshData.accessToken;
+                                saveAccessToken(accessToken);
+                                console.log('Refresh token으로 access token 획득 성공');
+                            }
+                        }
+                    } catch (tokenError) {
+                        console.log('Token 획득 실패:', tokenError);
+                    }
+                } else {
+                    console.log('SessionStorage에서 기존 토큰을 찾았습니다.');
+                }
+                
+                // 사용자 정보 조회 (토큰 유효성 검사 겸용)
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+                
+                const response = await fetch('/v1/auth/status', {
+                    headers: headers,
+                    credentials: 'include'
+                });
                 console.log('API 응답 상태:', response.status);
+                
+                // 토큰이 만료된 경우 갱신 시도
+                if (!response.ok && response.status === 401 && accessToken) {
+                    console.log('토큰이 만료됨. 갱신 시도...');
+                    clearAccessToken();
+                    
+                    try {
+                        const refreshResponse = await fetch('/v1/auth/refresh', {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        if (refreshResponse.ok) {
+                            const refreshData = await refreshResponse.json();
+                            accessToken = refreshData.accessToken;
+                            saveAccessToken(accessToken);
+                            console.log('토큰 갱신 성공');
+                            
+                            // 갱신된 토큰으로 다시 사용자 정보 조회
+                            const retryResponse = await fetch('/v1/auth/status', {
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`
+                                },
+                                credentials: 'include'
+                            });
+                            
+                            if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                handleAuthenticatedUser(data);
+                                return;
+                            }
+                        }
+                    } catch (refreshError) {
+                        console.log('토큰 갱신 실패:', refreshError);
+                    }
+                    
+                    // 갱신 실패 시 로그인 페이지로 이동
+                    clearAccessToken();
+                    console.log('토큰 갱신 실패 - 로그인 페이지로 리다이렉트');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
                 const data = await response.json();
                 console.log('API 응답 데이터:', data);
                 
                 if (data.authenticated) {
-                    // 로딩 숨기기
-                    document.getElementById('loading').style.display = 'none';
-                    
-                    // 사용자 정보 표시
-                    document.getElementById('userDetails').style.display = 'block';
-                    document.getElementById('userDisplayName').textContent = data.name || '이름 없음';
-                    document.getElementById('userEmail').textContent = data.email || '이메일 없음';
-                    
-                    // 제공자 배지 생성
-                    const providerSpan = document.getElementById('userProvider');
-                    const badge = document.createElement('span');
-                    badge.className = `provider-badge ${data.provider}-badge`;
-                    badge.textContent = data.provider === 'google' ? 'Google' : 
-                                      data.provider === 'kakao' ? 'Kakao' : 
-                                      data.provider === 'jwt' ? '일반 로그인' : 'Unknown';
-                    providerSpan.appendChild(badge);
-                    
-                    // 헤더의 사용자명 업데이트
-                    document.getElementById('userName').textContent = data.name || '사용자';
-                    
-                    // 연동 섹션 표시 및 연동 상태 로드
-                    document.getElementById('integrationSection').style.display = 'block';
-                    loadIntegrationStatus();
-                    
+                    handleAuthenticatedUser(data);
                 } else {
-                    // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+                    // 인증되지 않은 경우 토큰 정리하고 로그인 페이지로 리다이렉트
+                    clearAccessToken();
                     console.log('인증되지 않은 사용자 - 로그인 페이지로 리다이렉트');
                     window.location.href = '/login.html';
                 }
@@ -335,6 +432,34 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('error').style.display = 'block';
             }
+        }
+        
+        // 인증된 사용자 정보 처리
+        function handleAuthenticatedUser(data) {
+            // 로딩 숨기기
+            document.getElementById('loading').style.display = 'none';
+            
+            // 사용자 정보 표시
+            document.getElementById('userDetails').style.display = 'block';
+            document.getElementById('userDisplayName').textContent = data.name || '이름 없음';
+            document.getElementById('userEmail').textContent = data.email || '이메일 없음';
+            
+            // 제공자 배지 생성
+            const providerSpan = document.getElementById('userProvider');
+            const badge = document.createElement('span');
+            badge.className = `provider-badge ${data.provider}-badge`;
+            badge.textContent = data.provider === 'google' ? 'Google' : 
+                              data.provider === 'kakao' ? 'Kakao' : 
+                              data.provider === 'spotify' ? 'Spotify' :
+                              data.provider === 'jwt' ? '일반 로그인' : 'Unknown';
+            providerSpan.appendChild(badge);
+            
+            // 헤더의 사용자명 업데이트
+            document.getElementById('userName').textContent = data.name || '사용자';
+            
+            // 연동 섹션 표시 및 연동 상태 로드
+            document.getElementById('integrationSection').style.display = 'block';
+            loadIntegrationStatus();
         }
         
         // 로그아웃
@@ -347,6 +472,9 @@
                     }
                 });
                 
+                // 성공 여부와 상관없이 토큰 정리
+                clearAccessToken();
+                
                 if (response.ok) {
                     // 로그아웃 성공 시 로그인 페이지로 리다이렉트
                     window.location.href = '/login.html';
@@ -356,7 +484,8 @@
                 }
             } catch (error) {
                 console.error('로그아웃 실패:', error);
-                // 에러가 발생해도 로그인 페이지로 리다이렉트
+                // 에러가 발생해도 토큰 정리하고 로그인 페이지로 리다이렉트
+                clearAccessToken();
                 window.location.href = '/login.html';
             }
         }
@@ -365,13 +494,25 @@
         async function loadIntegrationStatus() {
             try {
                 console.log('연동 상태 확인 중...');
-                const response = await fetch('/v1/integrations/status');
+                const accessToken = getAccessToken();
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+                const response = await fetch('/v1/integrations/status', {
+                    headers: headers,
+                    credentials: 'include'
+                });
                 console.log('연동 상태 API 응답:', response.status);
                 
                 if (response.ok) {
                     const data = await response.json();
                     console.log('연동 상태 데이터:', data);
                     updateSpotifyStatus(data);
+                } else if (response.status === 401) {
+                    // 토큰이 만료된 경우 토큰 갱신 시도
+                    console.log('연동 상태 조회 중 토큰 만료 감지. 토큰 갱신 시도...');
+                    await refreshTokenAndRetry();
                 } else {
                     console.error('연동 상태 로드 실패:', response.status);
                     updateSpotifyStatus(null);
@@ -379,6 +520,31 @@
             } catch (error) {
                 console.error('연동 상태 로드 에러:', error);
                 updateSpotifyStatus(null);
+            }
+        }
+        
+        // 토큰 갱신 후 재시도 헬퍼 함수
+        async function refreshTokenAndRetry() {
+            try {
+                const refreshResponse = await fetch('/v1/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (refreshResponse.ok) {
+                    const refreshData = await refreshResponse.json();
+                    saveAccessToken(refreshData.accessToken);
+                    console.log('토큰 갱신 성공. 연동 상태 재조회...');
+                    loadIntegrationStatus();
+                } else {
+                    console.log('토큰 갱신 실패. 로그인 페이지로 이동...');
+                    clearAccessToken();
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('토큰 갱신 중 오류:', error);
+                clearAccessToken();
+                window.location.href = '/login.html';
             }
         }
         
@@ -432,14 +598,25 @@
             
             try {
                 console.log('스포티파이 연동 해제 중...');
+                const accessToken = getAccessToken();
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
                 const response = await fetch('/v1/integrations/spotify', {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: headers,
+                    credentials: 'include'
                 });
                 
                 if (response.ok) {
                     console.log('스포티파이 연동 해제 성공');
                     alert('스포티파이 연동이 해제되었습니다.');
                     loadIntegrationStatus(); // 상태 다시 로드
+                } else if (response.status === 401) {
+                    // 토큰 만료 시 갱신 후 재시도
+                    console.log('연동 해제 중 토큰 만료 감지. 토큰 갱신 후 재시도...');
+                    await refreshTokenAndRetry();
                 } else {
                     console.error('스포티파이 연동 해제 실패:', response.status);
                     alert('연동 해제에 실패했습니다. 다시 시도해주세요.');
