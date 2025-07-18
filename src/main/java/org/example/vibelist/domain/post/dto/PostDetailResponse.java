@@ -3,6 +3,7 @@ package org.example.vibelist.domain.post.dto;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /** 게시글 + 플레이리스트 상세 응답 */
 public record PostDetailResponse(
@@ -11,6 +12,7 @@ public record PostDetailResponse(
         String                  userName,
         String                  userProfileName,
         String                  content,
+        List<String>            tags,
         Boolean                 isPublic,
         Long                    likeCnt,
         Long                    viewCnt,

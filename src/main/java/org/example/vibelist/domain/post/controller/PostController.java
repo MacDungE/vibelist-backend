@@ -44,7 +44,7 @@ public class PostController {
     public Long createPost(@RequestBody @Valid PostCreateRequest request,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
 
-        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
+        Long userIdOrTestId = userDetail == null ? 10L : userDetail.getId();
 
 
         return postService.createPost(userIdOrTestId,request);
