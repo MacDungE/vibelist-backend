@@ -40,6 +40,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("[OAuth2_LOG] OAuth2 로그인 성공 핸들러 시작");
         log.info("[OAuth2_LOG] Request URI: {}", request.getRequestURI());
         log.info("[OAuth2_LOG] Authentication: {}", authentication);
+        log.info("[OAuth2_LOG] Authentication Principal: {}", authentication.getPrincipal());
+        log.info("[OAuth2_LOG] Authentication Authorities: {}", authentication.getAuthorities());
 
         try {
             DefaultOAuth2User oAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
@@ -132,12 +134,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("[OAuth2_LOG] 소셜 로그인 시도한 이름 = {}", name);
         log.info("[OAuth2_LOG] AccessToken 존재: {}", accessToken != null);
         log.info("[OAuth2_LOG] RefreshToken 존재: {}", refreshToken != null);
+        log.info("[OAuth2_LOG] 전체 attributes 내용: {}", attributes);
 
         // 사용자 ID를 안전하게 꺼내기 (null 체크 및 타입 캐스팅)
         String id = null;
-        Object idObj = attributes.get("id");
+        Object idObj = attributes.get("userId"); // OAuth2UserProcessor에서 설정한 실제 사용자 ID 사용
         if (idObj != null) {
-            // 소셜 플랫폼의 ID는 Long 범위를 초과할 수 있으므로 String으로 처리
+            // 실제 사용자 ID는 Long 타입이므로 String으로 변환
             id = idObj.toString();
             log.info("[OAuth2_LOG] 사용자 ID: {}", id);
         } else {
@@ -159,6 +162,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 토큰이 없는 경우 처리
         if (accessToken == null || refreshToken == null) {
             log.error("[OAuth2_LOG] 토큰이 없습니다. accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+            log.error("[OAuth2_LOG] 토큰 생성 실패로 인한 로그인 실패");
             response.sendRedirect("/login.html?error=token_missing");
             return;
         }

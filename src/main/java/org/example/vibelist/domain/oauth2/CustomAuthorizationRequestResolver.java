@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * OAuth2 Authorization Request 커스터마이징
@@ -61,14 +62,15 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
             log.info("[OAUTH2_RESOLVER] Spotify 파라미터 추가 - show_dialog: true, access_type: offline");
         }
         
-        // Integration 요청 처리 (간소화)
+        // Integration 요청 처리 (세션 기반으로 변경)
         String integrationUserId = request.getParameter("integration_user_id");
         if (integrationUserId != null) {
-            // state에 integration 정보 직접 포함
-            String newState = authorizationRequest.getState() + ":integration:" + integrationUserId;
-            builder.state(newState);
+            HttpSession session = request.getSession();
+            session.setAttribute("oauth2_integration_user_id", integrationUserId);
+            session.setAttribute("oauth2_integration_timestamp", System.currentTimeMillis());
+            session.setMaxInactiveInterval(300); // 5분 만료
             
-            log.info("[OAUTH2_RESOLVER] Integration 요청 감지 - userId: {}, newState: {}", integrationUserId, newState);
+            log.info("[OAUTH2_RESOLVER] Integration 요청 감지 - userId: {} (세션에 저장됨)", integrationUserId);
         }
 
         return builder.build();

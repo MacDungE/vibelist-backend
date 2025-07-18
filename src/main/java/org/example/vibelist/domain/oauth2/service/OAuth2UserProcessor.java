@@ -1,6 +1,7 @@
 package org.example.vibelist.domain.oauth2.service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.user.entity.User;
@@ -44,49 +45,42 @@ public class OAuth2UserProcessor {
         
         log.info("[OAUTH2_PROCESSOR] OAuth2 사용자 처리 시작 - provider: {}", provider);
         
-        // additionalParameters에서 Integration 요청 정보 확인 (간소화)
+        // 세션에서 Integration 요청 정보 확인
         boolean tempIsIntegrationRequest = false;
         Long tempIntegrationUserId = null;
         
-        Map<String, Object> additionalParams = userRequest.getAdditionalParameters();
-        Object stateParam = additionalParams.get("state");
-        
-        if (stateParam != null) {
-            String state = stateParam.toString();
-            if (state.contains(":integration:")) {
-                try {
-                    String[] stateParts = state.split(":");
-                    if (stateParts.length >= 3 && "integration".equals(stateParts[1])) {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            HttpServletRequest request = attributes.getRequest();
+            HttpSession session = request.getSession(false);
+            
+            if (session != null) {
+                Object userIdObj = session.getAttribute("oauth2_integration_user_id");
+                Object timestampObj = session.getAttribute("oauth2_integration_timestamp");
+                
+                if (userIdObj != null && timestampObj != null) {
+                    long timestamp = (Long) timestampObj;
+                    long currentTime = System.currentTimeMillis();
+                    
+                    // 5분(300초) 만료 체크
+                    if (currentTime - timestamp < 300000) {
                         tempIsIntegrationRequest = true;
-                        tempIntegrationUserId = Long.parseLong(stateParts[2]);
+                        tempIntegrationUserId = Long.parseLong(userIdObj.toString());
                         
                         log.info("[OAUTH2_PROCESSOR] Integration 요청 확인 - targetUserId: {}, provider: {}", tempIntegrationUserId, provider);
-                    }
-                } catch (Exception e) {
-                    log.warn("[OAUTH2_PROCESSOR] state 파라미터 파싱 실패 - 일반 로그인으로 처리: {}", e.getMessage());
-                }
-            }
-        }
-        
-        // additionalParameters에서도 확인되지 않으면 현재 요청에서 직접 확인
-        if (!tempIsIntegrationRequest) {
-            try {
-                ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-                HttpServletRequest request = attributes.getRequest();
-                String requestState = request.getParameter("state");
-                
-                if (requestState != null && requestState.contains(":integration:")) {
-                    String[] stateParts = requestState.split(":");
-                    if (stateParts.length >= 3 && "integration".equals(stateParts[1])) {
-                        tempIsIntegrationRequest = true;
-                        tempIntegrationUserId = Long.parseLong(stateParts[2]);
                         
-                        log.info("[OAUTH2_PROCESSOR] 요청에서 Integration 확인 - targetUserId: {}, provider: {}", tempIntegrationUserId, provider);
+                        // 세션 정보 정리
+                        session.removeAttribute("oauth2_integration_user_id");
+                        session.removeAttribute("oauth2_integration_timestamp");
+                    } else {
+                        log.warn("[OAUTH2_PROCESSOR] Integration 세션이 만료됨 ({}초 경과)", (currentTime - timestamp) / 1000);
+                        session.removeAttribute("oauth2_integration_user_id");
+                        session.removeAttribute("oauth2_integration_timestamp");
                     }
                 }
-            } catch (Exception e) {
-                log.debug("[OAUTH2_PROCESSOR] 요청에서 state 확인 실패 - 일반 로그인으로 처리: {}", e.getMessage());
             }
+        } catch (Exception e) {
+            log.debug("[OAUTH2_PROCESSOR] 세션에서 Integration 정보 확인 실패 - 일반 로그인으로 처리: {}", e.getMessage());
         }
         
         final boolean isIntegrationRequest = tempIsIntegrationRequest;
@@ -145,10 +139,19 @@ public class OAuth2UserProcessor {
         }
         
         // JWT 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+        String accessToken = null;
+        String refreshToken = null;
         
-        log.info("[OAUTH2_PROCESSOR] JWT 토큰 생성 완료 - userId: {}", user.getId());
+        try {
+            accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
+            refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+            
+            log.info("[OAUTH2_PROCESSOR] JWT 토큰 생성 완료 - userId: {}, accessToken 존재: {}, refreshToken 존재: {}", 
+                    user.getId(), accessToken != null, refreshToken != null);
+        } catch (Exception e) {
+            log.error("[OAUTH2_PROCESSOR] JWT 토큰 생성 실패 - userId: {}, 오류: {}", user.getId(), e.getMessage(), e);
+            throw new RuntimeException("JWT 토큰 생성에 실패했습니다.", e);
+        }
         
         // Auth 정보 업데이트 (일반 로그인인 경우만)
         if (!isIntegrationRequest) {
