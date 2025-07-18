@@ -38,3 +38,5 @@ out/
 
 # Environment variables
 .env
+
+.kiro/specs
