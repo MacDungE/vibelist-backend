@@ -35,7 +35,7 @@ public class RecommendService {
     // 2. 텍스트 기반: llm이 반환한 audio feature -> es 검색(fallback: 감정별 pool에서 가져오기) -> 추천 결과 반환 (List<TrackRsDto>)
 
     private final RecommendPoolService poolService;
-    private final TrackQueryProvider poolProvider;
+    private final TrackQueryProvider queryProvider;
     private final EmotionProfileManager profileManager;
     private final EmotionTextManager textManager;
 
@@ -67,7 +67,7 @@ public class RecommendService {
         EmotionAnalysis analysis = textManager.getEmotionAnalysis(userText, mode);
         log.info("📊 LLM 기반 검색 범위: {}", analysis);
 
-        List<TrackRsDto> result = poolProvider.recommendByAnalysis(analysis, 20);
+        List<TrackRsDto> result = queryProvider.recommendByAnalysis(analysis, 20);
 
         // 검색 결과 너무 적으면 fallback
         if (result.size() < 10) {
@@ -88,6 +88,8 @@ public class RecommendService {
 
     // 매핑된 감정 -> 플레이리스트 추천
     public List<TrackRsDto> recommendByEmotionType(EmotionType emotion, EmotionModeType mode) {
+        long start = System.currentTimeMillis();
+
         EmotionType transitioned = profileManager.getTransition(emotion, mode);
         log.info("🔁 전이된 감정: {}", transitioned);
 
@@ -99,9 +101,20 @@ public class RecommendService {
         String key = "recommendPool:" + transitioned;
 
         List<TrackRsDto> pool = poolService.getPool(key);
+
+        // ES 직접 검색: 비교용
+        if (pool == null || pool.isEmpty()) {
+            log.info("❌ Pool MISS - ES 직접 검색만 수행 (pool 저장 안함): key={}", key);
+            List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20); // 20곡 직접 ES에서 가져옴
+            long end = System.currentTimeMillis();
+            log.info("🎯 추천 결과 반환: 분기=ES직접검색, 곡수={}, 시간={}ms", result.size(), (end - start));
+            return result;
+        }
         Collections.shuffle(pool);
 
-        return pool.subList(0, Math.min(20, pool.size()));
+        List<TrackRsDto> result = pool.subList(0, Math.min(20, pool.size()));
+        long end = System.currentTimeMillis();
+        log.info("🎯 추천 결과 반환: 분기=캐시, 곡수={}, 시간={}ms", result.size(), (end - start));
+        return result;
         }
-
 }

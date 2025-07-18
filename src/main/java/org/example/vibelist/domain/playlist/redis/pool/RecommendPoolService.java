@@ -33,6 +33,7 @@ public class RecommendPoolService {
             log.info("❌ Pool MISS: key={}", key);
         }
         return pool;
+//        return null; // es 직접 검색과 비교용
     }
 
     // pool 삭제

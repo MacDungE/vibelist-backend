@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionAnalysis;
+import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 import org.example.vibelist.domain.playlist.es.builder.ESQueryBuilder;
 import org.example.vibelist.domain.playlist.es.document.AudioFeatureEsDocument;
 import org.example.vibelist.global.exception.CustomException;
@@ -27,11 +28,19 @@ public class TrackQueryProvider {
 
     private final ElasticsearchClient client;
 
+    // 구체적 audio feature 기반 검색
     public List<TrackRsDto> recommendByAnalysis(EmotionAnalysis analysis, int size) {
         Query query = ESQueryBuilder.build(analysis);
         return searchTracks(query, size);
     }
 
+    // valence, energy 기반 검색
+    public List<TrackRsDto> recommendByProfile(EmotionFeatureProfile profile, int size) {
+        Query query = ESQueryBuilder.build(profile);
+        return searchTracks(query, size);
+    }
+
+    // es에 검색 실행 / 파싱
     private List<TrackRsDto> searchTracks(Query query, int size) {
         SearchRequest request = SearchRequest.of(s -> s
                 .index("audio_feature_index")

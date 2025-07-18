@@ -29,13 +29,13 @@ public class RecommendPoolScheduler {
         refreshAllEmotionPools();
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *") // 매 시 정각마다 캐싱
     public void refreshAllEmotionPools() {
         log.info("⏰ Pool 스케줄러 실행");
         for (EmotionType emotion : EmotionType.values()) {
             String key = "recommendPool:" + emotion;
             EmotionFeatureProfile profile = profileManager.getProfile(emotion);
-            List<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 200);
+            List<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 1000);
             poolService.savePool(key, pool, 65, TimeUnit.MINUTES);
             log.info("🔁 Pool 새로 갱신: key={}, size={}", key, pool.size());
         }
