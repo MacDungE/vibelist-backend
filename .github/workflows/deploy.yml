@@ -63,10 +63,12 @@ jobs:
             SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}
             ES_HOST=${{ secrets.ES_HOST }}
             EMOTION_PROFILE_PATH=${{ secrets.EMOTION_PROFILE_PATH }}
+            PROFILE=${{ secrets.PROFILE }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           service: ${{ secrets.ECS_SERVICE_NAME }}
           cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-          task-definition: ${{ steps.render-task-def.outputs.task-definition }}  # ✅ 여기!
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}

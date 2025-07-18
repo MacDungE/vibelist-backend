@@ -47,7 +47,16 @@ public enum ErrorCode {
     COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "해당 댓글에 대한 권한이 없습니다."),
 
     // 사용자(User) 에러
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "존재하지 않는 사용자입니다."),
+
+    // 🎵 추천/감정 기반 추천(Recommendation/EmotionLLM) 에러
+    LLM_API_ERROR(HttpStatus.BAD_GATEWAY, "RECOMMEND_001", "AI 추천 API 호출에 실패했습니다."),
+    LLM_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "RECOMMEND_002", "AI 응답 파싱에 실패했습니다."),
+    LLM_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "RECOMMEND_003", "AI 추천 API 응답 지연입니다."),
+    LLM_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "RECOMMEND_004", "AI 응답 포멧이 잘못되었습니다."),
+    RECOMMEND_INVALID_INPUT(HttpStatus.BAD_REQUEST, "RECOMMEND_005", "잘못된 추천 요청입니다."),
+
+    ES_SEARCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RECOMMEND_007", "Elasticsearch 검색에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
