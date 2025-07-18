@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.service.UserService;
@@ -27,6 +28,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final IntegrationTokenInfoService integrationTokenInfoService;
     private final UserService userService;
+    private final CookieUtil cookieUtil;
 
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
@@ -161,20 +163,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             return;
         }
 
-        // 토큰 전달방식 - HttpOnly 쿠키로 전달
-        Cookie accessTokenCookie = new Cookie(TokenConstants.ACCESS_TOKEN_COOKIE, accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(60 * 30); // 30분짜리 액세스 토큰
-        response.addCookie(accessTokenCookie);
-
-        Cookie refreshTokenCookie = new Cookie(TokenConstants.REFRESH_TOKEN_COOKIE, refreshToken);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge(60 * 60 * 24 * 7); // 7일짜리 리프레시 토큰
-        response.addCookie(refreshTokenCookie);
-
-        log.info("[OAuth2_LOG] 쿠키 설정 완료");
+        // 새로운 토큰 전달방식 - 리프레시 토큰만 HTTP-only 쿠키로 설정
+        // 액세스 토큰은 프론트엔드에서 별도 API를 통해 획득하도록 변경
+        cookieUtil.setRefreshTokenCookie(response, refreshToken);
+        
+        log.info("[OAuth2_LOG] 리프레시 토큰 쿠키 설정 완료 (액세스 토큰은 별도 API로 제공)");
 
         // 리다이렉트 URL 결정
         String redirectUrl;

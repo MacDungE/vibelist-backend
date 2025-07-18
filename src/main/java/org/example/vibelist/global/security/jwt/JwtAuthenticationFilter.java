@@ -61,23 +61,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {
-        // 쿠키에서 access token 검색
+        // Priority 1: Authorization header (새로운 표준 방식)
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            log.debug("Authorization 헤더에서 토큰 추출: {}...", token.substring(0, Math.min(token.length(), 10)));
+            return token;
+        }
+        
+        // Priority 2: 쿠키에서 access token 검색 (하위 호환성을 위한 fallback)
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (TokenConstants.ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
                     String token = cookie.getValue();
                     if (StringUtils.hasText(token)) {
+                        log.debug("쿠키에서 토큰 추출 (레거시 방식): {}...", token.substring(0, Math.min(token.length(), 10)));
+                        log.warn("쿠키 기반 인증이 사용되었습니다. Authorization 헤더 사용을 권장합니다.");
                         return token;
                     }
                 }
             }
-        }
-        
-        // 기존 Authorization 헤더 방식도 유지 (하위 호환성을 위해)
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
         }
         
         return null;

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.auth.dto.CompleteSocialSignupRequest;
+import org.example.vibelist.domain.auth.dto.LoginRequest;
 import org.example.vibelist.domain.auth.dto.StatusResponse;
 import org.example.vibelist.domain.auth.dto.TokenResponse;
 import org.example.vibelist.domain.auth.service.AuthService;
@@ -40,6 +41,56 @@ public class AuthController {
     private final UserService userService;
     private final CookieUtil cookieUtil;
 
+    @Operation(summary = "로그인", description = "사용자명과 비밀번호로 로그인하여 액세스 토큰을 발급받습니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로그인 성공"),
+        @ApiResponse(responseCode = "401", description = "사용자명 또는 비밀번호가 잘못됨")
+    })
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+        try {
+            // 로그인 처리 및 토큰 생성
+            var loginResponse = authService.loginWithRefreshToken(loginRequest.getUsername(), loginRequest.getPassword());
+            
+            // 리프레시 토큰을 HTTP-only 쿠키로 설정
+            cookieUtil.setRefreshTokenCookie(response, loginResponse.getRefreshToken());
+            
+            // 액세스 토큰은 응답 본문에 반환 (쿠키로 설정하지 않음)
+            return ResponseEntity.ok(loginResponse.getTokenResponse());
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+    }
+
+    @Operation(summary = "OAuth2 로그인 후 액세스 토큰 획득", description = "OAuth2 로그인 완료 후 리프레시 토큰을 사용해 액세스 토큰을 획득합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "액세스 토큰 획득 성공"),
+        @ApiResponse(responseCode = "401", description = "리프레시 토큰이 없거나 유효하지 않음")
+    })
+    @PostMapping("/oauth2/token")
+    public ResponseEntity<?> getOAuth2AccessToken(
+            @Parameter(description = "리프레시 토큰 (쿠키)")
+            @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
+        try {
+            if (refreshToken == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("message", "리프레시 토큰이 없습니다.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
+            TokenResponse tokenResponse = authService.refreshToken(refreshToken);
+            
+            // OAuth2 로그인 후 첫 액세스 토큰 획득
+            return ResponseEntity.ok(tokenResponse);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+    }
+
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
@@ -48,20 +99,22 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(
             @Parameter(description = "리프레시 토큰 (쿠키)")
-            @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken, 
-            HttpServletResponse response) {
+            @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
         try {
             if (refreshToken == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("리프레시 토큰이 없습니다.");
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("message", "리프레시 토큰이 없습니다.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
+            
             TokenResponse tokenResponse = authService.refreshToken(refreshToken);
             
-            // 새로운 access token을 쿠키에 설정
-            cookieUtil.setAccessTokenCookie(response, tokenResponse.getAccessToken());
-            
+            // 새로운 액세스 토큰을 응답 본문에 반환 (쿠키로 설정하지 않음)
             return ResponseEntity.ok(tokenResponse);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
@@ -73,7 +126,10 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         authService.logout(response);
-        return ResponseEntity.ok("로그아웃 성공");
+        Map<String, String> logoutResponse = new HashMap<>();
+        logoutResponse.put("message", "로그아웃 성공");
+        logoutResponse.put("status", "success");
+        return ResponseEntity.ok(logoutResponse);
     }
 
     @Operation(summary = "현재 사용자 소셜 계정 조회", description = "현재 인증된 사용자의 소셜 로그인 연동 정보를 조회합니다.")

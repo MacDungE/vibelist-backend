@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 public class CookieUtil {
     
     private static final int REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7일
-    private static final int ACCESS_TOKEN_MAX_AGE = 30 * 60; // 30분
     
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
@@ -35,18 +34,6 @@ public class CookieUtil {
     }
     
     /**
-     * Access Token을 쿠키에 설정
-     */
-    public void setAccessTokenCookie(HttpServletResponse response, String accessToken) {
-        Cookie accessTokenCookie = new Cookie(TokenConstants.ACCESS_TOKEN_COOKIE, accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(isProduction()); // 프로덕션에서만 HTTPS
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(ACCESS_TOKEN_MAX_AGE);
-        response.addCookie(accessTokenCookie);
-    }
-    
-    /**
      * Refresh Token 쿠키 삭제
      */
     public void removeRefreshTokenCookie(HttpServletResponse response) {
@@ -59,22 +46,10 @@ public class CookieUtil {
     }
     
     /**
-     * Access Token 쿠키 삭제
-     */
-    public void removeAccessTokenCookie(HttpServletResponse response) {
-        Cookie accessTokenCookie = new Cookie(TokenConstants.ACCESS_TOKEN_COOKIE, null);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(isProduction());
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge(0); // 즉시 삭제
-        response.addCookie(accessTokenCookie);
-    }
-    
-    /**
      * 모든 인증 쿠키 삭제
+     * 현재는 리프레시 토큰 쿠키만 삭제합니다. (액세스 토큰은 더 이상 쿠키로 관리하지 않음)
      */
     public void removeAllAuthCookies(HttpServletResponse response) {
-        removeAccessTokenCookie(response);
         removeRefreshTokenCookie(response);
     }
     

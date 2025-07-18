@@ -21,12 +21,8 @@ public class AuthUtil {
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
         
         return TokenResponse.builder()
-                .accessToken(accessToken)
                 .tokenType("Bearer")
-                .expiresIn(jwtTokenProvider.getExpirationDateFromToken(accessToken).getTime())
-                .userId(user.getId())
-                .username(user.getUsername())
-                .role(user.getRole().name())
+                .accessToken(accessToken)
                 .build();
     }
     
@@ -39,12 +35,8 @@ public class AuthUtil {
         
         return LoginResponse.builder()
                 .tokenResponse(TokenResponse.builder()
-                        .accessToken(accessToken)
                         .tokenType("Bearer")
-                        .expiresIn(jwtTokenProvider.getExpirationDateFromToken(accessToken).getTime())
-                        .userId(user.getId())
-                        .username(user.getUsername())
-                        .role(user.getRole().name())
+                        .accessToken(accessToken)
                         .build())
                 .refreshToken(refreshToken)
                 .build();
@@ -57,12 +49,8 @@ public class AuthUtil {
         String accessToken = jwtTokenProvider.generateAccessToken(userId, username, role);
         
         return TokenResponse.builder()
-                .accessToken(accessToken)
                 .tokenType("Bearer")
-                .expiresIn(jwtTokenProvider.getExpirationDateFromToken(accessToken).getTime())
-                .userId(userId)
-                .username(username)
-                .role(role.name())
+                .accessToken(accessToken)
                 .build();
     }
 } 
