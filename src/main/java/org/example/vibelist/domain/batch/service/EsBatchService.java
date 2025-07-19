@@ -75,6 +75,7 @@ public class EsBatchService implements BatchService{
         }
 
         log.info("🎉 Elasticsearch 인덱싱 전체 완료");
+        System.exit(0);
     }
 
 

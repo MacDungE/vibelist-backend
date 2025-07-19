@@ -3,6 +3,8 @@ package org.example.vibelist.domain.elasticsearch.dto;
 import jakarta.persistence.Id;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.List;
 
@@ -11,25 +13,53 @@ import java.util.List;
 public class EsDoc {
     @Id
     private String id;
+
+    @Field(type = FieldType.Double)
     private double danceability;
+
+    @Field(type = FieldType.Double)
     private double energy;
+
+    @Field(type = FieldType.Integer)
     private int key;
+
+    @Field(type = FieldType.Double)
     private double loudness;
+
+    @Field(type = FieldType.Integer)
     private int mode;
+
+    @Field(type = FieldType.Double)
     private double speechiness;
+
+    @Field(type = FieldType.Double)
     private double acousticness;
+
+    @Field(type = FieldType.Double)
     private double instrumentalness;
+
+    @Field(type = FieldType.Double)
     private double liveness;
+
+    @Field(type = FieldType.Double)
     private double valence;
+
+    @Field(type = FieldType.Double)
     private double tempo;
+
+    @Field(type = FieldType.Integer)
     private int durationMs;
+
+    @Field(type = FieldType.Double)
     private double timeSignature;
-    private List<String> genres;//RDS에는 하나의 String으로 저장되어 있는데 나중에 ; 기준으로 Split해야함
-    private String spotifyId; //playlist에 대한 id
 
-    //--------audio feature -----//
+    @Field(type = FieldType.Keyword)
+    private List<String> genres;
 
+    @Field(type = FieldType.Keyword)
+    private String spotifyId;
 
+    @Field(type = FieldType.Object)
     private TrackMetrics trackMetrics;
 
     //--- track------//
