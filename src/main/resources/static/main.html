@@ -585,22 +585,52 @@
         }
         
         // 스포티파이 연동 시작
-        function connectSpotify() {
-            console.log('스포티파이 연동 시작...');
-            fetch('/v1/integrations/spotify/connect', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`
-                },
-                redirect: 'manual'
-            }).then(response => {
-            // debugger;
-                const location = response.headers.get('Location');
-                    console.log('스포티파이 연동 시작 성공:', location);
-                    window.location.href = location;
-
-            });
+        async function connectSpotify() {
+            try {
+                console.log('스포티파이 연동 시작...');
+                const accessToken = getAccessToken();
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+                
+                const response = await fetch('/v1/integrations/spotify/connect', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                console.log('스포티파이 연동 API 응답:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('스포티파이 연동 시작 성공:', data);
+                    
+                    if (data.redirectUrl) {
+                        console.log('리다이렉트 URL로 이동:', data.redirectUrl);
+                        window.location.href = data.redirectUrl;
+                    } else {
+                        console.error('리다이렉트 URL이 없습니다.');
+                        alert('연동 URL을 받지 못했습니다. 다시 시도해주세요.');
+                    }
+                } else if (response.status === 400) {
+                    const errorData = await response.json();
+                    console.log('이미 연동됨:', errorData);
+                    alert('이미 스포티파이가 연동되어 있습니다.');
+                    loadIntegrationStatus(); // 상태 다시 로드
+                } else if (response.status === 401) {
+                    // 토큰 만료 시 갱신 후 재시도
+                    console.log('연동 시작 중 토큰 만료 감지. 토큰 갱신 후 재시도...');
+                    await refreshTokenAndRetry();
+                } else {
+                    const errorData = await response.json();
+                    console.error('스포티파이 연동 시작 실패:', errorData);
+                    alert('연동 시작에 실패했습니다. 다시 시도해주세요.');
+                }
+            } catch (error) {
+                console.error('스포티파이 연동 시작 에러:', error);
+                alert('연동 시작 중 오류가 발생했습니다.');
+            }
         }
         
         // 스포티파이 연동 해제

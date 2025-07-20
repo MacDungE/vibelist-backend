@@ -290,15 +290,15 @@ public class IntegrationController {
                 .build();
     }
 
-    @Operation(summary = "스포티파이 연동 시작", description = "인증된 사용자가 스포티파이 연동을 시작합니다. 스포티파이 OAuth2 인증 페이지로 리다이렉트합니다.")
+        @Operation(summary = "스포티파이 연동 시작", description = "인증된 사용자가 스포티파이 연동을 시작합니다. 스포티파이 OAuth2 인증 URL을 반환합니다.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "302", description = "스포티파이 OAuth2 인증 페이지로 리다이렉트"),
+        @ApiResponse(responseCode = "200", description = "스포티파이 OAuth2 인증 URL 반환 성공"),
         @ApiResponse(responseCode = "400", description = "이미 연동된 경우"),
         @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/spotify/connect")
-    public void connectSpotify(HttpServletResponse response) throws IOException {
+    public ResponseEntity<?> connectSpotify() {
         try {
             Long userId = SecurityUtil.getCurrentUserId();
             
@@ -308,21 +308,30 @@ public class IntegrationController {
             Optional<IntegrationTokenInfo> existingToken = integrationTokenInfoService.getValidTokenInfo(userId, "SPOTIFY");
             if (existingToken.isPresent()) {
                 log.warn("[INTEGRATION] 이미 스포티파이가 연동되어 있음 - userId: {}", userId);
-                response.sendRedirect("/main.html?error=already_connected");
-                return;
+                return ResponseEntity.badRequest()
+                    .body(Map.of(
+                        "error", "already_connected",
+                        "message", "이미 스포티파이가 연동되어 있습니다."
+                    ));
             }
             
             // 간소화된 방식: URL 파라미터로 userId 전달
             String spotifyAuthUrl = "/oauth2/authorization/spotify?integration_user_id=" + userId;
             
-            log.info("[INTEGRATION] 스포티파이 OAuth2 페이지로 리다이렉트 - userId: {}, url: {}", userId, spotifyAuthUrl);
+            log.info("[INTEGRATION] 스포티파이 OAuth2 URL 생성 - userId: {}, url: {}", userId, spotifyAuthUrl);
             
-            response.setStatus(302);
-            response.sendRedirect(spotifyAuthUrl);
+            return ResponseEntity.ok(Map.of(
+                "redirectUrl", spotifyAuthUrl,
+                "message", "스포티파이 연동을 시작합니다."
+            ));
             
         } catch (Exception e) {
             log.error("[INTEGRATION] 스포티파이 연동 시작 중 오류 발생", e);
-            response.sendRedirect("/main.html?error=connection_failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "connection_failed",
+                    "message", "스포티파이 연동 시작 중 오류가 발생했습니다."
+                ));
         }
     }
 

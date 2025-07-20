@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -33,7 +34,7 @@ public class SecurityConfig {
 
 
     @Bean
-    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, ClientRegistrationRepository repo) throws Exception {
         log.info("[Security_CONFIG] DevSecurityConfig 초기화 시작");
         log.info("[Security_CONFIG] OAuth2UserService: {}", oAuth2UserService.getClass().getName());
         
@@ -106,8 +107,8 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                         .authorizationEndpoint(authorization -> authorization
-                                .authorizationRequestRepository(authorizationRequestRepository())
-                                .authorizationRequestResolver(customAuthorizationRequestResolver))
+//                                .authorizationRequestRepository(authorizationRequestRepository())
+                                .authorizationRequestResolver(new CustomAuthorizationRequestResolver(repo)))
                 )
                 // 로그아웃 설정
                 .logout(logout -> logout
