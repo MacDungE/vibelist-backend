@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>VibeList - 메인</title>
     <style>
         body {
@@ -238,11 +238,11 @@
     <div class="main-content">
         <div class="welcome-message">환영합니다!</div>
         
-        <div id="loading" class="loading">
+        <div class="loading" id="loading">
             사용자 정보를 불러오는 중...
         </div>
         
-        <div id="userDetails" class="user-details" style="display: none;">
+        <div class="user-details" id="userDetails" style="display: none;">
             <h2>사용자 정보</h2>
             <div class="user-detail-item">
                 <strong>이름:</strong> <span id="userDisplayName"></span>
@@ -255,18 +255,18 @@
             </div>
         </div>
         
-        <div id="error" class="error" style="display: none;">
+        <div class="error" id="error" style="display: none;">
             사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.
         </div>
         
         <!-- 연동 성공 메시지 -->
-        <div id="successMessage" class="success-message" style="display: none;">
+        <div class="success-message" id="successMessage" style="display: none;">
             <strong>🎉 스포티파이 연동이 완료되었습니다!</strong>
             <p>이제 VibeList에서 스포티파이 플레이리스트를 관리할 수 있습니다.</p>
         </div>
         
         <!-- 외부 서비스 연동 섹션 -->
-        <div id="integrationSection" class="integration-section" style="display: none;">
+        <div class="integration-section" id="integrationSection" style="display: none;">
             <h2 class="integration-title">🎵 음악 서비스 연동</h2>
             
             <div class="service-item">
@@ -587,7 +587,20 @@
         // 스포티파이 연동 시작
         function connectSpotify() {
             console.log('스포티파이 연동 시작...');
-            window.location.href = '/v1/integrations/spotify/connect';
+            fetch('/v1/integrations/spotify/connect', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Authorization': `Bearer ${getAccessToken()}`
+                },
+                redirect: 'manual'
+            }).then(response => {
+            // debugger;
+                const location = response.headers.get('Location');
+                    console.log('스포티파이 연동 시작 성공:', location);
+                    window.location.href = location;
+
+            });
         }
         
         // 스포티파이 연동 해제

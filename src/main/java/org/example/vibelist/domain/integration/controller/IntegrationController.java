@@ -317,6 +317,7 @@ public class IntegrationController {
             
             log.info("[INTEGRATION] 스포티파이 OAuth2 페이지로 리다이렉트 - userId: {}, url: {}", userId, spotifyAuthUrl);
             
+            response.setStatus(302);
             response.sendRedirect(spotifyAuthUrl);
             
         } catch (Exception e) {

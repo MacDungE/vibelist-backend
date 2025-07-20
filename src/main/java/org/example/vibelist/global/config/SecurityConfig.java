@@ -3,15 +3,11 @@ package org.example.vibelist.global.config;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.vibelist.domain.oauth2.*;
 import org.example.vibelist.global.constants.TokenConstants;
-import org.example.vibelist.domain.oauth2.CustomAuthorizationCodeTokenResponseClient;
-import org.example.vibelist.domain.oauth2.OAuth2LoginSuccessHandler;
-import org.example.vibelist.domain.oauth2.OAuth2LogoutSuccessHandler;
-import org.example.vibelist.domain.oauth2.OAuth2UserService;
 import org.example.vibelist.global.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,10 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
-@Profile("dev")
 @RequiredArgsConstructor
 @Slf4j
-public class DevSecurityConfig {
+public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfigurationSource corsConfigurationSource;
@@ -34,6 +29,7 @@ public class DevSecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
     private final CustomAuthorizationCodeTokenResponseClient customTokenResponseClient;
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
 
 
     @Bean
@@ -64,8 +60,10 @@ public class DevSecurityConfig {
                                 "/.well-known/**").permitAll()
                                         // 인증 관련 엔드포인트 허용
                 .requestMatchers("/v1/auth/**").permitAll()
-                // OAuth2 관련 엔드포인트 허용
+                // OAuth2 관련 엔드포인트 허용 (쿼리 파라미터 포함)
                 .requestMatchers("/login/oauth2/**", "/oauth2/**", "/v1/oauth2/**").permitAll()
+                // OAuth2 인증 엔드포인트 명시적 허용 (integration_user_id 파라미터 포함)
+                .requestMatchers("/oauth2/authorization/**").permitAll()
                 // 헬스체크 및 모니터링 엔드포인트 허용
                         .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
                         // 웹소켓 엔드포인트 허용
@@ -108,7 +106,8 @@ public class DevSecurityConfig {
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                         .authorizationEndpoint(authorization -> authorization
-                                .authorizationRequestRepository(authorizationRequestRepository()))
+                                .authorizationRequestRepository(authorizationRequestRepository())
+                                .authorizationRequestResolver(customAuthorizationRequestResolver))
                 )
                 // 로그아웃 설정
                 .logout(logout -> logout
