@@ -6,20 +6,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.integration.dto.IntegrationStatusResponse;
 import org.example.vibelist.domain.integration.dto.IntegrationTokenResponse;
 import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
 import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
+import org.example.vibelist.global.security.util.SecurityUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -50,7 +48,7 @@ public class IntegrationController {
     @GetMapping("/status")
     public ResponseEntity<?> getCurrentUserIntegrationStatus() {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             List<IntegrationTokenInfo> activeTokens = integrationTokenInfoService.getUserActiveTokens(userId);
             
@@ -88,7 +86,7 @@ public class IntegrationController {
     public ResponseEntity<?> getProviderIntegration(
             @Parameter(description = "서비스 제공자 (spotify, google 등)") @PathVariable String provider) {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             Optional<IntegrationTokenInfo> tokenInfoOpt = integrationTokenInfoService.getActiveTokenInfo(userId, provider);
             
@@ -114,7 +112,7 @@ public class IntegrationController {
     public ResponseEntity<?> getValidProviderIntegration(
             @Parameter(description = "서비스 제공자 (spotify, google 등)") @PathVariable String provider) {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             Optional<IntegrationTokenInfo> tokenInfoOpt = integrationTokenInfoService.getValidTokenInfo(userId, provider);
             
@@ -141,7 +139,7 @@ public class IntegrationController {
     public ResponseEntity<?> disconnectProvider(
             @Parameter(description = "연동 해제할 서비스 제공자") @PathVariable String provider) {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             integrationTokenInfoService.deactivateToken(userId, provider);
             
@@ -162,7 +160,7 @@ public class IntegrationController {
     @DeleteMapping("/all")
     public ResponseEntity<?> disconnectAllProviders() {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             List<IntegrationTokenInfo> activeTokens = integrationTokenInfoService.getUserActiveTokens(userId);
             
@@ -189,7 +187,7 @@ public class IntegrationController {
     public ResponseEntity<?> checkProviderIntegrationExists(
             @Parameter(description = "확인할 서비스 제공자") @PathVariable String provider) {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             boolean exists = integrationTokenInfoService.hasToken(userId, provider);
             
@@ -211,7 +209,7 @@ public class IntegrationController {
     @GetMapping("/providers")
     public ResponseEntity<?> getConnectedProviders() {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             List<IntegrationTokenInfo> activeTokens = integrationTokenInfoService.getUserActiveTokens(userId);
             
@@ -238,7 +236,7 @@ public class IntegrationController {
     public ResponseEntity<?> getIntegrationsByScope(
             @Parameter(description = "조회할 권한 스코프") @RequestParam String scope) {
         try {
-            Long userId = getCurrentUserId();
+            Long userId =SecurityUtil.getCurrentUserId();
             
             List<IntegrationTokenInfo> activeTokens = integrationTokenInfoService.getUserActiveTokens(userId);
             
@@ -261,16 +259,6 @@ public class IntegrationController {
         }
     }
 
-    /**
-     * 현재 사용자 ID 추출
-     */
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof Long)) {
-            throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
-        }
-        return (Long) authentication.getPrincipal();
-    }
 
     /**
      * IntegrationTokenInfo를 IntegrationTokenResponse로 변환
@@ -312,7 +300,7 @@ public class IntegrationController {
     @GetMapping("/spotify/connect")
     public void connectSpotify(HttpServletResponse response) throws IOException {
         try {
-            Long userId = getCurrentUserId();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             log.info("[INTEGRATION] 스포티파이 연동 시작 - userId: {}", userId);
             
@@ -368,8 +356,7 @@ public class IntegrationController {
     @GetMapping("/spotify/token-debug")
     public ResponseEntity<?> getSpotifyTokenDebugInfo() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = Long.valueOf(authentication.getName());
+            Long userId = SecurityUtil.getCurrentUserId();
             
             log.info("[INTEGRATION_DEBUG] 스포티파이 토큰 디버그 정보 조회 - userId: {}", userId);
             

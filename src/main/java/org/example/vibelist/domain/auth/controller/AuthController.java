@@ -15,15 +15,14 @@ import org.example.vibelist.domain.auth.dto.StatusResponse;
 import org.example.vibelist.domain.auth.dto.TokenResponse;
 import org.example.vibelist.domain.auth.service.AuthService;
 import org.example.vibelist.domain.auth.util.CookieUtil;
-
-import org.example.vibelist.global.constants.SocialProviderConstants;
-import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.domain.user.dto.SocialAccountResponse;
 import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.constants.SocialProviderConstants;
+import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.security.util.SecurityUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.web.bind.annotation.*;
 
@@ -141,8 +140,7 @@ public class AuthController {
     @GetMapping("/me/social")
     public ResponseEntity<?> getCurrentUserSocialAccounts() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) authentication.getPrincipal();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             List<SocialAccountResponse> socialAccounts = userService.findUserSocialAccounts(userId);
             return ResponseEntity.ok(socialAccounts);
@@ -189,9 +187,9 @@ public class AuthController {
     })
     @GetMapping("/status")
     public ResponseEntity<StatusResponse> getAuthStatus() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityUtil.getAuthentication();
         
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.ok(StatusResponse.unauthenticated());
         }
         
@@ -206,22 +204,22 @@ public class AuthController {
         } 
         
         // JWT 토큰으로 인증된 사용자인 경우
-        if (authentication.getPrincipal() instanceof Long userId) {
-            try {
-                var userOpt = userService.findUserById(userId);
-                if (userOpt.isPresent()) {
-                    var user = userOpt.get();
-                    var profileOpt = userService.findUserProfileById(userId);
-                    
-                    return ResponseEntity.ok(StatusResponse.authenticated(
-                        "jwt",
-                        profileOpt.map(p -> p.getEmail()).orElse(""),
-                        profileOpt.map(p -> p.getName()).orElse(user.getUsername())
-                    ));
-                }
-            } catch (Exception e) {
-                // 예외 발생 시 인증되지 않은 상태로 처리
+        try {
+            Long userId = SecurityUtil.getUserIdFromAuthentication(authentication);
+            var userOpt = userService.findUserById(userId);
+            
+            if (userOpt.isPresent()) {
+                var user = userOpt.get();
+                var profileOpt = userService.findUserProfileById(userId);
+                
+                return ResponseEntity.ok(StatusResponse.authenticated(
+                    "jwt",
+                    profileOpt.map(p -> p.getEmail()).orElse(""),
+                    profileOpt.map(p -> p.getName()).orElse(user.getUsername())
+                ));
             }
+        } catch (Exception e) {
+            // 예외 발생 시 인증되지 않은 상태로 처리
         }
         
         return ResponseEntity.ok(StatusResponse.unauthenticated());

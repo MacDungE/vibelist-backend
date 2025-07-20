@@ -39,8 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (JwtTokenType.ACCESS.equals(tokenType)) {
                         Authentication authentication = jwtTokenProvider.getAuthentication(token);
                         SecurityContextHolder.getContext().setAuthentication(authentication);
-                        log.debug("JWT 토큰 인증 성공: 사용자={}, 권한={}", 
-                                authentication.getName(), 
+                        log.debug("JWT 토큰 인증 성공: 사용자={}, 권한={}",
+                                jwtTokenProvider.getCustomUserDetails(authentication).getUsername(),
                                 authentication.getAuthorities());
                     } else {
                         log.warn("잘못된 토큰 타입: {} (ACCESS 토큰이 필요함)", tokenType);
