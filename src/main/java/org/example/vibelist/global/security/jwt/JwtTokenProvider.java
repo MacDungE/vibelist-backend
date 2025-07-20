@@ -4,8 +4,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.global.constants.Role;
+import org.example.vibelist.global.security.core.CustomUserDetailService;
+import org.example.vibelist.global.security.core.CustomUserDetails;
+import org.example.vibelist.global.security.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,14 +22,14 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtTokenProvider {
 
+    private final CustomUserDetailService customUserDetailService;
     @Value("${jwt.secret}")
     private String jwtSecret;
-
     @Value("${jwt.access-token-validity}")
     private long accessTokenValidity;
-
     @Value("${jwt.refresh-token-validity}")
     private long refreshTokenValidity;
 
@@ -163,8 +167,21 @@ public String generateRefreshToken(Long userId) {
 
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role.name()));
 
-        return new UsernamePasswordAuthenticationToken(userId, username, authorities);
+        return new UsernamePasswordAuthenticationToken(customUserDetailService.loadUserById(userId), username, authorities);
     }
+
+
+   /** Authentication에서 CustomUserDetails 객체 추출 */
+   public CustomUserDetails getCustomUserDetails(Authentication authentication) {
+    try {
+        Long userId = SecurityUtil.getUserIdFromAuthentication(authentication);
+        return customUserDetailService.loadUserById(userId);
+    } catch (IllegalArgumentException e) {
+        log.error("Failed to get CustomUserDetails: {}", e.getMessage());
+        throw e;
+    }
+   }
+
 
     /**
      * 토큰 만료 시간 가져오기
