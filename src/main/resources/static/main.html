@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>VibeList - 메인</title>
     <style>
         body {
@@ -238,11 +238,11 @@
     <div class="main-content">
         <div class="welcome-message">환영합니다!</div>
         
-        <div id="loading" class="loading">
+        <div class="loading" id="loading">
             사용자 정보를 불러오는 중...
         </div>
         
-        <div id="userDetails" class="user-details" style="display: none;">
+        <div class="user-details" id="userDetails" style="display: none;">
             <h2>사용자 정보</h2>
             <div class="user-detail-item">
                 <strong>이름:</strong> <span id="userDisplayName"></span>
@@ -255,18 +255,18 @@
             </div>
         </div>
         
-        <div id="error" class="error" style="display: none;">
+        <div class="error" id="error" style="display: none;">
             사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.
         </div>
         
         <!-- 연동 성공 메시지 -->
-        <div id="successMessage" class="success-message" style="display: none;">
+        <div class="success-message" id="successMessage" style="display: none;">
             <strong>🎉 스포티파이 연동이 완료되었습니다!</strong>
             <p>이제 VibeList에서 스포티파이 플레이리스트를 관리할 수 있습니다.</p>
         </div>
         
         <!-- 외부 서비스 연동 섹션 -->
-        <div id="integrationSection" class="integration-section" style="display: none;">
+        <div class="integration-section" id="integrationSection" style="display: none;">
             <h2 class="integration-title">🎵 음악 서비스 연동</h2>
             
             <div class="service-item">
@@ -585,9 +585,52 @@
         }
         
         // 스포티파이 연동 시작
-        function connectSpotify() {
-            console.log('스포티파이 연동 시작...');
-            window.location.href = '/v1/integrations/spotify/connect';
+        async function connectSpotify() {
+            try {
+                console.log('스포티파이 연동 시작...');
+                const accessToken = getAccessToken();
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+                
+                const response = await fetch('/v1/integrations/spotify/connect', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                console.log('스포티파이 연동 API 응답:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('스포티파이 연동 시작 성공:', data);
+                    
+                    if (data.redirectUrl) {
+                        console.log('리다이렉트 URL로 이동:', data.redirectUrl);
+                        window.location.href = data.redirectUrl;
+                    } else {
+                        console.error('리다이렉트 URL이 없습니다.');
+                        alert('연동 URL을 받지 못했습니다. 다시 시도해주세요.');
+                    }
+                } else if (response.status === 400) {
+                    const errorData = await response.json();
+                    console.log('이미 연동됨:', errorData);
+                    alert('이미 스포티파이가 연동되어 있습니다.');
+                    loadIntegrationStatus(); // 상태 다시 로드
+                } else if (response.status === 401) {
+                    // 토큰 만료 시 갱신 후 재시도
+                    console.log('연동 시작 중 토큰 만료 감지. 토큰 갱신 후 재시도...');
+                    await refreshTokenAndRetry();
+                } else {
+                    const errorData = await response.json();
+                    console.error('스포티파이 연동 시작 실패:', errorData);
+                    alert('연동 시작에 실패했습니다. 다시 시도해주세요.');
+                }
+            } catch (error) {
+                console.error('스포티파이 연동 시작 에러:', error);
+                alert('연동 시작 중 오류가 발생했습니다.');
+            }
         }
         
         // 스포티파이 연동 해제

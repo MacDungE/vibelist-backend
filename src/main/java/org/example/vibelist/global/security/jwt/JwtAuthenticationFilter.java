@@ -101,6 +101,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.startsWith("/v1/auth/social/complete-signup") ||
                path.startsWith("/health/") ||
                path.startsWith("/actuator/") ||
+               path.startsWith("/oauth2/authorization/") ||  // OAuth2 인증 요청 경로 추가
+               path.startsWith("/login/oauth2/") ||  // OAuth2 콜백 경로 추가
                path.equals("/favicon.ico");
     }
 } 
