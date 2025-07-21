@@ -15,6 +15,8 @@ import org.example.vibelist.domain.post.entity.Playlist;
 import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.like.service.LikeService;
 import org.example.vibelist.domain.post.repository.PostRepository;
+import org.example.vibelist.domain.post.tag.entity.Tag;
+import org.example.vibelist.domain.post.tag.service.TagService;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +40,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final LikeService likeService;
     private final ExploreService exploreService;
+    private final TagService tagService;
 
     @Transactional
     public Long createPost(Long userId, PostCreateRequest dto) {
@@ -64,11 +69,18 @@ public class PostService {
                 .tracks(dto.getTracks())
                 .build();
 
+        Set<Tag> tags = dto.getTags().stream()
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(tagService::getOrCreate)  // 중복 방지 + 신규 생성
+                .collect(Collectors.toSet());
+
         /* ─── ② Post 생성 & 저장(Cascade.ALL) ───────────── */
 
         Post post = Post.builder()
                 .user(user)
                 .content(dto.getContent())
+                .tags(tags)
                 .isPublic(dto.getIsPublic())
                 .playlist(playlist)      // 1:1 연결
                 .build();
@@ -93,7 +105,13 @@ public class PostService {
         if (!post.getUser().getId().equals(userId))
             throw new RuntimeException("Post id mismatch");
 
-        post.edit(dto.getContent(),dto.getIsPublic());
+        Set<Tag> tags = dto.getTags().stream()
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(tagService::getOrCreate)  // 중복 방지 + 신규 생성
+                .collect(Collectors.toSet());
+
+        post.edit(dto.getContent(),tags,dto.getIsPublic());
 
         // 💡 게시글 수정 후 Elasticsearch에 반영
         // 수정된 Post 엔티티를 PostDetailResponse DTO로 변환
@@ -150,6 +168,10 @@ public class PostService {
                 pl.getTotalLengthSec(),
                 pl.getTracks()                   // List<TrackRsDto>
         );
+        List<String> tags = post.getTags()          // Set<Tag>
+                .stream()
+                .map(Tag::getName)                  // Tag → String
+                .toList();                          // Java 16+ (Java 21에서도 OK)
 
         return new PostDetailResponse(
                 post.getId(),
@@ -157,6 +179,7 @@ public class PostService {
                 post.getUser().getUsername(),
                 post.getUser().getUserProfile().getName(),
                 post.getContent(),
+                tags,
                 post.getIsPublic(),
                 post.getLikeCnt(),
                 post.getViewCnt(),

@@ -1,6 +1,7 @@
 package org.example.vibelist.domain.post.comment.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.post.comment.dto.CommentCreateDto;
 import org.example.vibelist.domain.post.comment.dto.CommentResponseDto;
 import org.example.vibelist.domain.post.comment.dto.CommentUpdateDto;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -30,26 +32,26 @@ public class CommentService {
 
 
     public void create(CommentCreateDto dto, Long userId) {
-
-        User user = userRepository.findById(userId).orElseThrow();
-
-        Post post = postRepository.findById(dto.getPostId())
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        Comment parent = null;
-        if (dto.getParentId() != null) {
-            parent = commentRepository.findById(dto.getParentId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        try {
+            User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            Post post = postRepository.findById(dto.getPostId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+            Comment parent = null;
+            if (dto.getParentId() != null) {
+                parent = commentRepository.findById(dto.getParentId())
+                        .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+            }
+            Comment comment = Comment.builder()
+                    .content(dto.getContent())
+                    .user(user)
+                    .post(post)
+                    .parent(parent)
+                    .build();
+            commentRepository.save(comment);
+        } catch (Exception e) {
+            log.info("[COMMENT_001] 댓글 생성 실패 - userId: {}, dto: {}, error: {}", userId, dto, e.getMessage());
+            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
         }
-
-        Comment comment = Comment.builder()
-                .content(dto.getContent())
-                .user(user)
-                .post(post)
-                .parent(parent)
-                .build();
-
-        commentRepository.save(comment);
     }
 
     public List<CommentResponseDto> getByPostId(Long postId) {
@@ -73,25 +75,31 @@ public class CommentService {
     }
 
     public void update(Long id, CommentUpdateDto dto, Long userId) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-
-        if (!comment.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+        try {
+            Comment comment = commentRepository.findById(id)
+                    .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+            if (!comment.getUser().getId().equals(userId)) {
+                throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+            }
+            comment.setContent(dto.getContent());
+        } catch (Exception e) {
+            log.info("[COMMENT_002] 댓글 수정 실패 - commentId: {}, userId: {}, dto: {}, error: {}", id, userId, dto, e.getMessage());
+            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
         }
-
-        comment.setContent(dto.getContent());
     }
 
     public void delete(Long id, Long userId) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-
-        if (!comment.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+        try {
+            Comment comment = commentRepository.findById(id)
+                    .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+            if (!comment.getUser().getId().equals(userId)) {
+                throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+            }
+            commentRepository.delete(comment);
+        } catch (Exception e) {
+            log.info("[COMMENT_001] 댓글 삭제 실패 - commentId: {}, userId: {}, error: {}", id, userId, e.getMessage());
+            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
         }
-
-        commentRepository.delete(comment);
     }
 
     public List<CommentResponseDto> getSortedComments(Long postId, String sort) {
