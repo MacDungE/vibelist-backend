@@ -39,8 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (JwtTokenType.ACCESS.equals(tokenType)) {
                         Authentication authentication = jwtTokenProvider.getAuthentication(token);
                         SecurityContextHolder.getContext().setAuthentication(authentication);
-                        log.debug("JWT 토큰 인증 성공: 사용자={}, 권한={}", 
-                                authentication.getName(), 
+                        log.debug("JWT 토큰 인증 성공: 사용자={}, 권한={}",
+                                jwtTokenProvider.getCustomUserDetails(authentication).getUsername(),
                                 authentication.getAuthorities());
                     } else {
                         log.warn("잘못된 토큰 타입: {} (ACCESS 토큰이 필요함)", tokenType);
@@ -61,23 +61,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {
-        // 쿠키에서 access token 검색
+        // Priority 1: Authorization header (새로운 표준 방식)
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            log.debug("Authorization 헤더에서 토큰 추출: {}...", token.substring(0, Math.min(token.length(), 10)));
+            return token;
+        }
+        
+        // Priority 2: 쿠키에서 access token 검색 (하위 호환성을 위한 fallback)
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (TokenConstants.ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
                     String token = cookie.getValue();
                     if (StringUtils.hasText(token)) {
+                        log.debug("쿠키에서 토큰 추출 (레거시 방식): {}...", token.substring(0, Math.min(token.length(), 10)));
+                        log.warn("쿠키 기반 인증이 사용되었습니다. Authorization 헤더 사용을 권장합니다.");
                         return token;
                     }
                 }
             }
-        }
-        
-        // 기존 Authorization 헤더 방식도 유지 (하위 호환성을 위해)
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
         }
         
         return null;
@@ -97,6 +101,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.startsWith("/v1/auth/social/complete-signup") ||
                path.startsWith("/health/") ||
                path.startsWith("/actuator/") ||
+               path.startsWith("/oauth2/authorization/") ||  // OAuth2 인증 요청 경로 추가
+               path.startsWith("/login/oauth2/") ||  // OAuth2 콜백 경로 추가
                path.equals("/favicon.ico");
     }
 } 
