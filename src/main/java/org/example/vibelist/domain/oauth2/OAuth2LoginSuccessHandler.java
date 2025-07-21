@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -30,6 +31,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
+    @UserActivityLog(action="LOGIN") //AOP에 전송
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication)
@@ -118,6 +120,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 일반 로그인 처리 - 기존 로직 유지
      */
+    @UserActivityLog(action="LOGIN") //AOP에 전송
     private void handleRegularLogin(Map<String, Object> attributes, HttpServletResponse response) 
             throws IOException {
         log.info("[OAuth2_LOG] 일반 로그인 처리 시작");

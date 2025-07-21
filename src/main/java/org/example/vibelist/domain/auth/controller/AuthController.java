@@ -15,6 +15,7 @@ import org.example.vibelist.domain.auth.dto.TokenResponse;
 import org.example.vibelist.domain.auth.service.AuthService;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.domain.user.dto.SocialAccountResponse;
@@ -70,7 +71,8 @@ public class AuthController {
         @ApiResponse(responseCode = "200", description = "로그아웃 성공")
     })
     @SecurityRequirement(name = "bearer-key")
-    @PostMapping("/logout")
+    @PostMapping("/logout")//AOP에 전송
+    @UserActivityLog(action = "LOGOUT")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         authService.logout(response);
         return ResponseEntity.ok("로그아웃 성공");

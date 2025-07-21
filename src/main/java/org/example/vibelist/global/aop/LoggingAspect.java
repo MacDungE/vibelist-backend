@@ -4,7 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.security.core.Authentication;
@@ -24,35 +26,73 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class LoggingAspect {
     private final LogSender logSender;
+// 모든 도메인에 대하 로그 발생
+//    @Pointcut("execution(* org.example.vibelist.domain..*.*(..))")
+//    public void allDomainMethods(){}
+//    @AfterReturning(pointcut = "allDomainMethods()", returning = "result")
+//    public void logAfterService(JoinPoint joinPoint, Object result) {
+//        String domain = extractDomain(joinPoint);
+//        String eventType = joinPoint.getSignature().getName().toUpperCase();
+//        String userId = extractUserId(); // SecurityContext에서
+//
+//        UserLog log = UserLog.builder()
+//                .userId(userId)
+//                .domain(domain)
+//                .eventType(eventType)
+//                .timestamp(LocalDateTime.now())
+//                .ip(extractClientIp())
+//                .message("Called " + joinPoint.getSignature())
+//                .build();
+//
+//        logSender.send(log);
+//    }
+    @Around("@annotation(userActivityLog)")
+    public Object logUserAction(ProceedingJoinPoint pjp, UserActivityLog userActivityLog) throws Throwable {
+        // 요청이 아닌 다른 스레드에서 실행된 것이라면 로깅 무시
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (!(requestAttributes instanceof ServletRequestAttributes)) {
+            return pjp.proceed(); // 내부에서 호출된 경우 로그 남기지 않음
+        }
 
-    @Pointcut("execution(* org.example.vibelist.domain..*.*(..))")
-    public void allDomainMethods(){}
-    @AfterReturning(pointcut = "allDomainMethods()", returning = "result")
-    public void logAfterService(JoinPoint joinPoint, Object result) {
-        String domain = extractDomain(joinPoint);
-        String eventType = joinPoint.getSignature().getName().toUpperCase();
-        String userId = extractUserId(); // SecurityContext에서
+        Object result = pjp.proceed(); // 실제 메서드 실행
 
-        UserLog log = UserLog.builder()
-                .userId(userId)
-                .domain(domain)
-                .eventType(eventType)
-                .timestamp(LocalDateTime.now())
+        // 로그 기록
+        UserLog logData = UserLog.builder()
+                .userId(extractUserId())
                 .ip(extractClientIp())
-                .message("Called " + joinPoint.getSignature())
+                .eventType(userActivityLog.action())
+                .domain(extractDomain(pjp))
+                .timestamp(LocalDateTime.now())
+                .message("User performed: " + userActivityLog.action())
                 .build();
 
-        logSender.send(log);
+        logSender.send(logData);
+        return result;
     }
-
+    /*
+    *OAuth2 로그인시 id는 provider에 따라 String,Long,또는 char[]일 수 있습니다.
+    * 명시적인 type check를 수행하여 id를 반환합니다.
+     */
     private String extractUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) return "anonymous";
+
         Object principal = auth.getPrincipal();
         if (principal instanceof OAuth2User user) {
-            return String.valueOf(user.getAttribute("id"));
+            Object idAttr = user.getAttribute("userId");
+            if (idAttr instanceof String id) {
+                return id;
+            } else if (idAttr instanceof Number num) {
+                return num.toString();  // Long, Integer 등 처리
+            } else if (idAttr instanceof char[] chars) {
+                return new String(chars);
+            } else if (idAttr != null) {
+                return idAttr.toString();  // fallback
+            } else {
+                return "unknown";
+            }
         }
-        return auth.getName(); // username
+        return auth.getName(); // 일반 로그인 사용자
     }
 
     private String extractDomain(JoinPoint joinPoint) {
