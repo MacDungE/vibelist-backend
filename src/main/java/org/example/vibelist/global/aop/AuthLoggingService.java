@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.auth.aop;
+package org.example.vibelist.global.aop;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
