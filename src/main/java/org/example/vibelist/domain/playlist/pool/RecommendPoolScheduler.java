@@ -28,15 +28,29 @@ public class RecommendPoolScheduler {
         refreshAllEmotionPools();
     }
 
-    @Scheduled(cron = "0 0 * * * *") // 매 시 정각마다 캐싱
+    @Scheduled(cron = "0 0/30 * * * *") // 30분마다
     public void refreshAllEmotionPools() {
         log.info("⏰ Pool 스케줄러 실행");
+
+//        감정 pool 갱신 지연 시간 (1분) <- 조절 가능
+//        int delayMinutes = 1;
+//        int idx = 0;
         for (EmotionType emotion : EmotionType.values()) {
             String key = "recommendPool:" + emotion;
             EmotionFeatureProfile profile = profileManager.getProfile(emotion);
-            Set<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 200);
-            poolService.savePool(key, pool, 65, TimeUnit.MINUTES);
+            Set<TrackRsDto> pool = poolProvider.createPool(emotion, profile, 5000);
+            poolService.savePool(key, pool, 35, TimeUnit.MINUTES);
             log.info("🔁 Pool 새로 갱신: key={}, size={}", key, pool.size());
+
+//            // 마지막 pool 아니면 딜레이
+//            if (++idx < EmotionType.values().length) {
+//                try {
+//                    Thread.sleep(delayMinutes * 60 * 1000L); // 1 분 대기
+//                } catch (InterruptedException e) {
+//                    log.error("Pool 갱신 딜레이 중 오류 발생", e);
+//                    Thread.currentThread().interrupt(); // 인터럽트 상태 복원
+//                }
+//            }
         }
     }
 }

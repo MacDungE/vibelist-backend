@@ -101,7 +101,7 @@ public class RecommendService {
 
         List<TrackRsDto> randTracks = poolService.recommendFromPool(key, 20);
 
-        // ES 직접 검색: 비교용
+        // ES 직접 검색: fallback
         if (randTracks == null || randTracks.isEmpty()) {
             log.info("❌ Pool MISS - ES 직접 검색만 수행 (pool 저장 안함): key={}", key);
             List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20); // 20곡 직접 ES에서 가져옴
