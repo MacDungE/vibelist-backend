@@ -12,10 +12,9 @@ import org.example.vibelist.domain.user.dto.CreateUserRequest;
 import org.example.vibelist.domain.user.dto.UpdateUserProfileRequest;
 import org.example.vibelist.domain.user.dto.UserDto;
 import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.security.util.SecurityUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,8 +50,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUserInfo() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) authentication.getPrincipal();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             UserDto userDto = userService.findUserDtoById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
@@ -89,8 +87,7 @@ public class UserController {
     @PutMapping("/me/profile")
     public ResponseEntity<?> updateCurrentUserProfile(@RequestBody UpdateUserProfileRequest request) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) authentication.getPrincipal();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             UserDto updatedUser = userService.updateUserProfile(userId, request);
             return ResponseEntity.ok(updatedUser);
@@ -148,8 +145,7 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<?> deleteCurrentUser() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) authentication.getPrincipal();
+            Long userId = SecurityUtil.getCurrentUserId();
             
             authService.deleteUser(userId);
             return ResponseEntity.ok("사용자가 삭제되었습니다.");
