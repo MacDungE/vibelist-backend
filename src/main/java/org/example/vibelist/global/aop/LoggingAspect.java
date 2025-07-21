@@ -63,7 +63,7 @@ public class LoggingAspect {
                 .eventType(userActivityLog.action())
                 .domain(extractDomain(pjp))
                 .timestamp(LocalDateTime.now())
-                .message("User performed: " + userActivityLog.action())
+                .api(extractRequestDetails())
                 .build();
 
         logSender.send(logData);
@@ -117,6 +117,16 @@ public class LoggingAspect {
                 ip = request.getRemoteAddr();
             }
             return ip;
+        }
+        return "unknown";
+    }
+    private String extractRequestDetails() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes attrs) {
+            HttpServletRequest request = attrs.getRequest();
+            String uri = request.getRequestURI();
+            String queryString = request.getQueryString();
+            return queryString == null ? uri : uri + "?" + queryString;
         }
         return "unknown";
     }

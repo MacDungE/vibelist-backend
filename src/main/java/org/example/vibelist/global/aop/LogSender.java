@@ -25,13 +25,14 @@ public class LogSender {
     public void send(UserLog logData){
         try{
             String jsonLog = objectMapper.writeValueAsString(logData);
+            log.info("USER_LOG_PREVIEW: {}", objectMapper.writeValueAsString(logData));
             userLogger.info("User Action Log", //log 이름
                     StructuredArguments.keyValue("userId", logData.getUserId()), //json으로 파싱하기 위한 전처리 단계
                     StructuredArguments.keyValue("ip", logData.getIp()),
                     StructuredArguments.keyValue("eventType", logData.getEventType()),
                     StructuredArguments.keyValue("domain", logData.getDomain()),
                     StructuredArguments.keyValue("timestamp", logData.getTimestamp().toString()),
-                    StructuredArguments.keyValue("message", logData.getMessage())
+                    StructuredArguments.keyValue("api", logData.getApi())
             );
         }
         catch(JsonProcessingException e){
