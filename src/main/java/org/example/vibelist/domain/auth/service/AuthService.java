@@ -126,9 +126,18 @@ public class AuthService {
         return authUtil.createTokenResponse(user);
     }
 
+    public LoginResponse loginWithAccessToken(String accessToken) {
+        if (!jwtTokenProvider.validateToken(accessToken)) {
+            throw new IllegalArgumentException("유효하지 않은 액세스 토큰입니다.");
+        }
 
+        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        User user = userService.findUserById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-    
+        return authUtil.createLoginResponse(user);
+    }
+
     /**
      * 사용자 정보 조회
      */
