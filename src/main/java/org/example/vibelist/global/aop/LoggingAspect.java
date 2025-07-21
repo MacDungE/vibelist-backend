@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -12,20 +11,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 
 @Slf4j
 @Aspect
 @Component
 @RequiredArgsConstructor
-public class AuthLoggingAspect {
+public class LoggingAspect {
     private final LogSender logSender;
 
     @Pointcut("execution(* org.example.vibelist.domain..*.*(..))")
-    public allDomainMethods(){}
+    public void allDomainMethods(){}
     @AfterReturning(pointcut = "allDomainMethods()", returning = "result")
     public void logAfterService(JoinPoint joinPoint, Object result) {
         String domain = extractDomain(joinPoint);
@@ -37,6 +38,7 @@ public class AuthLoggingAspect {
                 .domain(domain)
                 .eventType(eventType)
                 .timestamp(LocalDateTime.now())
+                .ip(extractClientIp())
                 .message("Called " + joinPoint.getSignature())
                 .build();
 
@@ -54,13 +56,32 @@ public class AuthLoggingAspect {
     }
 
     private String extractDomain(JoinPoint joinPoint) {
-        String fullClassName = joinPoint.getTarget().getClass().getName();
-        if (fullClassName.contains("user")) return "user";
-        else if (fullClassName.contains("post")) return "post";
-        else return "unknown";
+        String className = joinPoint.getTarget().getClass().getName();
+        if (className.contains(".domain.auth.")) return "auth";
+        if (className.contains(".domain.batch.")) return "batch";
+        if (className.contains(".domain.explore.")) return "explore";
+        if (className.contains(".domain.integration.")) return "integration";
+        if (className.contains(".domain.oauth2.")) return "oauth2";
+        if (className.contains(".domain.playlist.")) return "playlist";
+        if (className.contains(".domain.post.")) return "post";
+        if (className.contains(".domain.user.")) return "user";
+
+        return "unknown";
+    }
+    private String extractClientIp() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes attrs) {
+            HttpServletRequest request = attrs.getRequest();
+            String ip = request.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) {
+                ip = request.getRemoteAddr();
+            }
+            return ip;
+        }
+        return "unknown";
     }
 }
 
 
-}
+
 
