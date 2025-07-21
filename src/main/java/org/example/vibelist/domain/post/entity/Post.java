@@ -5,13 +5,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.example.vibelist.domain.user.entity.User;
-import org.example.vibelist.global.jpa.entity.BaseEntity;
 import org.example.vibelist.global.jpa.entity.BaseTime;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.example.vibelist.domain.post.tag.entity.Tag;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import static jakarta.persistence.FetchType.LAZY;
 
@@ -30,6 +29,15 @@ public class Post extends BaseTime {
     @Column(columnDefinition = "text", nullable = false)
     private String content;
 
+    @ManyToMany
+    @JoinTable(
+            name = "post_tag",
+            joinColumns = @JoinColumn(name = "post_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
+
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic;
 
@@ -38,6 +46,8 @@ public class Post extends BaseTime {
 
     @Column(name = "view_cnt", nullable = false)
     private Long viewCnt = 0L;
+
+
 
 //    @CreatedDate
 //    @Column(name = "created_at", updatable = false)
@@ -55,8 +65,9 @@ public class Post extends BaseTime {
     private Playlist playlist;
 
 
-    public void edit(String content, Boolean isPublic){
+    public void edit(String content, Set<Tag> tags, Boolean isPublic){
         this.content = content;
+        this.tags = tags;
         this.isPublic = isPublic;
     }
 
@@ -79,11 +90,13 @@ public class Post extends BaseTime {
     @Builder
     private Post(User user,
                  String content,
+                 Set<Tag> tags,
                  Boolean isPublic,
                  Playlist playlist
                  ) {
         this.user       = user;
         this.content    = content;
+        this.tags      = tags;
         this.isPublic   = isPublic;
         this.playlist  = playlist;
     }

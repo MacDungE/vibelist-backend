@@ -19,7 +19,7 @@ public class PostESQueryBuilder {
     public static Query search(String keyword) {
         return Query.of(q -> q.bool(b -> b
                 .must(m -> m.multiMatch(mm -> mm
-                        .fields("content",
+                        .fields("content","tagsAnalyzed",
                                 "playlist.tracks.title",
                                 "playlist.tracks.artist",
                                 "playlist.tracks.album")

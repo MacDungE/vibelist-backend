@@ -3,6 +3,7 @@ package org.example.vibelist.domain.post.like.service;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.explore.service.ExploreService;
 import org.example.vibelist.domain.post.comment.entity.Comment;
 import org.example.vibelist.domain.post.comment.repository.CommentRepository;
@@ -16,13 +17,17 @@ import org.example.vibelist.domain.post.like.repository.CommentLikeRepository;
 import org.example.vibelist.domain.post.like.repository.PostLikeRepository;
 import org.example.vibelist.domain.post.repository.PostRepository;
 import org.example.vibelist.domain.post.service.PostService;
+import org.example.vibelist.domain.post.tag.entity.Tag;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
+import org.example.vibelist.global.exception.CustomException;
+import org.example.vibelist.global.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LikeService {
@@ -37,25 +42,23 @@ public class LikeService {
 
     @Transactional
     public boolean togglePostLike(Long postId, Long userId) {
-        if (postLikeRepo.existsByPostIdAndUserId(postId, userId)) {
-            postLikeRepo.deleteByPostIdAndUserId(postId, userId);   // hard-delete
-
-            postRepo.findById(postId).ifPresent(Post::decLike); //post entity에 반영
-
-            return false;
+        try {
+            if (postLikeRepo.existsByPostIdAndUserId(postId, userId)) {
+                postLikeRepo.deleteByPostIdAndUserId(postId, userId);   // hard-delete
+                postRepo.findById(postId).ifPresent(Post::decLike); //post entity에 반영
+                return false;
+            }
+            Post post = postRepo.findById(postId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+            PostLike like = PostLike.create(userRepo.getReferenceById(userId), post);
+            postLikeRepo.save(like);
+            post.incLike(); //post entity에 반영
+            exploreService.saveToES(toDto(post));
+            return true;
+        } catch (Exception e) {
+            log.info("[POST_001] 게시글 좋아요 토글 실패 - postId: {}, userId: {}, error: {}", postId, userId, e.getMessage());
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
-        Post post = postRepo.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("Post not found " + postId));
-        PostLike like = PostLike.create(userRepo.getReferenceById(userId), post);
-        postLikeRepo.save(like);
-
-        post.incLike(); //post entity에 반영
-
-        // 💡 게시글 좋아요 수 변경 후 Elasticsearch에 직접 업데이트
-        // PostService의 public toDto 메서드를 사용하여 PostDetailResponse로 변환
-        exploreService.saveToES(toDto(post));
-
-        return true;
     }
 
     public long countPostLikes(Long postId) {
@@ -108,6 +111,10 @@ public class LikeService {
                 pl.getTotalLengthSec(),
                 pl.getTracks()                   // List<TrackRsDto>
         );
+        List<String> tags = post.getTags()          // Set<Tag>
+                .stream()
+                .map(Tag::getName)                  // Tag → String
+                .toList();                          // Java 16+ (Java 21에서도 OK)
 
         return new PostDetailResponse(
                 post.getId(),
@@ -115,6 +122,7 @@ public class LikeService {
                 post.getUser().getUsername(),
                 post.getUser().getUserProfile().getName(),
                 post.getContent(),
+                tags,
                 post.getIsPublic(),
                 post.getLikeCnt(),
                 post.getViewCnt(),
