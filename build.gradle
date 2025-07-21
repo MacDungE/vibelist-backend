@@ -23,6 +23,7 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -69,6 +70,13 @@ dependencies {
 
     //logback
     implementation 'com.sndyuk:logback-more-appenders:1.8.5'
+
+
+    implementation 'ch.qos.logback:logback-classic'
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.677' // 최신 버전 확인
+    implementation 'com.amazonaws:aws-java-sdk-core:1.12.677' // 최신 버전 확인
+    implementation 'com.amazonaws:aws-java-sdk-sts:1.12.677' // 최신 버전 확인
+    implementation 'ca.pjer:logback-awslogs-appender:1.6.0' // Logback S3 appender
 
 
 }
