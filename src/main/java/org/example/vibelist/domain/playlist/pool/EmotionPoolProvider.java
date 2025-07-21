@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.playlist.redis.pool;
+package org.example.vibelist.domain.playlist.pool;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;

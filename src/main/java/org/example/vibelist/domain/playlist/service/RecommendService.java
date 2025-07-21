@@ -12,7 +12,7 @@ import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionProfileManager;
 import org.example.vibelist.domain.playlist.emotion.type.EmotionType;
 import org.example.vibelist.domain.playlist.provider.TrackQueryProvider;
-import org.example.vibelist.domain.playlist.redis.pool.RecommendPoolService;
+import org.example.vibelist.domain.playlist.pool.RecommendPoolService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

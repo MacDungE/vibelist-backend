@@ -1,4 +1,4 @@
-package org.example.vibelist.domain.playlist.redis.pool;
+package org.example.vibelist.domain.playlist.pool;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
