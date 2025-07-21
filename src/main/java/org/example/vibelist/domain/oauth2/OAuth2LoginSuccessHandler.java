@@ -12,6 +12,7 @@ import org.example.vibelist.domain.integration.service.IntegrationTokenInfoServi
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.service.UserService;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -29,6 +30,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final IntegrationTokenInfoService integrationTokenInfoService;
     private final UserService userService;
     private final CookieUtil cookieUtil;
+
+    @Value("${frontend.login.url}")
+    private String loginUrl;
+
+    @Value("${frontend.callback.url}")
+    private String callbackUrl;
 
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
@@ -69,7 +76,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             
         } catch (Exception e) {
             log.error("[OAuth2_LOG] OAuth2 로그인 성공 처리 중 오류 발생", e);
-            response.sendRedirect("/login.html?error=oauth2_error");
+            response.sendRedirect(loginUrl + "?error=oauth2_error");
         }
     }
 
@@ -97,7 +104,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             if (accessToken == null) {
                 log.error("[OAuth2_LOG] 연동 처리 실패: AccessToken이 없습니다");
-                response.sendRedirect("/main.html?integration=error&reason=no_token");
+                response.sendRedirect(callbackUrl + "?integration=error&reason=no_token");
                 return;
             }
 
@@ -109,13 +116,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             log.info("[OAuth2_LOG] 연동 토큰 정보 저장 완료 - provider: {}", provider);
 
             // 성공 리다이렉트 (쿠키 설정 없이)
-            String redirectUrl = "/main.html?integration=success&provider=" + provider + "&userId=" + userId;
+            String redirectUrl = callbackUrl + "?integration=success&provider=" + provider + "&userId=" + userId;
             log.info("[OAuth2_LOG] 연동 완료 - 메인 페이지로 리다이렉트: {}", redirectUrl);
             response.sendRedirect(redirectUrl);
 
         } catch (Exception e) {
             log.error("[OAuth2_LOG] 연동 처리 중 오류 발생 - userId: {}, provider: {}", userId, provider, e);
-            response.sendRedirect("/main.html?integration=error&reason=save_failed");
+            response.sendRedirect(callbackUrl + "?integration=error&reason=save_failed");
         }
     }
 
@@ -163,13 +170,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         if (accessToken == null || refreshToken == null) {
             log.error("[OAuth2_LOG] 토큰이 없습니다. accessToken: {}, refreshToken: {}", accessToken, refreshToken);
             log.error("[OAuth2_LOG] 토큰 생성 실패로 인한 로그인 실패");
-            response.sendRedirect("/login.html?error=token_missing");
+            response.sendRedirect(loginUrl + "?error=token_missing");
             return;
         }
 
         // 새로운 토큰 전달방식 - 리프레시 토큰만 HTTP-only 쿠키로 설정
         // 액세스 토큰은 프론트엔드에서 별도 API를 통해 획득하도록 변경
         cookieUtil.setRefreshTokenCookie(response, refreshToken);
+
+        // reseponse에  set-cookie 헤더에 값을 것을 확인 할수 있는 log
+        log.info("[OAuth2_LOG] response.getHeaderNames() = {}", response.getHeaderNames());
         
         log.info("[OAuth2_LOG] 리프레시 토큰 쿠키 설정 완료 (액세스 토큰은 별도 API로 제공)");
 
@@ -177,19 +187,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String redirectUrl;
         if (isNewUser) {
             // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
-            redirectUrl = "/social-signup.html";
+            redirectUrl = callbackUrl + "?isNewUser=true";
             if (tempUserId != null) {
-                redirectUrl += "?tempUserId=" + tempUserId;
+                redirectUrl += "&tempUserId=" + tempUserId;
             }
             if (provider != null) {
-                redirectUrl += (redirectUrl.contains("?") ? "&" : "?") + "provider=" + provider;
+                redirectUrl += "&provider=" + provider;
             }
             log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
         } else {
             // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
-            redirectUrl = "/main.html";
-            if (id != null) {
-                redirectUrl += "?id=" + id;
+            redirectUrl = callbackUrl;
+            if (accessToken != null) {
+                redirectUrl += "?accessToken=" + accessToken;
             }
             log.info("[OAuth2_LOG] 기존 사용자 - 메인 페이지로 리다이렉트: {}", redirectUrl);
         }
@@ -197,3 +207,4 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(redirectUrl);
     }
 }
+
