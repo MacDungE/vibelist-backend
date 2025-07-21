@@ -2,7 +2,6 @@ package org.example.vibelist.domain.oauth2;
 
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -177,9 +176,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 새로운 토큰 전달방식 - 리프레시 토큰만 HTTP-only 쿠키로 설정
         // 액세스 토큰은 프론트엔드에서 별도 API를 통해 획득하도록 변경
         cookieUtil.setRefreshTokenCookie(response, refreshToken);
-
-        // reseponse에  set-cookie 헤더에 값을 것을 확인 할수 있는 log
-        log.info("[OAuth2_LOG] response.getHeaderNames() = {}", response.getHeaderNames());
         
         log.info("[OAuth2_LOG] 리프레시 토큰 쿠키 설정 완료 (액세스 토큰은 별도 API로 제공)");
 

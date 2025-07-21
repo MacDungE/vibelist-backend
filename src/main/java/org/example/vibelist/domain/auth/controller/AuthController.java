@@ -40,36 +40,6 @@ public class AuthController {
     private final UserService userService;
     private final CookieUtil cookieUtil;
 
-    @Operation(summary = "소셜 로그인 콜백 처리", description = "소셜 로그인 성공 후 받은 accessToken을 Authorization 헤더에 담아 보내면, refreshToken을 쿠키에 설정하고 새로운 accessToken을 발급합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "로그인 성공 및 리프레시 토큰 쿠키 설정 완료"),
-        @ApiResponse(responseCode = "401", description = "유효하지 않은 액세스 토큰 또는 헤더 없음")
-    })
-    @SecurityRequirement(name = "bearer-key")
-    @GetMapping("/social-login/callback")
-    public ResponseEntity<?> socialLoginCallback(
-            @RequestHeader("Authorization") String authorizationHeader,
-            HttpServletResponse response) {
-        try {
-            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                throw new IllegalArgumentException("Authorization 헤더가 없거나 형식이 올바르지 않습니다.");
-            }
-            String accessToken = authorizationHeader.substring(7);
-
-            var loginResponse = authService.loginWithAccessToken(accessToken);
-            
-            // 리프레시 토큰을 HTTP-only 쿠키로 설정
-            cookieUtil.setRefreshTokenCookie(response, loginResponse.getRefreshToken());
-            
-            // 새로운 액세스 토큰은 응답 본문에 반환
-            return ResponseEntity.ok(loginResponse.getTokenResponse());
-        } catch (IllegalArgumentException e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
-        }
-    }
-
     @Operation(summary = "로그인", description = "사용자명과 비밀번호로 로그인하여 액세스 토큰을 발급받습니다.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "로그인 성공"),
