@@ -68,7 +68,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
     //logback
-    implementation 'com.arkansasconsulting:logback-s3-appender:1.0.2'
+    implementation 'com.sndyuk:logback-more-appenders:1.8.5'
 
 
 }
