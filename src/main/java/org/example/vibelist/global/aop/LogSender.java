@@ -26,26 +26,20 @@ public class LogSender {
     public void send(UserLog logData){
         try{
             String jsonLog = objectMapper.writeValueAsString(logData);
-            log.info("USER_LOG_PREVIEW: {}", objectMapper.writeValueAsString(logData));
-//            userLogger.info("User Action Log", //log 이름
-//                    StructuredArguments.keyValue("userId", logData.getUserId()), //json으로 파싱하기 위한 전처리 단계
-//                    StructuredArguments.keyValue("ip", logData.getIp()),
-//                    StructuredArguments.keyValue("eventType", logData.getEventType()),
-//                    StructuredArguments.keyValue("domain", logData.getDomain()),
-//                    StructuredArguments.keyValue("timestamp", logData.getTimestamp().toString()),
-//                    StructuredArguments.keyValue("api", logData.getApi())
-//            );
+            log.info("USER_LOG_PREVIEW: {}", jsonLog);
+
             MDC.put("userId", logData.getUserId());
             MDC.put("ip", logData.getIp());
             MDC.put("eventType", logData.getEventType());
             MDC.put("domain", logData.getDomain());
             MDC.put("timestamp", logData.getTimestamp().toString());
             MDC.put("api", logData.getApi());
+
+            userLogger.info("User Action Log");
         }
         catch(JsonProcessingException e){
-            e.printStackTrace();
-            log.error("로그 직렬화 실패",e);
-        }finally {
+            log.error("로그 직렬화 실패", e);
+        } finally {
             MDC.clear();
         }
     }
