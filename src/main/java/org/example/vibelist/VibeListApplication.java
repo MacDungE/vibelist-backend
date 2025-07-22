@@ -9,11 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableScheduling
-@Slf4j
 public class VibeListApplication {
 
     public static void main(String[] args) {
-        log.info("test");
         SpringApplication.run(VibeListApplication.class, args);
     }
 
