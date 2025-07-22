@@ -20,10 +20,12 @@ import org.example.vibelist.domain.post.service.PostService;
 import org.example.vibelist.domain.post.tag.entity.Tag;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.RsData;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
@@ -41,23 +43,25 @@ public class LikeService {
     /* ---------------- Post ---------------- */
 
     @Transactional
-    public boolean togglePostLike(Long postId, Long userId) {
+    public RsData<Boolean> togglePostLike(Long postId, Long userId) {
         try {
             if (postLikeRepo.existsByPostIdAndUserId(postId, userId)) {
-                postLikeRepo.deleteByPostIdAndUserId(postId, userId);   // hard-delete
-                postRepo.findById(postId).ifPresent(Post::decLike); //post entity에 반영
-                return false;
+                postLikeRepo.deleteByPostIdAndUserId(postId, userId);
+                postRepo.findById(postId).ifPresent(Post::decLike);
+                return RsData.success(ResponseCode.LIKE_CANCELLED, false);
             }
             Post post = postRepo.findById(postId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
             PostLike like = PostLike.create(userRepo.getReferenceById(userId), post);
             postLikeRepo.save(like);
-            post.incLike(); //post entity에 반영
+            post.incLike();
             exploreService.saveToES(toDto(post));
-            return true;
+            return RsData.success(ResponseCode.LIKE_SUCCESS, true);
+        } catch (GlobalException ce) {
+            throw ce;
         } catch (Exception e) {
-            log.info("[POST_001] 게시글 좋아요 토글 실패 - postId: {}, userId: {}, error: {}", postId, userId, e.getMessage());
-            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+            log.info("[LIKE_500] 게시글 좋아요 토글 실패 - postId: {}, userId: {}, error: {}", postId, userId, e.getMessage());
+            throw new GlobalException(ResponseCode.LIKE_INTERNAL_ERROR, "게시글 좋아요 토글 실패 - postId=" + postId + ", userId=" + userId + ", error=" + e.getMessage());
         }
     }
 
@@ -77,20 +81,24 @@ public class LikeService {
 
     @Transactional
     public boolean toggleCommentLike(Long commentId, Long userId) {
-        if (commentLikeRepo.existsByCommentIdAndUserId(commentId, userId)) {
-            commentLikeRepo.deleteByCommentIdAndUserId(commentId, userId);
-
-
-            commentRepo.findById(commentId).ifPresent(Comment::decLike); //comment entity에 반영
-
-            return false;
+        try {
+            if (commentLikeRepo.existsByCommentIdAndUserId(commentId, userId)) {
+                commentLikeRepo.deleteByCommentIdAndUserId(commentId, userId);
+                commentRepo.findById(commentId).ifPresent(Comment::decLike); //comment entity에 반영
+                return false;
+            }
+            Comment comment = commentRepo.findById(commentId)
+                    .orElseThrow(() -> new GlobalException(ResponseCode.COMMENT_NOT_FOUND, "commentId=" + commentId + "인 댓글을 찾을 수 없습니다."));
+            CommentLike like = CommentLike.create(userRepo.getReferenceById(userId), comment);
+            commentLikeRepo.save(like);
+            comment.incLike();//comment entity에 반영
+            return true;
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.info("[COMMENT_LIKE_500] 댓글 좋아요 토글 실패 - commentId: {}, userId: {}, error: {}", commentId, userId, e.getMessage());
+            throw new GlobalException(ResponseCode.COMMENT_LIKE_INTERNAL_ERROR, "댓글 좋아요 토글 실패 - commentId=" + commentId + ", userId=" + userId + ", error=" + e.getMessage());
         }
-        Comment comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("Comment not found " + commentId));
-        CommentLike like = CommentLike.create(userRepo.getReferenceById(userId), comment);
-        commentLikeRepo.save(like);
-        comment.incLike();//comment entity에 반영
-        return true;
     }
 
     public long countCommentLikes(Long commentId) {

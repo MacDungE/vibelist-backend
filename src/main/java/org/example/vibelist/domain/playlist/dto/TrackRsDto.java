@@ -5,15 +5,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.vibelist.domain.playlist.es.document.AudioFeatureEsDocument;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "트랙 응답 DTO")
 public class TrackRsDto {
 
+    @Schema(description = "Spotify 트랙 ID", example = "6rqhFgbbKwnb9MLmUQDhG6", required = true)
     private String spotifyId;
-    private int durationMs;
+    @Schema(description = "트랙 재생 시간(ms)", example = "210000", required = true)
+    private Integer durationMs;
 
     private String trackId;
     private String title;

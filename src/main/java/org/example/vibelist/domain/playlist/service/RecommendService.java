@@ -28,8 +28,9 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import java.io.IOException;
 import java.util.stream.Stream;
 
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
 
 
 @Service
@@ -45,13 +46,20 @@ public class RecommendService {
     private final EmotionTextManager textManager;
 
     // 입력값 구분
-    public List<TrackRsDto> recommend(RecommendRqDto request) throws JsonProcessingException {
-        if (request.getText() != null && !request.getText().isBlank()) {
-            return recommendByText(request.getText(), request.getMode());
-        } else if (request.getUserValence() != null && request.getUserEnergy() != null) {
-            return recommendByCoordinate(request.getUserValence(), request.getUserEnergy(), request.getMode());
-        } else {
-            throw new CustomException(ErrorCode.RECOMMEND_INVALID_INPUT);        }
+    public RsData<List<TrackRsDto>> recommend(RecommendRqDto request) {
+        try {
+            if (request.getText() != null && !request.getText().isBlank()) {
+                return RsData.success(ResponseCode.RECOMMEND_SUCCESS, recommendByText(request.getText(), request.getMode()));
+            } else if (request.getUserValence() != null && request.getUserEnergy() != null) {
+                return RsData.success(ResponseCode.RECOMMEND_SUCCESS, recommendByCoordinate(request.getUserValence(), request.getUserEnergy(), request.getMode()));
+            } else {
+                throw new GlobalException(ResponseCode.RECOMMEND_INVALID_INPUT, "추천 입력값이 잘못되었습니다. text, userValence, userEnergy 중 하나는 반드시 입력되어야 합니다.");
+            }
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "추천 처리 중 오류: " + e.getMessage());
+        }
     }
 
     // valence, energy -> 감정 매핑
@@ -129,7 +137,7 @@ public class RecommendService {
 
         } catch (IOException e) {
             log.error("❌ Elasticsearch 검색 실패", e);
-            throw new CustomException(ErrorCode.ES_SEARCH_FAILED);
+            throw new GlobalException(ResponseCode.ES_SEARCH_FAILED, "Elasticsearch 검색 실패: " + e.getMessage());
         }
     }
 

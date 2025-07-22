@@ -24,9 +24,6 @@ public class DevIntegrationTokenInfoService {
     public DevIntegrationTokenInfo getDevAuth(String name){
         //DevAuthToken 테이블의 한 행 전체를 return 합니다.
         DevIntegrationTokenInfo devIntegrationTokenInfo = devIntegrationTokenInfoRepository.findByName(name);
-        if(devIntegrationTokenInfo == null){
-            return null;
-        }
         return devIntegrationTokenInfo;
     }
 
