@@ -19,7 +19,12 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,12 +32,17 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CorsConfigurationSource corsConfigurationSource;
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler;
     private final CustomAuthorizationCodeTokenResponseClient customTokenResponseClient;
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
+
+    @Value("${frontend.login.url:https://your-production-domain.com}")
+    private String frontendProdUrl;
+
+    @Value("${frontend.dev.url:http://localhost:3000}")
+    private String frontendDevUrl;
 
 
     @Bean
@@ -42,19 +52,12 @@ public class SecurityConfig {
         
         http
                 // CORS 설정 추가
-               .cors(cors -> cors.configurationSource(corsConfigurationSource))
+               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                // CSRF(Cross-Site Request Forgery) 보호 기능을 비활성화
                 .csrf(AbstractHttpConfigurer::disable)
                 // 세션 관리 정책을 STATELESS로 설정 (JWT 사용 시 일반적)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 보안 헤더 설정
-//                .headers(headers -> headers
-//                        .contentTypeOptions().and()
-//                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-//                                .maxAgeInSeconds(31536000))
-//                        .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-//                )
                 // HTTP 요청에 대한 인증/인가 규칙 설정
                 .authorizeHttpRequests(auth -> auth
                         // 정적 리소스 및 기본 페이지 허용
@@ -112,7 +115,6 @@ public class SecurityConfig {
                 )
                 // OAuth2 설정
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/index.html")
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)
                         )
@@ -121,14 +123,12 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                         .authorizationEndpoint(authorization -> authorization
-//                                .authorizationRequestRepository(authorizationRequestRepository())
                                 .authorizationRequestResolver(new CustomAuthorizationRequestResolver(repo)))
                 )
                 // 로그아웃 설정
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessHandler(oAuth2LogoutSuccessHandler)
-                        .logoutSuccessUrl("/login.html")
                         .invalidateHttpSession(true)
                         .deleteCookies(TokenConstants.ACCESS_TOKEN_COOKIE, TokenConstants.REFRESH_TOKEN_COOKIE)
                         .permitAll()
@@ -137,6 +137,20 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(frontendDevUrl, frontendProdUrl, "https://local.vibelist.com"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean

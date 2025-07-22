@@ -78,6 +78,18 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "토큰 갱신 (OAuth2 로그인 후)", description = "OAuth2 로그인 완료 후 리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
+            @ApiResponse(responseCode = "401", description = "리프레시 토큰이 없거나 유효하지 않음")
+    })
+    @PostMapping("/token/refresh")
+    public ResponseEntity<?> refreshTokenForOAuth2(
+            @Parameter(description = "리프레시 토큰 (쿠키)")
+            @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
+        return refreshToken(refreshToken);
+    }
+
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(
