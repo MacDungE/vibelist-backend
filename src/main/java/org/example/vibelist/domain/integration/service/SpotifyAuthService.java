@@ -160,7 +160,7 @@ public class SpotifyAuthService {
                 Map<String, String> tokenMap = refreshAccessToken(dev.getRefreshToken());
 
                 if (!dev.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
-                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                    throw new (ResponseCode.);
                 }
 
                 String newAccessToken = tokenMap.get("access_token");
