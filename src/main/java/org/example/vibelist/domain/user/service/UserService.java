@@ -172,7 +172,7 @@ public class UserService {
     }
 
     public List<UserDto> searchUsersByName(String name) {
-        List<UserProfile> profiles = userProfileRepository.findByNameContaining(name);
+        List<UserProfile> profiles = userProfileRepository.findByNameContainingWithUser(name);
         return profiles.stream()
                 .map(profile -> {
                     User user = profile.getUser();
