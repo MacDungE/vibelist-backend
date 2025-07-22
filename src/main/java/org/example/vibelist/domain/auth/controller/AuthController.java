@@ -23,7 +23,6 @@ import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.util.SecurityUtil;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.ResponseCode;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
