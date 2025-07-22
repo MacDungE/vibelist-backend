@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.RsData;
 
 @Service
 @RequiredArgsConstructor
@@ -193,10 +196,35 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto createUserWithProfile(CreateUserRequest request) {
-        User user = createUser(request.getUsername(), request.getPassword(), request.getRole());
-        UserProfile profile = createUserProfile(user, request.getEmail(), request.getName(), request.getPhone());
-        return convertToUserDto(user, profile);
+    public RsData<UserDto> getUser(Long userId) {
+        try {
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다."));
+            return RsData.success(ResponseCode.USER_FOUND, convertToUserDto(user, user.getUserProfile()));
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "사용자 조회 중 오류: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public RsData<UserDto> createUserWithProfile(CreateUserRequest request) {
+        try {
+            if (existsByUsername(request.getUsername())) {
+                throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, "username='" + request.getUsername() + "'은 이미 존재합니다.");
+            }
+            if (existsByEmail(request.getEmail())) {
+                throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, "email='" + request.getEmail() + "'은 이미 존재합니다.");
+            }
+            User user = createUser(request.getUsername(), request.getPassword(), request.getRole());
+            UserProfile profile = createUserProfile(user, request.getEmail(), request.getName(), request.getPhone());
+            return RsData.success(ResponseCode.USER_CREATED, convertToUserDto(user, profile));
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "사용자 생성 중 오류: " + e.getMessage());
+        }
     }
 
     @Transactional
