@@ -10,6 +10,9 @@ import org.example.vibelist.domain.post.dto.PostDetailResponse;
 import org.example.vibelist.domain.post.dto.PostUpdateRequest;
 import org.example.vibelist.domain.post.service.PostService;
 import org.example.vibelist.global.aop.UserActivityLog;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.RsData;
 import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +44,7 @@ public class PostController {
     @ResponseStatus(HttpStatus.CREATED)
     @UserActivityLog(action = "CREATE_POST")//AOP 전달
     public ResponseEntity<RsData<Long>> createPost(@RequestBody @Valid PostCreateRequest request,
-                           @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
+                                                   @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         Long userId = userDetail.getId();
         RsData<Long> result = postService.createPost(userId, request);
@@ -87,9 +90,10 @@ public class PostController {
     @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "현재 인증된 사용자가 좋아요한 게시글 목록을 조회합니다.")
     @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
     @UserActivityLog(action="VIEW_LIKES_POST")//AOP전달
-    public List<PostDetailResponse> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
-        Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
-        return postService.getLikedPostsByUser(userDetail.getId());
+    public ResponseEntity<RsData<?>> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
+        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
+        Long userId = userDetail.getId();
+        RsData<?> result = postService.getLikedPostsByUser(userId);
+        return ResponseEntity.ok(result);
     }
-
 }
