@@ -58,12 +58,9 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithValidAuthorizationHeader_ShouldAuthenticateSuccessfully() throws Exception {
         // given
         when(request.getHeader("Authorization")).thenReturn(BEARER_TOKEN);
-        when(request.getCookies()).thenReturn(null);
         when(jwtTokenProvider.validateToken(VALID_TOKEN)).thenReturn(true);
         when(jwtTokenProvider.getTokenType(VALID_TOKEN)).thenReturn(JwtTokenType.ACCESS);
         when(jwtTokenProvider.getAuthentication(VALID_TOKEN)).thenReturn(authentication);
-        when(authentication.getName()).thenReturn("testUser");
-        when(authentication.getAuthorities()).thenReturn(null);
 
         // when
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
@@ -216,7 +213,6 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithException_ShouldClearSecurityContextAndContinue() throws Exception {
         // given
         when(request.getHeader("Authorization")).thenReturn(BEARER_TOKEN);
-        when(request.getCookies()).thenReturn(null);
         when(jwtTokenProvider.validateToken(VALID_TOKEN)).thenThrow(new RuntimeException("Token validation error"));
 
         // when

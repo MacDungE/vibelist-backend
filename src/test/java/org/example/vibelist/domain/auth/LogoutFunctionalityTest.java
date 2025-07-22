@@ -22,11 +22,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.example.vibelist.global.config.SecurityConfig;
+import org.example.vibelist.global.config.WebConfig;
+import org.springframework.test.context.ContextConfiguration;
+
 @SpringBootTest
 @AutoConfigureWebMvc
 @ActiveProfiles("test")
 @Transactional
 @DisplayName("로그아웃 기능 테스트")
+@ContextConfiguration(classes = {SecurityConfig.class, WebConfig.class})
 class LogoutFunctionalityTest {
 
     @Autowired

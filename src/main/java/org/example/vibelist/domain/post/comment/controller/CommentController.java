@@ -42,11 +42,11 @@ public class CommentController {
 
     @Operation(summary = "댓글 조회", description = "현재 게시글의 댓글을 정렬 기준에 따라 조회합니다.")
     @GetMapping
-    public ResponseEntity<RsData<?>> getAll(
+    public ResponseEntity<RsData<List<CommentResponseDto>>> getAll(
             @RequestParam Long postId,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        RsData<?> result = commentService.getByPostId(postId);
+        RsData<?> result = commentService.getSortedComments(postId, sort);
         return ResponseEntity.ok(result);
     }
 
@@ -63,12 +63,12 @@ public class CommentController {
 
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<RsData<?>> delete(@PathVariable Long id, CustomUserDetails details) {
+    public ResponseEntity<RsData<Void>> delete(@PathVariable Long id, CustomUserDetails details) {
         if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
         Long userId = details.getId();
-        RsData<?> result = commentService.delete(id, userId);
+        RsData<Void> result = commentService.delete(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
     }
 // 댓글 좋아요 / 취소
