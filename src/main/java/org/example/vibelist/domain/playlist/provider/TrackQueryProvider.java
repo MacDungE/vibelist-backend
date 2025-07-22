@@ -13,8 +13,8 @@ import org.example.vibelist.domain.playlist.emotion.profile.EmotionAnalysis;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfile;
 import org.example.vibelist.domain.playlist.es.builder.ESQueryBuilder;
 import org.example.vibelist.domain.playlist.es.document.AudioFeatureEsDocument;
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class TrackQueryProvider {
 
         } catch (IOException e) {
             log.error("❌ Elasticsearch 검색 실패", e);
-            throw new CustomException(ErrorCode.ES_SEARCH_FAILED);
+            throw new GlobalException(ResponseCode.ES_SEARCH_FAILED);
         }
     }
 }

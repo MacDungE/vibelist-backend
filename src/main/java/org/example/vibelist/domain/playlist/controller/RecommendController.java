@@ -2,6 +2,7 @@ package org.example.vibelist.domain.playlist.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.playlist.dto.RecommendRqDto;
+import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.RecommendService;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,8 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 
 import org.example.vibelist.global.response.RsData;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v1/recommend")
