@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.post.dto.PostCreateRequest;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
 import org.example.vibelist.domain.post.dto.PostUpdateRequest;
+import org.example.vibelist.domain.post.repository.PostRepository;
 import org.example.vibelist.domain.post.service.PostService;
 import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,11 +46,11 @@ public class PostController {
 
     @Operation(summary = "게시글 상세 조회", description = "게시글과 연결된 플레이리스트 및 트랙 정보를 반환합니다.")
     @GetMapping("/{id}")
-    public ResponseEntity<RsData<?>> getPostDetail(@PathVariable Long id,
+    public ResponseEntity<RsData<PostDetailResponse>> getPostDetail(@PathVariable Long id,
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         Long userId = userDetail.getId();
-        RsData<?> result = postService.getPostDetail(id, userId);
+        RsData<PostDetailResponse> result = postService.getPostDetail(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 200 : 404).body(result);
     }
 
@@ -76,11 +77,11 @@ public class PostController {
 
     @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "현재 인증된 사용자가 좋아요한 게시글 목록을 조회합니다.")
     @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<RsData<?>> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
+    public ResponseEntity<RsData<List<PostDetailResponse>>> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         Long userId = userDetail.getId();
-        RsData<?> result = postService.getLikedPostsByUser(userId);
-        return ResponseEntity.ok(result);
+        RsData<List<PostDetailResponse>> result = postService.getLikedPostsByUser(userId);
+        return ResponseEntity.status(result.isSuccess() ? 200 : 404).body(result);
     }
 
 }

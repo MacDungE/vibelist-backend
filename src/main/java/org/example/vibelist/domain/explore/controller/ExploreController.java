@@ -28,18 +28,18 @@ public class ExploreController {
 
     @Operation(summary = "게시글 검색", description = "키워드를 기반으로 게시글을 검색합니다.")
     @GetMapping("/search")
-    public ResponseEntity<RsData<?>> search(
+    public ResponseEntity<RsData<Page<PostDetailResponse>>> search(
             @Parameter(description = "검색 키워드", required = true)
             @RequestParam("q") String keyword,
             @Parameter(hidden = true) Pageable pageable) {
-        RsData<?> result = exploreService.search(keyword, pageable);
+        RsData<Page<PostDetailResponse>> result = exploreService.search(keyword, pageable);
         return ResponseEntity.status(result.isSuccess() ? 200 : 400).body(result);
     }
 
     @Operation(summary = "피드 조회", description = "추천 게시글 피드를 조회합니다.")
     @GetMapping("/feed")
-    public ResponseEntity<RsData<?>> feed(@Parameter(hidden = true) Pageable pageable) {
-        RsData<?> result = exploreService.feed(pageable);
+    public ResponseEntity<RsData<Page<PostDetailResponse>>> feed(@Parameter(hidden = true) Pageable pageable) {
+        RsData<Page<PostDetailResponse>> result = exploreService.feed(pageable);
         return ResponseEntity.ok(result);
     }
 
