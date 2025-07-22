@@ -46,7 +46,7 @@ public class CommentController {
             @RequestParam Long postId,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        RsData<?> result = commentService.getSortedComments(postId, sort);
+        RsData<List<CommentResponseDto>> result = commentService.getSortedComments(postId, sort);
         return ResponseEntity.ok(result);
     }
 
