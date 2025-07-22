@@ -3,12 +3,15 @@ package org.example.vibelist.domain.post.tag.service;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.example.vibelist.domain.post.tag.dto.TagDTO;
 import org.example.vibelist.domain.post.tag.entity.Tag;
 import org.example.vibelist.domain.post.tag.repository.TagRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.example.vibelist.global.response.RsData;
 import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.response.GlobalException;
@@ -18,7 +21,7 @@ import org.example.vibelist.global.response.GlobalException;
 public class TagService {
     private final TagRepository tagRepository;
 
-    public RsData<List<Tag>> autoComplete(String input, int limit) {
+    public RsData<List<TagDTO>> autoComplete(String input, int limit) {
         try {
             input = input.trim();
             if (input.isBlank()) return RsData.success(ResponseCode.TAG_AUTOCOMPLETE_SUCCESS, List.of());
@@ -30,7 +33,10 @@ public class TagService {
             } else {
                 tags = tagRepository.findTopNByNamePrefix(input.toLowerCase(), limit);
             }
-            return RsData.success(ResponseCode.TAG_AUTOCOMPLETE_SUCCESS, tags);
+            List<TagDTO> TagDTOs = tags.stream()
+                    .map(TagDTO::from)
+                    .collect(Collectors.toList());
+            return RsData.success(ResponseCode.TAG_AUTOCOMPLETE_SUCCESS, TagDTOs);
         } catch (Exception e) {
             throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "태그 자동완성 중 오류 발생: " + e.getMessage());
         }
