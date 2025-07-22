@@ -1,0 +1,33 @@
+<configuration>
+    <!-- 색상 및 예외 포맷 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+
+    <!-- 콘솔용 Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss}){faint} %clr([%thread]){faint} %clr(%-5level) %clr(%logger{36}){cyan} %clr(-){faint} %msg%n%wex</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Logstash용 Appender -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:5044</destination>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <fieldNames>
+                <message>message</message>
+                <timestamp>@timestamp</timestamp>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- 콘솔 로그는 전체 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- 사용자 로그만 logstash로 -->
+    <logger name="user-log" level="INFO" additivity="false">
+        <appender-ref ref="LOGSTASH"/>
+    </logger>
+</configuration>

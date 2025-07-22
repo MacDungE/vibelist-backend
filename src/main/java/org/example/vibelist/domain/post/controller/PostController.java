@@ -9,6 +9,7 @@ import org.example.vibelist.domain.post.dto.PostCreateRequest;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
 import org.example.vibelist.domain.post.dto.PostUpdateRequest;
 import org.example.vibelist.domain.post.service.PostService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,6 +42,7 @@ public class PostController {
     })
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    @UserActivityLog(action = "CREATE_POST")//AOP 전달
     public Long createPost(@RequestBody @Valid PostCreateRequest request,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
 
@@ -54,6 +56,7 @@ public class PostController {
 
     @Operation(summary = "게시글 상세 조회", description = "게시글과 연결된 플레이리스트 및 트랙 정보를 반환합니다.")
     @GetMapping("/{id}")
+    @UserActivityLog(action="VIEW_POST")//AOP전달
     public PostDetailResponse getPostDetail(@PathVariable Long id,
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
 
@@ -68,6 +71,7 @@ public class PostController {
     })
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @UserActivityLog(action="EDIT_POST")//AOP전달
     public void updatePost(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail,
                            @RequestBody @Valid PostUpdateRequest request) {
 
@@ -84,6 +88,7 @@ public class PostController {
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @UserActivityLog(action="DELETE_POST")//AOP전달
     public void deletePost(@PathVariable Long id,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
 
@@ -99,6 +104,7 @@ public class PostController {
         @ApiResponse(responseCode = "401", description = "인증 필요", content = @Content)
     })
     @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
+    @UserActivityLog(action="VIEW_LIKES_POST")//AOP전달
     public List<PostDetailResponse> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
         Long userIdOrTestId = userDetail == null ? 1L : userDetail.getId();
         return postService.getLikedPostsByUser(userDetail.getId());
