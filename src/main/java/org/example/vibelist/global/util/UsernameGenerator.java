@@ -3,6 +3,8 @@ package org.example.vibelist.global.util;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 
 @Component
 public class UsernameGenerator {
@@ -39,7 +41,7 @@ public class UsernameGenerator {
             username = generateRandomUsername();
             attempts++;
             if (attempts > 100) {
-                throw new RuntimeException("사용자명 생성에 실패했습니다. 다시 시도해주세요.");
+                throw new GlobalException(ResponseCode.USERNAME_GENERATION_FAILED, "사용자명 생성에 100회 이상 실패했습니다. 잠시 후 다시 시도해주세요.");
             }
         } while (existsChecker.test(username));
         

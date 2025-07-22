@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.oauth2.*;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,31 +61,41 @@ public class SecurityConfig {
                         .requestMatchers("/", "/*.html", "/favicon.ico",
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/.well-known/**").permitAll()
-                                        // 인증 관련 엔드포인트 허용
-                .requestMatchers("/v1/auth/**").permitAll()
-                // OAuth2 관련 엔드포인트 허용 (쿼리 파라미터 포함)
-                .requestMatchers("/login/oauth2/**", "/oauth2/**", "/v1/oauth2/**").permitAll()
-                // OAuth2 인증 엔드포인트 명시적 허용 (integration_user_id 파라미터 포함)
-                .requestMatchers("/oauth2/authorization/**").permitAll()
-                // 헬스체크 및 모니터링 엔드포인트 허용
-                .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
-                //로그 수집 엔드포인트 허용
-                .requestMatchers("/auth-logs/_doc/**").permitAll()
+                        // 인증 관련 엔드포인트 허용
+                        .requestMatchers("/v1/auth/**").permitAll()
+                        // OAuth2 관련 엔드포인트 허용 (쿼리 파라미터 포함)
+                        .requestMatchers("/login/oauth2/**", "/oauth2/**", "/v1/oauth2/**").permitAll()
+                        // OAuth2 인증 엔드포인트 명시적 허용 (integration_user_id 파라미터 포함)
+                        .requestMatchers("/oauth2/authorization/**").permitAll()
+                        // 헬스체크 및 모니터링 엔드포인트 허용
+                        .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
                         // 웹소켓 엔드포인트 허용
                         .requestMatchers("/ws/**", "/websocket/**").permitAll()
                         // API 문서 허용
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         // 공개 API 엔드포인트 허용
                         .requestMatchers("/v1/public/**").permitAll()
-                        .requestMatchers("/v1/post/**").permitAll()
+                        // 탐색(검색/피드/트렌드) 자유롭게 허용
                         .requestMatchers("/v1/explore/**").permitAll()
-                        .requestMatchers("/v3/api-docs").permitAll()
-                        .requestMatchers("/v1/dev_auth/**").permitAll()
-                        // 사용자 관련 엔드포인트는 인증 필요
-                        .requestMatchers("v1/playlist/**").permitAll()
-                        .requestMatchers("/v1/user/**").authenticated()
+                        // 게시글/댓글/좋아요 조회(permitAll), 생성/수정/삭제/토글(인증 필요)
+                        // 게시글 조회
+                        .requestMatchers("/v1/post", "/v1/post/", "/v1/post/{id}", "/v1/post/likes", "/v1/post/{id}/likes", "/v1/post/{id}/likes/count", "/v1/post/{id}/likes/me").permitAll()
+                        // 댓글 조회
+                        .requestMatchers("/v1/comment", "/v1/comment/", "/v1/comment/{id}").permitAll()
+                        // 좋아요 조회
+                        .requestMatchers("/v1/post/{postId}/likes/count", "/v1/post/{postId}/likes/me", "/v1/comment/{commentId}/likes/count", "/v1/comment/{commentId}/likes/me").permitAll()
+                        // 나머지 게시글/댓글/좋아요(생성/수정/삭제/토글 등)는 인증 필요
+                        .requestMatchers("/v1/post/**").authenticated()
+                        .requestMatchers("/v1/comment/**").authenticated()
+                        .requestMatchers("/v1/like/**").authenticated()
+                        // 플레이리스트, 태그, 추천 등 기타 공개 API
+                        .requestMatchers("/v1/playlist/**").permitAll()
+                        .requestMatchers("/v1/tag/**").permitAll()
                         .requestMatchers("/v1/recommend").permitAll()
-
+                        // 사용자 관련 엔드포인트는 인증 필요
+                        .requestMatchers("/v1/user/**").authenticated()
+                        // 개발용 인증
+                        .requestMatchers("/v1/dev_auth/**").permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
@@ -91,11 +103,11 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e
                         // 인증이 안된 사용자가 접근하려고할 때
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "인증이 필요합니다: " + authException.getMessage());
                         })
                         // 인증은 되었지만 권한이 없을 때
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                            throw new GlobalException(ResponseCode.AUTH_FORBIDDEN, "권한이 없습니다: " + accessDeniedException.getMessage());
                         })
                 )
                 // OAuth2 설정

@@ -11,8 +11,9 @@ import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.repository.PostRepository;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.GlobalException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,15 +32,15 @@ public class CommentService {
 //    private final RedisTemplate<String, String> redisTemplate;
 
 
-    public void create(CommentCreateDto dto, Long userId) {
+    public RsData<Void> create(CommentCreateDto dto, Long userId) {
         try {
-            User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            User user = userRepository.findById(userId).orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다."));
             Post post = postRepository.findById(dto.getPostId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + dto.getPostId() + "인 게시글을 찾을 수 없습니다."));
             Comment parent = null;
             if (dto.getParentId() != null) {
                 parent = commentRepository.findById(dto.getParentId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                        .orElseThrow(() -> new GlobalException(ResponseCode.COMMENT_NOT_FOUND, "parentId=" + dto.getParentId() + "인 부모 댓글을 찾을 수 없습니다."));
             }
             Comment comment = Comment.builder()
                     .content(dto.getContent())
@@ -48,57 +49,71 @@ public class CommentService {
                     .parent(parent)
                     .build();
             commentRepository.save(comment);
+            return RsData.success(ResponseCode.COMMENT_CREATED, null);
+        } catch (GlobalException ce) {
+            throw ce;
         } catch (Exception e) {
-            log.info("[COMMENT_001] 댓글 생성 실패 - userId: {}, dto: {}, error: {}", userId, dto, e.getMessage());
-            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+            log.info("[COMMENT_500] 댓글 생성 실패 - userId: {}, dto: {}, error: {}", userId, dto, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "댓글 생성 중 오류 - userId=" + userId + ", error=" + e.getMessage());
         }
     }
 
-    public List<CommentResponseDto> getByPostId(Long postId) {
-        List<Comment> comments = commentRepository.findByPostId(postId);
-        Map<Long, CommentResponseDto> map = new LinkedHashMap<>();
+    public RsData<List<CommentResponseDto>> getByPostId(Long postId) {
+        try {
+            List<Comment> comments = commentRepository.findByPostId(postId);
+            Map<Long, CommentResponseDto> map = new LinkedHashMap<>();
 
-        // 먼저 부모 댓글만 등록
-        comments.stream().filter(c -> c.getParent() == null).forEach(c -> {
-            map.put(c.getId(), toDto(c));
-        });
+            // 먼저 부모 댓글만 등록
+            comments.stream().filter(c -> c.getParent() == null).forEach(c -> {
+                map.put(c.getId(), toDto(c));
+            });
 
-        // 자식 댓글을 부모에 추가
-        comments.stream().filter(c -> c.getParent() != null).forEach(c -> {
-            CommentResponseDto parentDto = map.get(c.getParent().getId());
-            if (parentDto != null) {
-                parentDto.getChildren().add(toDto(c));
-            }
-        });
+            // 자식 댓글을 부모에 추가
+            comments.stream().filter(c -> c.getParent() != null).forEach(c -> {
+                CommentResponseDto parentDto = map.get(c.getParent().getId());
+                if (parentDto != null) {
+                    parentDto.getChildren().add(toDto(c));
+                }
+            });
 
-        return new ArrayList<>(map.values());
+            return RsData.success(ResponseCode.COMMENT_UPDATED, new ArrayList<>(map.values()));
+        } catch (Exception e) {
+            log.info("[COMMENT_500] 댓글 목록 조회 실패 - postId: {}, error: {}", postId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "댓글 목록 조회 중 오류 - postId=" + postId + ", error=" + e.getMessage());
+        }
     }
 
-    public void update(Long id, CommentUpdateDto dto, Long userId) {
+    public RsData<Void> update(Long id, CommentUpdateDto dto, Long userId) {
         try {
             Comment comment = commentRepository.findById(id)
-                    .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                    .orElseThrow(() -> new GlobalException(ResponseCode.COMMENT_NOT_FOUND, "commentId=" + id + "인 댓글을 찾을 수 없습니다."));
             if (!comment.getUser().getId().equals(userId)) {
-                throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+                throw new GlobalException(ResponseCode.COMMENT_FORBIDDEN, "댓글 수정 권한 없음 - userId=" + userId + ", commentId=" + id);
             }
             comment.setContent(dto.getContent());
+            return RsData.success(ResponseCode.COMMENT_UPDATED, null);
+        } catch (GlobalException ce) {
+            throw ce;
         } catch (Exception e) {
-            log.info("[COMMENT_002] 댓글 수정 실패 - commentId: {}, userId: {}, dto: {}, error: {}", id, userId, dto, e.getMessage());
-            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+            log.info("[COMMENT_500] 댓글 수정 실패 - commentId: {}, userId: {}, dto: {}, error: {}", id, userId, dto, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "댓글 수정 중 오류 - commentId=" + id + ", userId=" + userId + ", error=" + e.getMessage());
         }
     }
 
-    public void delete(Long id, Long userId) {
+    public RsData<Void> delete(Long id, Long userId) {
         try {
             Comment comment = commentRepository.findById(id)
-                    .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                    .orElseThrow(() -> new GlobalException(ResponseCode.COMMENT_NOT_FOUND, "commentId=" + id + "인 댓글을 찾을 수 없습니다."));
             if (!comment.getUser().getId().equals(userId)) {
-                throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+                throw new GlobalException(ResponseCode.COMMENT_FORBIDDEN, "댓글 삭제 권한 없음 - userId=" + userId + ", commentId=" + id);
             }
             commentRepository.delete(comment);
+            return RsData.success(ResponseCode.COMMENT_DELETED, null);
+        } catch (GlobalException ce) {
+            throw ce;
         } catch (Exception e) {
-            log.info("[COMMENT_001] 댓글 삭제 실패 - commentId: {}, userId: {}, error: {}", id, userId, e.getMessage());
-            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+            log.info("[COMMENT_500] 댓글 삭제 실패 - commentId: {}, userId: {}, error: {}", id, userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "댓글 삭제 중 오류 - commentId=" + id + ", userId=" + userId + ", error=" + e.getMessage());
         }
     }
 
@@ -113,7 +128,7 @@ public class CommentService {
             case "oldest" -> Comparator.comparing(Comment::getCreatedAt);
             case "likes" -> Comparator.comparing(Comment::getLikeCount).reversed();
             case "latest" -> Comparator.comparing(Comment::getCreatedAt).reversed();
-            default ->  throw new CustomException(ErrorCode.BAD_REQUEST);
+            default ->  throw new GlobalException(ResponseCode.BAD_REQUEST, "지원하지 않는 정렬 방식: " + sort);
         };
         parents.sort(comparator);
 

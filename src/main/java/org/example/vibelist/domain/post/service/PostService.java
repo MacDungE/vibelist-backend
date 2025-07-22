@@ -29,6 +29,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -43,118 +47,141 @@ public class PostService {
     private final TagService tagService;
 
     @Transactional
-    public Long createPost(Long userId, PostCreateRequest dto) {
-        User user = userRepository.findById(userId).orElseThrow(NoSuchElementException::new);
-        List<TrackRsDto> tracks = dto.getTracks();//track 정보 받아오기
-        SpotifyPlaylistDto responseDto= new SpotifyPlaylistDto();
+    public RsData<Long> createPost(Long userId, PostCreateRequest dto) {
         try {
-            responseDto = playlistService.createPlaylist(userId,tracks);
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다."));
+            List<TrackRsDto> tracks = dto.getTracks();
+            SpotifyPlaylistDto responseDto;
+            try {
+                responseDto = playlistService.createPlaylist(userId, tracks).getData();
+            } catch (Exception e) {
+                log.error("[POST_502] 플레이리스트 생성 실패 - userId: {}, error: {}", userId, e.getMessage());
+                throw new GlobalException(ResponseCode.PLAYLIST_CREATE_FAIL, "플레이리스트 생성 실패 - userId=" + userId + ", error=" + e.getMessage());
+            }
+            String spotifyUrl = responseDto.getSpotifyId();
+            int totalTracks = tracks.size();
+            int totalLengthSec = tracks.stream().mapToInt(TrackRsDto::getDurationMs).sum() / 1_000;
+            Playlist playlist = Playlist.builder()
+                    .spotifyUrl(spotifyUrl)
+                    .totalTracks(totalTracks)
+                    .totalLengthSec(totalLengthSec)
+                    .tracks(tracks)
+                    .build();
+            Set<Tag> tags = dto.getTags().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(tagService::getOrCreate)
+                    .collect(Collectors.toSet());
+            Post post = Post.builder()
+                    .user(user)
+                    .content(dto.getContent())
+                    .tags(tags)
+                    .isPublic(dto.getIsPublic())
+                    .playlist(playlist)
+                    .build();
+            try {
+                postRepository.save(post);
+            } catch (Exception e) {
+                log.error("[POST_503] 게시글 저장 실패 - userId: {}, error: {}", userId, e.getMessage());
+                throw new GlobalException(ResponseCode.POST_SAVE_FAIL, "게시글 저장 실패 - userId=" + userId + ", error=" + e.getMessage());
+            }
+            try {
+                PostDetailResponse postDetailResponse = toDto(post);
+                exploreService.saveToES(postDetailResponse);
+            } catch (Exception e) {
+                log.error("[POST_504] Elasticsearch 저장 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
+            }
+            return RsData.success(ResponseCode.POST_CREATED, post.getId());
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[SYS_500] 알 수 없는 게시글 생성 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "게시글 생성 중 알 수 없는 오류 - userId=" + userId + ", error=" + e.getMessage());
         }
-        catch (Exception e) {
-            log.info("Spotify api 호출 중 에러가 발생했습니다."+e.getMessage());
-        }
-        String spotifyUrl= responseDto.getSpotifyId();
-
-        // 2) 총 트랙 수·총 길이 계산
-        int totalTracks     = dto.getTracks().size();
-        int totalLengthSec = dto.getTracks()          // List<TrackRsDto>
-                .stream()
-                .mapToInt(TrackRsDto::getDurationMs)  // ① 밀리초 합산
-                .sum() / 1_000;                       // ② 초 단위로 변환
-
-        Playlist playlist = Playlist.builder()
-                .spotifyUrl(spotifyUrl)
-                .totalTracks(totalTracks)
-                .totalLengthSec(totalLengthSec)
-                .tracks(dto.getTracks())
-                .build();
-
-        Set<Tag> tags = dto.getTags().stream()
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .map(tagService::getOrCreate)  // 중복 방지 + 신규 생성
-                .collect(Collectors.toSet());
-
-        /* ─── ② Post 생성 & 저장(Cascade.ALL) ───────────── */
-
-        Post post = Post.builder()
-                .user(user)
-                .content(dto.getContent())
-                .tags(tags)
-                .isPublic(dto.getIsPublic())
-                .playlist(playlist)      // 1:1 연결
-                .build();
-
-        postRepository.save(post);
-
-        // 💡 게시글 생성 후 Elasticsearch에 저장
-        // Post 엔티티를 PostDetailResponse DTO로 변환
-        PostDetailResponse postDetailResponse = toDto(post);
-        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환)
-        exploreService.saveToES(postDetailResponse);
-
-        // Playlist 가 함께 INSERT
-        return post.getId();
     }
 
     @Transactional
-    public void updatePost(Long userId, PostUpdateRequest dto) {
-
-        Post post = postRepository.findByIdAndDeletedAtIsNull(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        if (!post.getUser().getId().equals(userId))
-            throw new RuntimeException("Post id mismatch");
-
-        Set<Tag> tags = dto.getTags().stream()
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .map(tagService::getOrCreate)  // 중복 방지 + 신규 생성
-                .collect(Collectors.toSet());
-
-        post.edit(dto.getContent(),tags,dto.getIsPublic());
-
-        // 💡 게시글 수정 후 Elasticsearch에 반영
-        // 수정된 Post 엔티티를 PostDetailResponse DTO로 변환
-        PostDetailResponse postDetailResponse = toDto(post);
-        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환 및 업데이트)
-        exploreService.saveToES(postDetailResponse);
+    public RsData<Void> updatePost(Long userId, PostUpdateRequest dto) {
+        try {
+            Post post = postRepository.findByIdAndDeletedAtIsNull(dto.getId())
+                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + dto.getId() + "인 게시글을 찾을 수 없습니다."));
+            if (!post.getUser().getId().equals(userId))
+                throw new GlobalException(ResponseCode.POST_FORBIDDEN, "게시글 수정 권한 없음 - userId=" + userId + ", postId=" + dto.getId());
+            Set<Tag> tags = dto.getTags().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(tagService::getOrCreate)
+                    .collect(Collectors.toSet());
+            post.edit(dto.getContent(), tags, dto.getIsPublic());
+            try {
+                PostDetailResponse postDetailResponse = toDto(post);
+                exploreService.saveToES(postDetailResponse);
+            } catch (Exception e) {
+                log.error("[POST_004] Elasticsearch 반영 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
+            }
+            return RsData.success(ResponseCode.POST_UPDATED, null);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[POST_999] 알 수 없는 게시글 수정 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "게시글 수정 중 알 수 없는 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
     }
 
     @Transactional
-    public void deletePost(Long userId, Long postId) {
-        Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        if (!post.getUser().getId().equals(userId))
-            throw new RuntimeException("Post id mismatch");
-        post.markDeleted();
-
-        // 💡 Elasticsearch에서도 해당 게시글 문서를 물리적으로 삭제
-        exploreService.deleteFromES(postId);
-    }
-
-    public PostDetailResponse getPostDetail(Long postId, Long viewerId) {
-
-        Post post = postRepository.findDetailById(postId)
-                .orElseThrow(() -> new NoSuchElementException("게시글이 존재하지 않습니다."));
-
-        /* 비공개 게시글이면 작성자만 허용 */
-        if (!post.getIsPublic() && !post.getUser().getId().equals(viewerId)) {
-            throw new AccessDeniedException("열람 권한이 없습니다.");
+    public RsData<Void> deletePost(Long userId, Long postId) {
+        try {
+            Post post = postRepository.findByIdAndDeletedAtIsNull(postId)
+                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
+            if (!post.getUser().getId().equals(userId))
+                throw new GlobalException(ResponseCode.POST_FORBIDDEN, "게시글 삭제 권한 없음 - userId=" + userId + ", postId=" + postId);
+            post.markDeleted();
+            try {
+                exploreService.deleteFromES(postId);
+            } catch (Exception e) {
+                log.error("[POST_005] Elasticsearch 삭제 실패 - postId: {}, error: {}", postId, e.getMessage());
+            }
+            return RsData.success(ResponseCode.POST_DELETED, null);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[POST_999] 알 수 없는 게시글 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "게시글 삭제 중 알 수 없는 오류 - userId=" + userId + ", error=" + e.getMessage());
         }
-
-        post.addViewCnt();
-
-        // ExploreService에 DTO 전달 (ExploreService가 내부적으로 Document로 변환 및 업데이트)
-        exploreService.saveToES(toDto(post));
-
-        return toDto(post);
     }
 
-    public List<PostDetailResponse> getLikedPostsByUser(Long userId) {
-        List<Post> posts = likeService.getPostsByUserId(userId);
-        return posts.stream()
-                .map(this::toDto)
-                .toList();
+    public RsData<PostDetailResponse> getPostDetail(Long postId, Long viewerId) {
+        try {
+            Post post = postRepository.findDetailById(postId)
+                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
+            if (!post.getIsPublic() && !post.getUser().getId().equals(viewerId)) {
+                throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글 접근 권한 없음 - viewerId=" + viewerId + ", postId=" + postId);
+            }
+            post.addViewCnt();
+            try {
+                exploreService.saveToES(toDto(post));
+            } catch (Exception e) {
+                log.error("[POST_004] Elasticsearch 반영 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
+            }
+            return RsData.success(ResponseCode.POST_CREATED, "게시글 상세 조회 성공", toDto(post));
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[POST_999] 알 수 없는 게시글 상세 조회 오류 - postId: {}, error: {}", postId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "게시글 상세 조회 중 알 수 없는 오류 - postId=" + postId + ", error=" + e.getMessage());
+        }
+    }
+
+    public RsData<List<PostDetailResponse>> getLikedPostsByUser(Long userId) {
+        try {
+            List<Post> posts = likeService.getPostsByUserId(userId);
+            List<PostDetailResponse> result = posts.stream().map(this::toDto).toList();
+            return RsData.success(ResponseCode.POST_CREATED, "좋아요한 게시글 목록 조회 성공", result);
+        } catch (Exception e) {
+            log.error("[POST_999] 좋아요한 게시글 목록 조회 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "좋아요한 게시글 목록 조회 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
     }
 
 

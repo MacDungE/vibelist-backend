@@ -1,7 +1,11 @@
-package org.example.vibelist.global.exception;
+package org.example.vibelist.global.response;
 
 import java.time.LocalDateTime;
 
+/**
+ * @deprecated RsData.fail(code, message)로 대체하세요.
+ */
+@Deprecated
 public class ErrorResponse {
 
     private final String code;

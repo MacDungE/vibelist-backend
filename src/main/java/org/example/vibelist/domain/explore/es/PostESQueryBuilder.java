@@ -15,19 +15,83 @@ public class PostESQueryBuilder {
 
     private PostESQueryBuilder() { } // util-class
 
-    /* ---------- 1. 키워드 검색 ---------- */
+//    /* ---------- 1. 키워드 검색 ---------- */
+//    public static Query search(String keyword) {
+//        return Query.of(q -> q.bool(b -> b
+//                /* MUST 절 – multi_match 하나만 넣어 간결하게 */
+//                .must(m -> m.multiMatch(mm -> mm
+//                        .query(keyword)
+//                        .fields(
+//                                "content",
+//                                "tagsAnalyzed",
+//                                "playlist.tracks.title",
+//                                "playlist.tracks.artist",
+//                                "playlist.tracks.album"
+//                        )
+//                        .type(TextQueryType.BestFields)   // ← 기본값과 동일 – 한 field 최고스코어만
+//                        .operator(Operator.And)           // ← 모든 토큰 포함 (느슨하게 = Or)
+//                        .fuzziness("AUTO")                // ← 오타 허용
+//                ))
+//
+//                /* FILTER 절 – 공개 글만 */
+//                .filter(f -> f.term(t -> t
+//                        .field("isPublic")
+//                        .value(true)
+//                ))
+//        ));
+//    }
+//
+//
+
+    /* ---------- 1. 키워드 + 가중치 스코어링 검색 ---------- */
     public static Query search(String keyword) {
-        return Query.of(q -> q.bool(b -> b
+
+        /* ①  기본 bool 쿼리  ------------------------------------- */
+        Query baseQuery = Query.of(q -> q.bool(b -> b
+
+                /* ①-1  MUST – multi_match */
                 .must(m -> m.multiMatch(mm -> mm
-                        .fields("content","tagsAnalyzed",
+                        .query(keyword)
+                        .fields(
+                                "content",
+                                "tagsAnalyzed",
                                 "playlist.tracks.title",
                                 "playlist.tracks.artist",
-                                "playlist.tracks.album")
-                        .query(keyword)))
-                .filter(f -> f.term(t -> t.field("isPublic").value(true)))
+                                "playlist.tracks.album"
+                        )
+                        .type(TextQueryType.BestFields)   // 최고 스코어 필드 1개
+                        .operator(Operator.And)           // 모든 토큰 포함
+                        .fuzziness("AUTO")                // 오타 허용
+                ))
+
+                /* ①-2  FILTER – 공개 글만 */
+                .filter(f -> f.term(t -> t
+                        .field("isPublic")
+                        .value(true)
+                ))
+        ));
+
+        /* ②  function_score 로 좋아요·조회수 가중치 부여  ---------- */
+        return Query.of(q -> q.functionScore(fs -> fs
+                .query(baseQuery)
+
+                /* 좋아요 수(×2) */
+                .functions(f -> f.fieldValueFactor(fvf -> fvf
+                        .field("likeCnt")
+                        .factor(2.0)
+                        .missing(0.0)
+                ).weight(1.0))
+
+                /* 조회수(×1) */
+                .functions(f -> f.fieldValueFactor(fvf -> fvf
+                        .field("viewCnt")
+                        .factor(1.0)
+                        .missing(0.0)
+                ).weight(1.0))
+
+                .scoreMode(FunctionScoreMode.Sum)   // 합산
         ));
     }
-
     /* ---------- 2. 피드(공개글) ---------- */
     public static Query feed() {
         return Query.of(q -> q.term(t -> t.field("isPublic").value(true)));
@@ -57,14 +121,17 @@ public class PostESQueryBuilder {
 
                 // ② createdAt ≥ since  OR  updatedAt ≥ since  (최소 1개 조건 만족)
                 .filter(f -> f.bool(b2 -> b2
-                        .should(s -> s.range(r -> r.untyped(u -> u
-                                .field("createdAt")
-                                .gte(JsonData.of(iso))
-                        )))
-                        .should(s -> s.range(r -> r.untyped(u -> u
-                                .field("updatedAt")
-                                .gte(JsonData.of(iso))
-                        )))
+                        .should(s -> s.range(r -> r
+                                .untyped(u -> u
+                                        .field("createdAt")
+                                        .gte(JsonData.of(iso)))
+
+                        ))
+                        .should(s -> s.range(r -> r
+                                .untyped(u -> u
+                                        .field("updatedAt")
+                                        .gte(JsonData.of(iso)))
+                        ))
                         .minimumShouldMatch("1")      // should 절 둘 중 하나 이상
                 ))
         ));
@@ -81,20 +148,23 @@ public class PostESQueryBuilder {
 
         /* ── 1. 활성 + 최근 글 필터 ───────────────────────────── */
         Query baseQuery = Query.of(q -> q.bool(b -> b
-
+                // match_all을 추가하여 쿼리 컨텍스트로 실행되도록 보장
+                .must(m -> m.matchAll(ma -> ma))
                 // deletedAt 이 null 인 문서만
                 .filter(f -> f.bool(fb -> fb.mustNot(mn -> mn.exists(e -> e.field("deletedAt")))))
 
                 // createdAt ≥ since  OR  updatedAt ≥ since  (둘 중 하나 이상)
                 .filter(f -> f.bool(b2 -> b2
-                        .should(s -> s.range(r -> r.untyped(u -> u
-                                .field("createdAt")
-                                .gte(JsonData.of(iso))
-                        )))
-                        .should(s -> s.range(r -> r.untyped(u -> u
-                                .field("updatedAt")
-                                .gte(JsonData.of(iso))
-                        )))
+                        .should(s -> s.range(r -> r
+                                .untyped(u -> u
+                                        .field("createdAt")
+                                        .gte(JsonData.of(iso)))
+                        ))
+                        .should(s -> s.range(r -> r
+                                .untyped(u -> u
+                                        .field("updatedAt")
+                                        .gte(JsonData.of(iso)))
+                        ))
                         .minimumShouldMatch("1")
                 ))
         ));
