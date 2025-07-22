@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.RsData;
 
 /**
  * 외부 서비스 연동을 위한 토큰 정보 관리 서비스
@@ -164,8 +167,18 @@ public class IntegrationTokenInfoService {
      * 사용자의 모든 활성 토큰 조회
      */
     @Transactional(readOnly = true)
-    public List<IntegrationTokenInfo> getUserActiveTokens(Long userId) {
-        return tokenInfoRepository.findActiveTokensByUserId(userId);
+    public RsData<List<IntegrationTokenInfo>> getUserActiveTokens(Long userId) {
+        try {
+            List<IntegrationTokenInfo> tokens = tokenInfoRepository.findActiveTokensByUserId(userId);
+            if (tokens.isEmpty()) {
+                throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "에 대한 활성 토큰이 존재하지 않습니다.");
+            }
+            return RsData.success(ResponseCode.USER_FOUND, tokens);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "활성 토큰 조회 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
     }
 
     /**

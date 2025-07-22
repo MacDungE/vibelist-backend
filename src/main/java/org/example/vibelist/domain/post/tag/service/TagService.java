@@ -9,35 +9,41 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
 
 @Service
 @RequiredArgsConstructor
 public class TagService {
     private final TagRepository tagRepository;
 
-    public List<Tag> autoComplete(String input, int limit) {
-        input = input.trim();
-        if (input.isBlank()) return List.of();
-
-        // ① ‘아’ 한 글자만 → 28글자 범위 검색
-        if (isHangulSyllable(input.charAt(0)) && input.length() == 1) {
-            char base  = (char) ((input.charAt(0) - 0xAC00) / 28 * 28 + 0xAC00);
-            char upper = (char) (base + 28);
-            return tagRepository.findTopNByInitialRange(base, upper, limit);
+    public RsData<List<Tag>> autoComplete(String input, int limit) {
+        try {
+            input = input.trim();
+            if (input.isBlank()) return RsData.success(ResponseCode.TAG_AUTOCOMPLETE_SUCCESS, List.of());
+            List<Tag> tags;
+            if (isHangulSyllable(input.charAt(0)) && input.length() == 1) {
+                char base  = (char) ((input.charAt(0) - 0xAC00) / 28 * 28 + 0xAC00);
+                char upper = (char) (base + 28);
+                tags = tagRepository.findTopNByInitialRange(base, upper, limit);
+            } else {
+                tags = tagRepository.findTopNByNamePrefix(input.toLowerCase(), limit);
+            }
+            return RsData.success(ResponseCode.TAG_AUTOCOMPLETE_SUCCESS, tags);
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "태그 자동완성 중 오류 발생: " + e.getMessage());
         }
-
-        // ② 그 외엔 LIKE prefix
-        return tagRepository.findTopNByNamePrefix(input.toLowerCase(), limit);
     }
 
     @Transactional
     public Tag getOrCreate(String rawName) {
-        if (rawName == null) throw new IllegalArgumentException("tag name is null");
+        if (rawName == null) throw new GlobalException(ResponseCode.TAG_INVALID, "태그 이름은 null일 수 없습니다.");
 
         // ① 공백 제거 + 소문자 통일
         String name = rawName.trim().toLowerCase();
         if (name.isEmpty())
-            throw new IllegalArgumentException("tag name is empty");
+            throw new GlobalException(ResponseCode.TAG_INVALID, "태그 이름은 비어있을 수 없습니다.");
 
         // ② 먼저 존재 여부 확인
         return tagRepository.findByName(name)

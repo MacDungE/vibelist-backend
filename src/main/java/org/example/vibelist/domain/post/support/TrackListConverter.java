@@ -6,8 +6,8 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.postgresql.util.PGobject;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ public class TrackListConverter
             return jsonb;
         } catch (Exception e) {
             log.info("[SYS_001] 트랙 리스트 직렬화 실패 - attribute: {}, error: {}", attribute, e.getMessage());
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "트랙 리스트 직렬화 실패 - attribute=" + attribute + ", error=" + e.getMessage());
         }
     }
 
@@ -45,7 +45,7 @@ public class TrackListConverter
             return om.readValue(dbData.getValue(), new TypeReference<>() {});
         } catch (IOException e) {
             log.info("[SYS_001] 트랙 리스트 역직렬화 실패 - dbData: {}, error: {}", dbData, e.getMessage());
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "트랙 리스트 역직렬화 실패 - dbData=" + dbData + ", error=" + e.getMessage());
         }
     }
 }

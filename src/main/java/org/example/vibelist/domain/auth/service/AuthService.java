@@ -21,6 +21,9 @@ import org.example.vibelist.global.util.UsernameGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.RsData;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,12 +50,12 @@ public class AuthService {
     public void signup(String username, String password, String email, String name, String phone) {
         // 사용자명 중복 확인
         if (userService.existsByUsername(username)) {
-            throw new IllegalArgumentException("이미 존재하는 사용자명입니다.");
+            throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, "username='" + username + "'은 이미 존재합니다.");
         }
 
         // 이메일 중복 확인
         if (userService.existsByEmail(email)) {
-            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+            throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, "email='" + email + "'은 이미 존재합니다.");
         }
 
         // 비밀번호 암호화
@@ -68,39 +71,45 @@ public class AuthService {
     /**
      * 로그인 처리 - JWT 토큰 반환
      */
-    public TokenResponse login(String username, String password) {
-        Optional<User> userOpt = userService.findUserByUsername(username);
-        
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자명 또는 비밀번호가 잘못되었습니다.");
+    public RsData<TokenResponse> login(String username, String password) {
+        try {
+            Optional<User> userOpt = userService.findUserByUsername(username);
+            if (userOpt.isEmpty()) {
+                throw new GlobalException(ResponseCode.USER_NOT_FOUND, "username='" + username + "'인 사용자를 찾을 수 없습니다.");
+            }
+            User user = userOpt.get();
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new GlobalException(ResponseCode.USER_PASSWORD_INVALID, "비밀번호 불일치 - username='" + username + "'");
+            }
+            TokenResponse token = authUtil.createTokenResponse(user);
+            return RsData.success(ResponseCode.USER_LOGIN_SUCCESS, token);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "로그인 처리 중 오류: " + e.getMessage());
         }
-
-        User user = userOpt.get();
-        // 암호화된 비밀번호 검증
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("사용자명 또는 비밀번호가 잘못되었습니다.");
-        }
-
-        return authUtil.createTokenResponse(user);
     }
 
     /**
      * 로그인 처리 - JWT 토큰과 refresh token 반환
      */
-    public LoginResponse loginWithRefreshToken(String username, String password) {
-        Optional<User> userOpt = userService.findUserByUsername(username);
-        
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자명 또는 비밀번호가 잘못되었습니다.");
+    public RsData<LoginResponse> loginWithRefreshToken(String username, String password) {
+        try {
+            Optional<User> userOpt = userService.findUserByUsername(username);
+            if (userOpt.isEmpty()) {
+                throw new GlobalException(ResponseCode.USER_NOT_FOUND, "username='" + username + "'인 사용자를 찾을 수 없습니다.");
+            }
+            User user = userOpt.get();
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new GlobalException(ResponseCode.USER_PASSWORD_INVALID, "비밀번호 불일치 - username='" + username + "'");
+            }
+            LoginResponse loginResponse = authUtil.createLoginResponse(user);
+            return RsData.success(ResponseCode.USER_LOGIN_SUCCESS, loginResponse);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "로그인 처리 중 오류: " + e.getMessage());
         }
-
-        User user = userOpt.get();
-        // 암호화된 비밀번호 검증
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("사용자명 또는 비밀번호가 잘못되었습니다.");
-        }
-
-        return authUtil.createLoginResponse(user);
     }
 
     /**
@@ -110,7 +119,7 @@ public class AuthService {
         // 리프레시 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken) || 
             !JwtTokenType.REFRESH.equals(jwtTokenProvider.getTokenType(refreshToken))) {
-            throw new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "유효하지 않은 리프레시 토큰입니다.");
         }
 
         // 사용자 정보 조회
@@ -118,7 +127,7 @@ public class AuthService {
         Optional<User> userOpt = userService.findUserById(userId);
         
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다.");
         }
 
         User user = userOpt.get();
@@ -136,12 +145,12 @@ public class AuthService {
     public UserProfile getUserProfile(Long userId) {
         Optional<User> userOpt = userService.findUserById(userId);
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다.");
         }
 
         Optional<UserProfile> profileOpt = userService.findUserProfileById(userId);
         if (profileOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자 프로필을 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자의 프로필을 찾을 수 없습니다.");
         }
         
         return profileOpt.get();
@@ -153,7 +162,7 @@ public class AuthService {
     public void updateUserProfile(Long userId, String name, String phone, String avatarUrl, String bio) {
         Optional<UserProfile> profileOpt = userService.findUserProfileById(userId);
         if (profileOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자 프로필을 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자의 프로필을 찾을 수 없습니다.");
         }
 
         UserProfile existingProfile = profileOpt.get();
@@ -186,7 +195,7 @@ public class AuthService {
     public void deleteUser(Long userId) {
         Optional<User> userOpt = userService.findUserById(userId);
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다.");
         }
 
         userService.deleteUserProfile(userId);
@@ -310,7 +319,7 @@ public class AuthService {
     public void completeSocialSignup(String username, String provider, String tempUserId) {
         // 사용자명 중복 확인
         if (userService.existsByUsername(username)) {
-            throw new IllegalArgumentException("이미 존재하는 사용자명입니다.");
+            throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, "username='" + username + "'은 이미 존재합니다.");
         }
         
         // 임시 사용자 ID로 사용자 찾기
@@ -318,7 +327,7 @@ public class AuthService {
         Optional<User> userOpt = userService.findUserById(userId);
         
         if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, "tempUserId=" + tempUserId + "인 임시 사용자를 찾을 수 없습니다.");
         }
         
         User user = userOpt.get();

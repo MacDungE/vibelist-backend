@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.ResponseCode;
 
 @RestController
 @Tag(name = "시스템 상태", description = "애플리케이션 상태 확인 API")
@@ -23,17 +25,9 @@ public class HealthController {
     @Value("${spring.application.name:default}")
     private String applicationName;
 
-    @Operation(summary = "서버 상태 확인", description = "서버의 현재 상태와 정보를 확인합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "서버 정상 작동 중")
-    })
+    @Operation(summary = "헬스 체크", description = "서버 상태 확인용 API")
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("timestamp", LocalDateTime.now());
-        response.put("stage", activeProfile);
-        response.put("message", applicationName + " 서버가 정상적으로 실행 중입니다.");
-        return ResponseEntity.ok(response);
+    public ResponseEntity<RsData<?>> healthCheck() {
+        return ResponseEntity.ok(RsData.success(ResponseCode.HEALTH_OK, "ok"));
     }
 } 

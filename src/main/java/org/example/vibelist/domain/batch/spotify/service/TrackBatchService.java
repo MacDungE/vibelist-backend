@@ -9,6 +9,8 @@ import org.example.vibelist.domain.batch.audiofeature.repository.AudioFeatureRep
 import org.example.vibelist.domain.playlist.entity.Track;
 import org.example.vibelist.domain.batch.spotify.client.SpotifyApiClient;
 import org.example.vibelist.domain.batch.spotify.dto.SpotifyTrackMetaDto;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
 
 import java.io.IOException;
 import java.nio.file.Files;

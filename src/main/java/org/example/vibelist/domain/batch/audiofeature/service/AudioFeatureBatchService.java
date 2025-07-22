@@ -2,6 +2,8 @@ package org.example.vibelist.domain.batch.audiofeature.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.batch.service.BatchService;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 

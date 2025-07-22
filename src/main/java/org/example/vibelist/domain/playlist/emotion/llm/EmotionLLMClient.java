@@ -3,8 +3,8 @@ package org.example.vibelist.domain.playlist.emotion.llm;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionAnalysis;
-import org.example.vibelist.global.exception.CustomException;
-import org.example.vibelist.global.exception.ErrorCode;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -51,7 +51,7 @@ public class EmotionLLMClient {
                 .onStatus(HttpStatusCode::isError, clientResponse ->
                         clientResponse.bodyToMono(String.class)
                                 .flatMap(errorBody -> Mono.error(
-                                        new CustomException(ErrorCode.LLM_API_ERROR)
+                                        new GlobalException(ResponseCode.LLM_API_ERROR, "LLM API 에러: " + clientResponse.statusCode() + " - " + errorBody)
                                 ))
 
                 )
@@ -59,9 +59,9 @@ public class EmotionLLMClient {
                 // 2. 타임아웃 / 통신장애 처리
                 .timeout(Duration.ofSeconds(5))
                 .onErrorMap(TimeoutException.class, e ->
-                        new CustomException(ErrorCode.LLM_TIMEOUT))
+                        new GlobalException(ResponseCode.LLM_TIMEOUT, "LLM API 호출 시간 초과"))
                 .onErrorMap(WebClientRequestException.class, e ->
-                        new CustomException(ErrorCode.LLM_API_ERROR))
+                        new GlobalException(ResponseCode.LLM_API_ERROR, "LLM API 요청 실패: " + e.getMessage()))
                 // 3. JSON 파싱
                 .map(json -> json.get("candidates").get(0).get("content").get("parts").get(0).get("text").asText())
                 .map(this::extractJsonFromText)
@@ -69,7 +69,7 @@ public class EmotionLLMClient {
                     try {
                         return objectMapper.readValue(jsonStr, EmotionAnalysis.class);
                     } catch (Exception e) {
-                        throw new CustomException(ErrorCode.LLM_PARSE_ERROR);
+                        throw new GlobalException(ResponseCode.LLM_PARSE_ERROR, "LLM 응답 파싱 실패: " + e.getMessage());
                     }
                 });
     }
@@ -80,6 +80,6 @@ public class EmotionLLMClient {
         if (start != -1 && end != -1 && end > start) {
             return text.substring(start, end + 1);
         }
-        throw new CustomException(ErrorCode.LLM_INVALID_FORMAT);
+        throw new GlobalException(ResponseCode.LLM_INVALID_FORMAT, "LLM 응답에서 유효한 JSON 형식을 찾을 수 없습니다.");
     }
 }
