@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.post.like.service.LikeService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.response.GlobalException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,6 +33,7 @@ public class LikeController {
 
     @Operation(summary = "포스트 좋아요 토글")
     @PostMapping("/post/{postId}/likes")
+    @UserActivityLog(action = "TOGGLE_LIKE_POST")//AOP 전달
     public ResponseEntity<RsData<?>> togglePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
@@ -62,6 +64,7 @@ public class LikeController {
     @Operation(summary = "댓글 좋아요 토글",
             security = @SecurityRequirement(name = "access-cookie"))
     @PostMapping("/comment/{commentId}/likes")
+    @UserActivityLog(action = "TOGGLE_LIKE_COMMENT") //AOP 전달 
     public ResponseEntity<LikeStatusRes> toggleComment(@PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         boolean liked = likeService.toggleCommentLike(commentId, userDetail.getId());
