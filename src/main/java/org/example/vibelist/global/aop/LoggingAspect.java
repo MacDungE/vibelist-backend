@@ -1,6 +1,9 @@
 package org.example.vibelist.global.aop;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -59,7 +62,6 @@ public class LoggingAspect {
         }
 
         Object result = pjp.proceed(); // 실제 메서드 실행
-
         // 로그 기록
         UserLog logData = UserLog.builder()
                 .userId(extractUserId())
@@ -68,6 +70,7 @@ public class LoggingAspect {
                 .domain(extractDomain(pjp))
                 .timestamp(LocalDateTime.now())
                 .api(extractRequestDetails())
+                .requestBody(extractRequestBody(pjp))
                 .build();
 
         logSender.send(logData);
@@ -104,7 +107,9 @@ public class LoggingAspect {
         }
         return auth.getName(); // 일반 로그인 사용자
     }
-
+    /*
+    호출되는 API의 domain를 반환합니다.
+     */
     private String extractDomain(JoinPoint joinPoint) {
         String className = joinPoint.getTarget().getClass().getName();
         if (className.contains(".domain.auth.")) return "auth";
@@ -118,7 +123,9 @@ public class LoggingAspect {
 
         return "unknown";
     }
-
+    /*
+    요청자의 IP를 추출합니다.
+     */
     private String extractClientIp() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes attrs) {
@@ -131,7 +138,9 @@ public class LoggingAspect {
         }
         return "unknown";
     }
-
+    /*
+    호출되는 API르 반환합니다.
+     */
     private String extractRequestDetails() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs != null) {
@@ -140,11 +149,28 @@ public class LoggingAspect {
             String query = request.getQueryString(); // 예: foo=bar
             if(query!=null){ //query값이 넘어올때
                 String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
-                return uri + "?" + decodedQuery;
+                return uri + "?" + decodedQuery; // ex: v1/explore/search?q=우울함
             }
             return uri;
         }
         return "unknown";
+    }
+    /*
+    Request body를 추출합니다.
+     */
+    private String extractRequestBody(ProceedingJoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (Object arg : args) {
+            if (arg instanceof HttpServletRequest || arg instanceof HttpServletResponse) continue;
+
+            try {
+                return objectMapper.writeValueAsString(arg); // JSON 직렬화
+            } catch (JsonProcessingException e) {
+                return "body_parsing_error";
+            }
+        }
+        return null;
     }
 }
 
