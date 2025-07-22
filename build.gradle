@@ -27,21 +27,45 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'io.projectreactor:reactor-test'
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    runtimeOnly 'org.postgresql:postgresql'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-
+    // JWT 관련 의존성
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
     //json 처리
     implementation 'org.json:json:20240303'
 
     //csv파일 읽기
     implementation 'org.apache.commons:commons-csv:1.8'
+
+    //elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    // OpenTelemetry 의존성 추가
+    implementation 'io.opentelemetry:opentelemetry-api:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-sdk:1.36.0'
+    implementation 'io.opentelemetry:opentelemetry-exporter-logging:1.36.0'
+
+    // Swagger/OpenAPI 의존성
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+////    //Elasticsearch와 Java 애플리케이션 간 통신을 위한 공식 클라이언트
+//    implementation 'co.elastic.clients:elasticsearch-java'
+
+    //JSON ↔ Java 객체 간 직렬화/역직렬화를 수행하는 라이브러리
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+
+
+
 }
 
 tasks.named('test') {
