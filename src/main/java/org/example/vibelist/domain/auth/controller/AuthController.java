@@ -20,6 +20,8 @@ import org.example.vibelist.domain.user.service.UserService;
 import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.util.SecurityUtil;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -41,10 +43,6 @@ public class AuthController {
     private final CookieUtil cookieUtil;
 
     @Operation(summary = "로그인", description = "사용자명과 비밀번호로 로그인하여 액세스 토큰을 발급받습니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "로그인 성공"),
-        @ApiResponse(responseCode = "401", description = "사용자명 또는 비밀번호가 잘못됨")
-    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         try {
@@ -52,31 +50,23 @@ public class AuthController {
             var loginResponse = authService.loginWithRefreshToken(loginRequest.getUsername(), loginRequest.getPassword());
             
             // 리프레시 토큰을 HTTP-only 쿠키로 설정
-            cookieUtil.setRefreshTokenCookie(response, loginResponse.getRefreshToken());
+            cookieUtil.setRefreshTokenCookie(response, loginResponse.getData().getRefreshToken());
             
             // 액세스 토큰은 응답 본문에 반환 (쿠키로 설정하지 않음)
-            return ResponseEntity.ok(loginResponse.getTokenResponse());
+            return ResponseEntity.ok(loginResponse.getData().getTokenResponse());
         } catch (IllegalArgumentException e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         }
     }
 
     @Operation(summary = "OAuth2 로그인 후 액세스 토큰 획득", description = "OAuth2 로그인 완료 후 리프레시 토큰을 사용해 액세스 토큰을 획득합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "액세스 토큰 획득 성공"),
-        @ApiResponse(responseCode = "401", description = "리프레시 토큰이 없거나 유효하지 않음")
-    })
     @PostMapping("/oauth2/token")
     public ResponseEntity<?> getOAuth2AccessToken(
             @Parameter(description = "리프레시 토큰 (쿠키)")
             @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
         try {
             if (refreshToken == null) {
-                Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("message", "리프레시 토큰이 없습니다.");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+                throw new GlobalException(ResponseCode.AUTH_REQUIRED);
             }
             
             TokenResponse tokenResponse = authService.refreshToken(refreshToken);
@@ -84,9 +74,7 @@ public class AuthController {
             // OAuth2 로그인 후 첫 액세스 토큰 획득
             return ResponseEntity.ok(tokenResponse);
         } catch (IllegalArgumentException e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         }
     }
 
@@ -103,19 +91,13 @@ public class AuthController {
     }
 
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
-        @ApiResponse(responseCode = "401", description = "리프레시 토큰이 없거나 유효하지 않음")
-    })
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(
             @Parameter(description = "리프레시 토큰 (쿠키)")
             @CookieValue(name = TokenConstants.REFRESH_TOKEN_COOKIE, required = false) String refreshToken) {
         try {
             if (refreshToken == null) {
-                Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("message", "리프레시 토큰이 없습니다.");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+                throw new GlobalException(ResponseCode.AUTH_REQUIRED);
             }
             
             TokenResponse tokenResponse = authService.refreshToken(refreshToken);
@@ -123,16 +105,11 @@ public class AuthController {
             // 새로운 액세스 토큰을 응답 본문에 반환 (쿠키로 설정하지 않음)
             return ResponseEntity.ok(tokenResponse);
         } catch (IllegalArgumentException e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         }
     }
 
     @Operation(summary = "로그아웃", description = "사용자를 로그아웃하고 토큰을 무효화합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "로그아웃 성공")
-    })
     @SecurityRequirement(name = "bearer-key")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
@@ -144,10 +121,6 @@ public class AuthController {
     }
 
     @Operation(summary = "현재 사용자 소셜 계정 조회", description = "현재 인증된 사용자의 소셜 로그인 연동 정보를 조회합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "소셜 계정 조회 성공"),
-        @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
-    })
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/me/social")
     public ResponseEntity<?> getCurrentUserSocialAccounts() {
@@ -162,10 +135,6 @@ public class AuthController {
     }
 
     @Operation(summary = "사용자 소셜 계정 조회", description = "특정 사용자의 소셜 로그인 연동 정보를 조회합니다. (관리자용)")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "소셜 계정 조회 성공"),
-        @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
-    })
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/{userId}/social")
     public ResponseEntity<?> getUserSocialAccounts(
@@ -175,10 +144,6 @@ public class AuthController {
     }
 
     @Operation(summary = "소셜 회원가입 완료", description = "소셜 로그인 후 사용자명을 설정하여 회원가입을 완료합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "회원가입 완료 성공"),
-        @ApiResponse(responseCode = "400", description = "잘못된 요청 (중복된 사용자명 등)")
-    })
     @PostMapping("/social/complete-signup")
     public ResponseEntity<?> completeSocialSignup(@RequestBody CompleteSocialSignupRequest request) {
         try {
@@ -194,9 +159,6 @@ public class AuthController {
     }
 
     @Operation(summary = "인증 상태 확인", description = "현재 사용자의 인증 상태와 정보를 확인합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "인증 상태 조회 성공")
-    })
     @GetMapping("/status")
     public ResponseEntity<StatusResponse> getAuthStatus() {
         Authentication authentication = SecurityUtil.getAuthentication();
@@ -238,9 +200,6 @@ public class AuthController {
     }
 
     @Operation(summary = "소셜 로그인 URL 조회", description = "Google, Kakao, Spotify 등 소셜 로그인 URL을 제공합니다.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "로그인 URL 조회 성공")
-    })
     @GetMapping("/social-login-urls")
     public ResponseEntity<Map<String, String>> getLoginUrls() {
         Map<String, String> loginUrls = new HashMap<>();

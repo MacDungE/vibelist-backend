@@ -15,6 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.RsData;
 
 @RestController
 @RequestMapping("/v1/comments")
@@ -25,58 +30,46 @@ public class CommentController {
     private final CommentService commentService;
 
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "댓글 생성 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청")
-    })
     @PostMapping
-    public ResponseEntity<Void> create(@RequestBody CommentCreateDto dto, CustomUserDetails details) {
-        Long userIdOrTestId = details == null ? 1L : details.getId();
-        commentService.create(dto, userIdOrTestId);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, CustomUserDetails details) {
+        if (details == null) {
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
+        }
+        Long userId = details.getId();
+        RsData<?> result = commentService.create(dto, userId);
+        return ResponseEntity.status(result.isSuccess() ? 201 : 400).body(result);
     }
 
     @Operation(summary = "댓글 조회", description = "현재 게시글의 댓글을 정렬 기준에 따라 조회합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "댓글 조회 성공"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
-            @ApiResponse(responseCode = "400", description = "잘못된 정렬 기준")
-    })
     @GetMapping
-    public ResponseEntity<List<CommentResponseDto>> getAll(
+    public ResponseEntity<RsData<?>> getAll(
             @RequestParam Long postId,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        List<CommentResponseDto> comments = commentService.getSortedComments(postId, sort);
-        return ResponseEntity.ok(comments);
+        RsData<?> result = commentService.getByPostId(postId);
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "댓글 수정", description = "댓글 내용을 수정합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "댓글 수정 성공"),
-            @ApiResponse(responseCode = "403", description = "댓글 작성자가 아님"),
-            @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
-    })
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, CustomUserDetails details) {
-
-        Long userIdOrTestId = details == null ? 1L : details.getId();
-        commentService.update(id, dto, userIdOrTestId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, CustomUserDetails details) {
+        if (details == null) {
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
+        }
+        Long userId = details.getId();
+        RsData<?> result = commentService.update(id, dto, userId);
+        return ResponseEntity.status(result.isSuccess() ? 200 : 403).body(result);
     }
 
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "댓글 삭제 성공"),
-            @ApiResponse(responseCode = "403", description = "댓글 작성자가 아님"),
-            @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
-    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id, CustomUserDetails details) {
-
-        Long userIdOrTestId = details == null ? 1L : details.getId();
-        commentService.delete(id, userIdOrTestId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<RsData<?>> delete(@PathVariable Long id, CustomUserDetails details) {
+        if (details == null) {
+            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
+        }
+        Long userId = details.getId();
+        RsData<?> result = commentService.delete(id, userId);
+        return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
     }
 // 댓글 좋아요 / 취소
 //    @PostMapping("/{id}/like")

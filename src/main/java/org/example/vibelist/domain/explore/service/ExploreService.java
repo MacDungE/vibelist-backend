@@ -23,6 +23,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.GlobalException;
 
 @Service
 @RequiredArgsConstructor
@@ -31,24 +34,23 @@ public class ExploreService {
     private final ElasticsearchOperations operations;
 
     /* ---------- 검색 ---------- */
-    public Page<PostDetailResponse> search(String keyword, Pageable pageable) {
-        Query q = PostESQueryBuilder.search(keyword);
-        NativeQuery nq = NativeQuery.builder()
-                .withQuery(q)
-                .withPageable(pageable)
-                .build();
-        return execute(nq, pageable);
+    public RsData<Page<PostDetailResponse>> search(String keyword, Pageable pageable) {
+        try {
+            Page<PostDetailResponse> result = execute(NativeQuery.builder().withQuery(PostESQueryBuilder.search(keyword)).withPageable(pageable).build(), pageable);
+            return RsData.success(ResponseCode.EXPLORE_SEARCH_SUCCESS, result);
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "탐색 검색 중 오류 - keyword='" + keyword + "', error=" + e.getMessage());
+        }
     }
 
     /* ---------- 피드(최신순) ---------- */
-    public Page<PostDetailResponse> feed(Pageable pageable) {
-        Query q = PostESQueryBuilder.feed();
-        NativeQuery nq = NativeQuery.builder()
-                .withQuery(q)
-                .withSort(Sort.by(Sort.Direction.DESC, "updatedAt"))
-                .withPageable(pageable)
-                .build();
-        return execute(nq, pageable);
+    public RsData<Page<PostDetailResponse>> feed(Pageable pageable) {
+        try {
+            Page<PostDetailResponse> result = execute(NativeQuery.builder().withQuery(PostESQueryBuilder.feed()).withSort(Sort.by(Sort.Direction.DESC, "updatedAt")).withPageable(pageable).build(), pageable);
+            return RsData.success(ResponseCode.EXPLORE_FEED_SUCCESS, result);
+        } catch (Exception e) {
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "탐색 피드 조회 중 오류 - error=" + e.getMessage());
+        }
     }
 
 
