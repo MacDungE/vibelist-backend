@@ -18,6 +18,7 @@
                         "eventType": "%X{eventType}",
                         "domain": "%X{domain}",
                         "api": "%X{api}",
+                        "requestBody": "%X{requestBody}"
                         "message": "%msg"
                         }
                     </pattern>
