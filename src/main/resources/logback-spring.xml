@@ -35,4 +35,8 @@
     <logger name="user-log" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
+
+    <logger level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
 </configuration>
