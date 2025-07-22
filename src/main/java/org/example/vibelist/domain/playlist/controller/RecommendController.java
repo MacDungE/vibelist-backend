@@ -6,10 +6,7 @@ import org.example.vibelist.domain.playlist.dto.RecommendRqDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.RecommendService;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,6 +25,7 @@ import java.util.List;
 public class RecommendController {
     // 감정 기반 트랙 추천 API의 HTTP 요청을 처리하는 컨트롤러
     // RecommendService를 호출해 추천 결과를 반환
+    // 주석 처리한 부분은 es 기반 추천과 캐싱 비교를 위한 코드입니다. <- 성능 비교 테스트용(k6)
 
     private final RecommendService recommendService;
 
@@ -39,8 +37,15 @@ public class RecommendController {
         @ApiResponse(responseCode = "200", description = "추천 결과", content = @Content(schema = @Schema(implementation = TrackRsDto.class))),
         @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터", content = @Content)
     })
-    public ResponseEntity<List<TrackRsDto>> recommend(@RequestBody @Valid RecommendRqDto request) throws JsonProcessingException {
-        return ResponseEntity.ok(recommendService.recommend(request));
+    public ResponseEntity<List<TrackRsDto>> recommend(
+            @RequestBody @Valid RecommendRqDto request
+//            ,@RequestParam(value = "source", required = false, defaultValue = "cache") String source
+    ) throws JsonProcessingException {
+//        if ("es".equalsIgnoreCase(source)) {
+//            return ResponseEntity.ok(recommendService.recommendByEs(request));
+//        } else {
+            return ResponseEntity.ok(recommendService.recommend(request));
+//        }
     }
 
 }

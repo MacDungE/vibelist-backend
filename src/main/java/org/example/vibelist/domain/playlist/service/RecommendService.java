@@ -113,5 +113,24 @@ public class RecommendService {
         long end = System.currentTimeMillis();
         log.info("🎯 추천 결과 반환: 분기=캐시, 곡수={}, 시간={}ms", randTracks.size(), (end - start));
         return randTracks;
-        }
+    }
+
+    // es 기반 추천 <- 성능 비교 테스트용(k6)
+//    public List<TrackRsDto> recommendByEs(RecommendRqDto request) throws JsonProcessingException {
+//        log.info("🎯 recommendDirect 호출 - request: {}", request);
+//        log.info("🧭 좌표 기반 추천 - valence: {}, energy: {}, mode: {}", request.getUserValence(), request.getUserEnergy(), request.getMode());
+//        EmotionType emotion = profileManager.classify(request.getUserValence(), request.getUserEnergy());
+//        log.info("🧠 분류된 감정: {}", emotion);
+//        EmotionType transitioned = profileManager.getTransition(emotion, request.getMode());
+//        log.info("🔁 전이된 감정: {}", transitioned);
+//        EmotionFeatureProfile profile = profileManager.getProfile(transitioned);
+//        log.info("📊 검색 범위 - valence: {} ~ {}, energy: {} ~ {}",
+//                profile.getValence().getMin(), profile.getValence().getMax(),
+//                profile.getEnergy().getMin(), profile.getEnergy().getMax());
+//        List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20);
+//        log.info("🎵 추천 결과 반환 - 분기=좌표, 곡수={}", result.size());
+//        return result;
+//    }
+
 }
+
