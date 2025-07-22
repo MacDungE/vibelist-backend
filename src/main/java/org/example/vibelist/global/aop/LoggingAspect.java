@@ -18,6 +18,8 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 
@@ -27,7 +29,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class LoggingAspect {
     private final LogSender logSender;
-// 모든 도메인에 대하 로그 발생
+
+    // 모든 도메인에 대하 로그 발생
 //    @Pointcut("execution(* org.example.vibelist.domain..*.*(..))")
 //    public void allDomainMethods(){}
 //    @AfterReturning(pointcut = "allDomainMethods()", returning = "result")
@@ -70,9 +73,10 @@ public class LoggingAspect {
         logSender.send(logData);
         return result;
     }
+
     /*
-    *OAuth2 로그인시 id는 provider에 따라 String,Long,또는 char[]일 수 있습니다.
-    * 명시적인 type check를 수행하여 id를 반환합니다.
+     *OAuth2 로그인시 id는 provider에 따라 String,Long,또는 char[]일 수 있습니다.
+     * 명시적인 type check를 수행하여 id를 반환합니다.
      */
     private String extractUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -114,6 +118,7 @@ public class LoggingAspect {
 
         return "unknown";
     }
+
     private String extractClientIp() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes attrs) {
@@ -126,13 +131,18 @@ public class LoggingAspect {
         }
         return "unknown";
     }
+
     private String extractRequestDetails() {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (requestAttributes instanceof ServletRequestAttributes attrs) {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
             HttpServletRequest request = attrs.getRequest();
-            String uri = request.getRequestURI();
-            String queryString = request.getQueryString();
-            return queryString == null ? uri : uri + "?" + queryString;
+            String uri = request.getRequestURI(); // 예: /v1/post/1
+            String query = request.getQueryString(); // 예: foo=bar
+            if(query!=null){ //query값이 넘어올때
+                String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
+                return uri + "?" + decodedQuery;
+            }
+            return uri;
         }
         return "unknown";
     }
