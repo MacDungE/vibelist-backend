@@ -9,6 +9,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -75,7 +76,7 @@ public class LoggingAspect {
      */
     private String extractUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return "anonymous";
+        if (auth == null || !auth.isAuthenticated()) return "anonymous"; // 비로그인 사용자
 
         Object principal = auth.getPrincipal();
         if (principal instanceof OAuth2User user) {
@@ -91,6 +92,11 @@ public class LoggingAspect {
             } else {
                 return "unknown";
             }
+        }
+        //CustomUserDetail 처리
+        if (principal instanceof CustomUserDetails customUserDetails) {
+            Long userId = customUserDetails.getId();
+            return String.valueOf(userId);
         }
         return auth.getName(); // 일반 로그인 사용자
     }
