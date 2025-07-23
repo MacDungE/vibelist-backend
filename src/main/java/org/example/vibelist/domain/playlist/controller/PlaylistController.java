@@ -31,12 +31,12 @@ public class PlaylistController {
 
     @Operation(summary = "Spotify에 Playlist 삽입", description = "유저가 선택한 Playlist를 Spotify에 삽입합니다.")
     @PostMapping("/add")
-    public ResponseEntity<RsData<?>> addPlaylist(@RequestBody List<TrackRsDto> tracks) {
+    public ResponseEntity<RsData<SpotifyPlaylistDto>> addPlaylist(@RequestBody List<TrackRsDto> tracks) {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
-        RsData<?> result = playlistService.createPlaylist(userId, tracks);
+        RsData<SpotifyPlaylistDto> result = playlistService.createPlaylist(userId, tracks);
         return ResponseEntity.status(result.isSuccess() ? 201 : 400).body(result);
     }
 }

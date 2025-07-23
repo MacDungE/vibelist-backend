@@ -38,12 +38,12 @@ public class TagController {
             description = "입력한 문자열(초성·키워드)을 기반으로 태그를 추천합니다."
     )
     @GetMapping("/suggest")
-    public ResponseEntity<RsData<?>> suggest(
+    public ResponseEntity<RsData<List<TagDTO>>> suggest(
             @Parameter(description = "검색어(초성 또는 키워드)", example = "아")
             @RequestParam String q,
             @Parameter(description = "반환 개수 (default = 10)", example = "10")
             @RequestParam(defaultValue = "10") int limit) {
-        RsData<?> result = tagService.autoComplete(q, limit);
+        RsData<List<TagDTO>> result = tagService.autoComplete(q, limit);
         return ResponseEntity.ok(result);
     }
 }

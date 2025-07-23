@@ -5,13 +5,15 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
 public class PostESQueryBuilder {
 
-    private static final DateTimeFormatter ISO_DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter ISO_DATE_TIME_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private PostESQueryBuilder() { } // util-class
 
@@ -113,7 +115,7 @@ public class PostESQueryBuilder {
      */
     /** deletedAt 이 null 이고, createdAt 또는 updatedAt 이 `since` 이후인 글만 검색  */
     public static Query buildActivePostsSince(LocalDateTime since) {
-        String iso = since.format(ISO_DATE_TIME_FORMATTER);   // ES 는 ISO-8601 문자열을 받음
+        String iso = since.atOffset(ZoneOffset.UTC).format(ISO_DATE_TIME_FORMATTER);   // ES는 ISO-8601(오프셋 포함) 문자열을 받음
 
         return Query.of(q -> q.bool(b -> b
                 // ① deletedAt 존재 여부
@@ -125,7 +127,6 @@ public class PostESQueryBuilder {
                                 .untyped(u -> u
                                         .field("createdAt")
                                         .gte(JsonData.of(iso)))
-
                         ))
                         .should(s -> s.range(r -> r
                                 .untyped(u -> u
@@ -144,7 +145,7 @@ public class PostESQueryBuilder {
      * @return Elasticsearch Query 객체
      */
     public static Query buildScoredAndSortedActivePosts(LocalDateTime since) {
-        String iso = since.format(ISO_DATE_TIME_FORMATTER);
+        String iso = since.atOffset(ZoneOffset.UTC).format(ISO_DATE_TIME_FORMATTER);
 
         /* ── 1. 활성 + 최근 글 필터 ───────────────────────────── */
         Query baseQuery = Query.of(q -> q.bool(b -> b

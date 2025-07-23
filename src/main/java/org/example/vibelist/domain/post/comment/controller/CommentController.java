@@ -49,7 +49,7 @@ public class CommentController {
             @RequestParam Long postId,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        RsData<?> result = commentService.getByPostId(postId);
+        RsData<List<CommentResponseDto>> result = commentService.getSortedComments(postId, sort);
         return ResponseEntity.ok(result);
     }
 
@@ -73,7 +73,7 @@ public class CommentController {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
         Long userId = details.getId();
-        RsData<?> result = commentService.delete(id, userId);
+        RsData<Void> result = commentService.delete(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
     }
 // 댓글 좋아요 / 취소

@@ -37,7 +37,7 @@ public class LikeController {
     public ResponseEntity<RsData<?>> togglePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
-        RsData<?> result = likeService.togglePostLike(postId, userId);
+        RsData<Boolean> result = likeService.togglePostLike(postId, userId);
         return ResponseEntity.ok(result);
     }
 
