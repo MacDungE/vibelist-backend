@@ -3,7 +3,8 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - faeture/s3test
+      - main
+      - main-redis
 
 jobs:
   deploy:
