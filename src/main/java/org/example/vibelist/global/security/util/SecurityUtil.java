@@ -13,7 +13,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class SecurityUtil {
 
 ㅎ
-    public static Authentication getAuthentication() {
+    public /**
+     * Retrieves the current {@link Authentication} object from the Spring Security context.
+     *
+     * @return the current authentication, or {@code null} if no authentication is present
+     */
+    static Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
@@ -21,11 +26,12 @@ public class SecurityUtil {
         return (CustomUserDetails) getAuthentication().getPrincipal();
     }
     /**
-     * 현재 인증된 사용자의 ID를 가져옵니다.
-     * Authentication 객체의 Principal이 CustomUserDetails 또는 Long 타입인 경우를 처리합니다.
+     * Retrieves the ID of the currently authenticated user.
      *
-     * @return 사용자 ID
-     * @throws IllegalArgumentException 인증되지 않은 사용자이거나 Principal 타입이 지원되지 않는 경우
+     * Supports principals of type {@code CustomUserDetails} or {@code Long}. Throws {@code IllegalArgumentException} if the user is unauthenticated or the principal type is unsupported.
+     *
+     * @return the authenticated user's ID
+     * @throws IllegalArgumentException if the user is unauthenticated or the principal type is not supported
      */
     public static Long getCurrentUserId() {
         Authentication authentication = SecurityUtil.getAuthentication();
@@ -43,11 +49,13 @@ public class SecurityUtil {
     }
 
     /**
-     * 인증 객체에서 사용자 ID를 추출합니다.
+     * Extracts the user ID from the provided Authentication object.
      *
-     * @param authentication 인증 객체
-     * @return 사용자 ID
-     * @throws IllegalArgumentException Principal 타입이 지원되지 않는 경우
+     * Supports principals of type CustomUserDetails or Long. Throws IllegalArgumentException if the authentication is null or the principal type is unsupported.
+     *
+     * @param authentication the Authentication object from which to extract the user ID
+     * @return the user ID associated with the authentication
+     * @throws IllegalArgumentException if authentication is null or the principal type is unsupported
      */
     public static Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null) {

@@ -111,6 +111,11 @@ public class AuthController {
         }
     }
 
+    /**
+     * Logs out the current user by invalidating authentication tokens and clearing relevant cookies.
+     *
+     * @return a response entity containing a success message and status.
+     */
     @Operation(summary = "로그아웃", description = "사용자를 로그아웃하고 토큰을 무효화합니다.")
     @SecurityRequirement(name = "bearer-key")
     @PostMapping("/logout")
@@ -219,7 +224,12 @@ public class AuthController {
         return ResponseEntity.ok(loginUrls);
     }
 
-    // 소셜 제공자 정보 추출
+    /**
+     * Extracts the social provider name from OAuth2 user attributes.
+     *
+     * @param attributes the OAuth2 user attributes map
+     * @return the lowercase provider name, or "unknown" if not found
+     */
     private String getProviderFromAttributes(Map<String, Object> attributes) {
         String provider = SocialProviderConstants.fromAttributes(attributes);
         return provider != null ? SocialProviderConstants.getLowerCaseName(provider) : "unknown";

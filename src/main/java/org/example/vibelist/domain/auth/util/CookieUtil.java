@@ -25,24 +25,21 @@ public class CookieUtil {
     private String activeProfile;
 
     /**
-     * 현재 환경이 프로덕션인지 확인
+     * Determines whether the current environment is production.
      *
-     * @return 프로덕션 환경이면 true, 아니면 false
+     * @return {@code true} if the active profile is "prod"; {@code false} otherwise.
      */
     private boolean isProduction() {
         return "prod".equals(activeProfile);
     }
 
-    /**
-     * Refresh Token을 쿠키에 설정
+    /****
+     * Sets the refresh token as an HTTP-only, secure cookie with SameSite=None for cross-site requests.
      *
-     * 보안을 위해 다음 속성들을 설정합니다:
-     * - httpOnly: JavaScript에서 쿠키 접근 방지 (XSS 공격 방어)
-     * - secure: HTTPS 연결에서만 쿠키 전송
-     * - sameSite=None: 크로스-사이트 요청에서도 쿠키 전송 허용 (CORS 지원)
+     * The cookie is added to the response with a 7-day expiration, root path, and attributes to enhance security and support CORS.
      *
-     * @param response HttpServletResponse 객체
-     * @param refreshToken 설정할 Refresh Token 값
+     * @param response the HTTP response to which the refresh token cookie will be added
+     * @param refreshToken the refresh token value to store in the cookie
      */
     public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         ResponseCookie cookie = ResponseCookie.from(TokenConstants.REFRESH_TOKEN_COOKIE, refreshToken)
@@ -55,13 +52,12 @@ public class CookieUtil {
         response.addHeader("Set-Cookie", cookie.toString());
     }
     
-    /**
-     * Refresh Token 쿠키 삭제
+    /****
+     * Removes the refresh token cookie from the client's browser.
      *
-     * 쿠키를 삭제하기 위해 동일한 이름과 경로로 빈 값의 쿠키를 생성하고
-     * maxAge를 0으로 설정하여 브라우저가 즉시 삭제하도록 합니다.
+     * Creates a cookie with the same name and path as the refresh token cookie, sets its value to empty and max age to 0, instructing the browser to delete it immediately. The cookie is set as HttpOnly, Secure, and SameSite=None to match the original security attributes.
      *
-     * @param response HttpServletResponse 객체
+     * @param response the HTTP response to which the removal cookie will be added
      */
     public void removeRefreshTokenCookie(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from(TokenConstants.REFRESH_TOKEN_COOKIE, "")
@@ -75,19 +71,25 @@ public class CookieUtil {
     }
 
     /**
-     * 모든 인증 쿠키 삭제
+     * Removes all authentication-related cookies from the HTTP response.
      *
-     * 현재는 리프레시 토큰 쿠키만 삭제합니다.
-     * (액세스 토큰은 더 이상 쿠키로 관리하지 않고 Authorization 헤더를 통해 전달됨)
+     * Currently, this only deletes the refresh token cookie. Access tokens are not managed via cookies and are sent through the Authorization header.
      *
-     * @param response HttpServletResponse 객체
+     * @param response the HTTP response to which the cookie removal will be applied
      */
     public void removeAllAuthCookies(HttpServletResponse response) {
         removeRefreshTokenCookie(response);
     }
     
     /**
-     * 커스텀 쿠키 생성
+     * Creates a new HTTP cookie with the specified name, value, and maximum age.
+     *
+     * The cookie is set as HttpOnly, uses the root path ("/"), and is marked as secure if running in a production environment.
+     *
+     * @param name   the name of the cookie
+     * @param value  the value to assign to the cookie
+     * @param maxAge the maximum age of the cookie in seconds
+     * @return the configured Cookie object
      */
     public Cookie createCookie(String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
@@ -99,7 +101,10 @@ public class CookieUtil {
     }
 
     /**
-     * 요청에서 refresh 토큰 쿠키를 추출
+     * Retrieves the value of the refresh token cookie from the given HTTP request.
+     *
+     * @param request the HTTP servlet request containing cookies
+     * @return the refresh token value if present; otherwise, {@code null}
      */
     public String resolveRefreshToken(HttpServletRequest request) {
         if (request.getCookies() == null) return null;

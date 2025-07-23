@@ -51,7 +51,18 @@ public class LoggingAspect {
 //                .build();
 //
 //        logSender.send(log);
-//    }
+/**
+     * Intercepts methods annotated with {@link UserActivityLog} to log user actions and request metadata.
+     *
+     * Captures user ID, client IP, event type, domain, timestamp, API request details, and request body,
+     * then sends this information as a {@link UserLog} using the {@code logSender}. If the method is not
+     * executed within an HTTP request context, logging is skipped.
+     *
+     * @param pjp the join point representing the intercepted method
+     * @param userActivityLog the annotation instance providing event type information
+     * @return the result of the intercepted method execution
+     * @throws Throwable if the intercepted method throws any exception
+     */
 
     @Around("@annotation(userActivityLog)")
     public Object logUserAction(ProceedingJoinPoint pjp, UserActivityLog userActivityLog) throws Throwable {
@@ -77,9 +88,13 @@ public class LoggingAspect {
         return result;
     }
 
-    /*
-     *OAuth2 로그인시 id는 provider에 따라 String,Long,또는 char[]일 수 있습니다.
-     * 명시적인 type check를 수행하여 id를 반환합니다.
+    /**
+     * Extracts the user ID of the currently authenticated user.
+     *
+     * Handles various authentication types, including OAuth2 and custom user details, and returns the user ID as a string.
+     * Returns "anonymous" if the user is not authenticated, or "unknown" if the user ID cannot be determined.
+     *
+     * @return the user ID as a string, or "anonymous"/"unknown" if not available
      */
     public String extractUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -107,8 +122,11 @@ public class LoggingAspect {
         }
         return auth.getName(); // 일반 로그인 사용자
     }
-    /*
-    호출되는 API의 domain를 반환합니다.
+    /**
+     * Determines the API domain based on the package name of the target class in the join point.
+     *
+     * @param joinPoint the join point representing the intercepted method call
+     * @return the domain name (e.g., "auth", "batch", "explore", etc.), or "unknown" if no match is found
      */
     public String extractDomain(JoinPoint joinPoint) {
         String className = joinPoint.getTarget().getClass().getName();
@@ -123,8 +141,13 @@ public class LoggingAspect {
 
         return "unknown";
     }
-    /*
-    요청자의 IP를 추출합니다.
+    /**
+     * Retrieves the client's IP address from the current HTTP request.
+     *
+     * Attempts to extract the IP from the "X-Forwarded-For" header; if unavailable, falls back to the remote address.
+     * Returns "unknown" if no HTTP request is present.
+     *
+     * @return the client's IP address, or "unknown" if not available
      */
     public String extractClientIp() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
@@ -138,8 +161,10 @@ public class LoggingAspect {
         }
         return "unknown";
     }
-    /*
-    호출되는 API르 반환합니다.
+    /**
+     * Retrieves the current HTTP request's URI and decoded query string.
+     *
+     * @return the request URI with decoded query parameters if available, or "unknown" if no HTTP request is present
      */
     public String extractRequestDetails() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -155,8 +180,15 @@ public class LoggingAspect {
         }
         return "unknown";
     }
-    /*
-    Request body를 추출합니다.
+    /**
+     * Extracts and serializes the first non-request/response argument from the join point as a JSON string.
+     *
+     * Iterates through the method arguments, skipping instances of {@code HttpServletRequest} and {@code HttpServletResponse}.
+     * Attempts to serialize the first eligible argument to JSON. Returns {@code "body_parsing_error"} if serialization fails,
+     * or {@code null} if no suitable argument is found.
+     *
+     * @param joinPoint the join point representing the method invocation
+     * @return the serialized JSON string of the request body, "body_parsing_error" on serialization failure, or null if no body is present
      */
     public String extractRequestBody(ProceedingJoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();

@@ -234,9 +234,9 @@ public class AuthService {
 
     
     /**
-     * 로그아웃 처리
-     * - 클라이언트의 access token과 refresh token 쿠키를 삭제
-     * - 서버 측에서는 JWT 토큰이 stateless이므로 별도 처리 불필요
+     * Logs out the user by removing authentication cookies and recording the logout event.
+     *
+     * Extracts the refresh token from the request to identify the user, retrieves the client IP address, logs the logout event, and deletes all authentication-related cookies from the response.
      */
     public void logout(HttpServletRequest request,HttpServletResponse response) {
         /*
