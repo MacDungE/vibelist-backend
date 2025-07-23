@@ -92,6 +92,8 @@ public class AuthController {
         return refreshToken(refreshToken);
     }
 
+
+    //일단 이걸로 사용할거임
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용해 새로운 액세스 토큰을 발급받습니다.")
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(

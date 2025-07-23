@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - main-redis
+      - develop
 
 jobs:
   deploy:
@@ -68,6 +69,10 @@ jobs:
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             LOGSTASH_HOSTNAME=${{ secrets.LOGSTASH_HOSTNAME }}
             LOGSTASH_PID=${{ secrets.LOGSTASH_PID }}
+            FRONTEND_CALLBACK_URL=${{ secrets.FRONTEND_CALLBACK_URL }}
+            FRONTEND_LOGIN_URL=${{ secrets.FRONTEND_LOGIN_URL }}
+            FRONTEND_LOGOUT_URL=${{ secrets.FRONTEND_LOGOUT_URL }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1

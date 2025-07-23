@@ -201,6 +201,28 @@ public class IntegrationTokenInfoService {
     }
 
     /**
+     * 사용자의 모든 토큰 삭제 (벌크 처리 - 더 효율적)
+     */
+    @Transactional
+    public RsData<Void> deleteAllTokensByUserIdBulk(Long userId) {
+        try {
+            log.info("[INTEGRATION_TOKEN_DELETE] 사용자 토큰 벌크 삭제 시작 - userId: {}", userId);
+
+            // 벌크 삭제 실행
+            int deletedCount = tokenInfoRepository.deleteByUserId(userId);
+
+            log.info("[INTEGRATION_TOKEN_DELETE] 사용자 토큰 벌크 삭제 완료 - userId: {}, 삭제된 토큰: {}", userId, deletedCount);
+
+            return RsData.success(ResponseCode.INTEGRATION_TOKEN_DELETE, null);
+
+        } catch (Exception e) {
+            log.error("[INTEGRATION_TOKEN_DELETE] 사용자 토큰 벌크 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 토큰 삭제 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
+    /**
      * 만료된 토큰들 정리
      */
     @Transactional

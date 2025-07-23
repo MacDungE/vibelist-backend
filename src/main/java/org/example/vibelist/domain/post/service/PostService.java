@@ -19,6 +19,8 @@ import org.example.vibelist.domain.post.tag.entity.Tag;
 import org.example.vibelist.domain.post.tag.service.TagService;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,20 +153,72 @@ public class PostService {
         }
     }
 
+    @Transactional
+    public RsData<Void> softDeleteAllPostsByUserIdBulk(Long userId) {
+        try {
+            // 1. ES 삭제를 위해 먼저 포스트 ID들 조회
+            List<Long> postIds = postRepository.findPostIdsByUserIdAndDeletedAtIsNull(userId);
+
+            if (postIds.isEmpty()) {
+                log.info("[POST_006] 삭제할 포스트가 없음 - userId: {}", userId);
+                return RsData.success(ResponseCode.POST_DELETED, null);
+            }
+
+            // 2. 벌크 소프트 삭제
+            int deletedCount = postRepository.softDeleteByUserId(userId);
+
+            // 3. ES에서 일괄 삭제
+            int esFailCount = 0;
+            for (Long postId : postIds) {
+                try {
+                    exploreService.deleteFromES(postId);
+                } catch (Exception e) {
+                    esFailCount++;
+                    log.error("[POST_008] Elasticsearch 삭제 실패 - postId: {}, error: {}", postId, e.getMessage());
+                }
+            }
+
+            log.info("[POST_010] 사용자 포스트 벌크 삭제 완료 - userId: {}, 삭제된 포스트: {}, ES실패: {}",
+                    userId, deletedCount, esFailCount);
+
+            return RsData.success(ResponseCode.POST_DELETED, null);
+
+        } catch (Exception e) {
+            log.error("[POST_999] 사용자 포스트 벌크 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 포스트 삭제 중 알 수 없는 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
     public RsData<PostDetailResponse> getPostDetail(Long postId, Long viewerId) {
         try {
             Post post = postRepository.findDetailById(postId)
                     .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
-            if (!post.getIsPublic() && !post.getUser().getId().equals(viewerId)) {
-                throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글 접근 권한 없음 - viewerId=" + viewerId + ", postId=" + postId);
+
+            // 비공개 게시글 접근 권한 체크
+            if (!post.getIsPublic()) {
+                // viewerId가 null이면 비로그인 사용자이므로 접근 불가
+                if (viewerId == null) {
+                    throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글은 로그인이 필요합니다 - postId=" + postId);
+                }
+                // 작성자가 아닌 경우 접근 불가
+                if (!post.getUser().getId().equals(viewerId)) {
+                    throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글 접근 권한 없음 - viewerId=" + viewerId + ", postId=" + postId);
+                }
             }
+
+            // 조회수 증가
             post.addViewCnt();
+
+            // Elasticsearch 업데이트
             try {
                 exploreService.saveToES(toDto(post));
             } catch (Exception e) {
                 log.error("[POST_004] Elasticsearch 반영 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
             }
+
             return RsData.success(ResponseCode.POST_CREATED, "게시글 상세 조회 성공", toDto(post));
+
         } catch (GlobalException ce) {
             throw ce;
         } catch (Exception e) {
@@ -181,6 +235,52 @@ public class PostService {
         } catch (Exception e) {
             log.error("[POST_999] 좋아요한 게시글 목록 조회 오류 - userId: {}, error: {}", userId, e.getMessage());
             throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "좋아요한 게시글 목록 조회 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+    public RsData<Page<PostDetailResponse>> getLikedPostsByUser(String username, String viewerUsername, Pageable pageable) {
+        try {
+            // 프로필 소유자 확인
+            User profileOwner = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "username=" + username + "인 사용자를 찾을 수 없습니다."));
+
+            // 좋아요한 게시글 페이지 조회
+            Page<Post> posts = likeService.getPostsByUsernamePageable(username, viewerUsername, pageable);
+            Page<PostDetailResponse> result = posts.map(this::toDto);
+
+            return RsData.success(ResponseCode.POST_CREATED, "좋아요한 게시글 목록 조회 성공", result);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[POST_999] 좋아요한 게시글 목록 조회 오류 - username: {}, error: {}", username, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "좋아요한 게시글 목록 조회 중 오류 - userId=" + username + ", error=" + e.getMessage());
+        }
+    }
+
+    public RsData<Page<PostDetailResponse>> getPostsByUser(String username, String viewerUsername, Pageable pageable) {
+        try {
+            // 프로필 소유자 확인
+            User profileOwner = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "username=" + username + "인 사용자를 찾을 수 없습니다."));
+
+            Page<Post> posts;
+
+            // 본인 프로필인 경우: 모든 게시글 조회
+            if (username.equals(viewerUsername)) {
+                posts = postRepository.findByUsernameAndDeletedAtIsNull(username, pageable);
+            }
+            // 타인 프로필인 경우: 공개 게시글만 조회
+            else {
+                posts = postRepository.findByUsernameAndIsPublicTrueAndDeletedAtIsNull(username, pageable);
+            }
+
+            Page<PostDetailResponse> result = posts.map(this::toDto);
+
+            return RsData.success(ResponseCode.POST_CREATED, "작성한 게시글 목록 조회 성공", result);
+        } catch (GlobalException ce) {
+            throw ce;
+        } catch (Exception e) {
+            log.error("[POST_999] 작성한 게시글 목록 조회 오류 - username: {}, error: {}", username, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR, "작성한 게시글 목록 조회 중 오류 - username=" + username + ", error=" + e.getMessage());
         }
     }
 
