@@ -1,5 +1,6 @@
 package org.example.vibelist.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,9 +8,12 @@ import org.example.vibelist.domain.oauth2.*;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.global.response.RsData;
 import org.example.vibelist.global.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,7 +21,9 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -85,6 +91,8 @@ public class SecurityConfig {
                         .requestMatchers("/v1/post", "/v1/post/", "/v1/post/{id}", "/v1/post/likes", "/v1/post/{id}/likes", "/v1/post/{id}/likes/count", "/v1/post/{id}/likes/me").permitAll()
                         // 댓글 조회
                         .requestMatchers("/v1/comment", "/v1/comment/", "/v1/comment/{id}").permitAll()
+                        // 댓글 조회 허용 (GET 요청만)
+                        .requestMatchers(HttpMethod.GET, "/v1/comments").permitAll()
                         // 좋아요 조회
                         .requestMatchers("/v1/post/{postId}/likes/count", "/v1/post/{postId}/likes/me", "/v1/comment/{commentId}/likes/count", "/v1/comment/{commentId}/likes/me").permitAll()
                         // 나머지 게시글/댓글/좋아요(생성/수정/삭제/토글 등)는 인증 필요
@@ -104,14 +112,8 @@ public class SecurityConfig {
                 )
                 // 인증 실패시 예외처리
                 .exceptionHandling(e -> e
-                        // 인증이 안된 사용자가 접근하려고할 때
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "인증이 필요합니다: " + authException.getMessage());
-                        })
-                        // 인증은 되었지만 권한이 없을 때
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            throw new GlobalException(ResponseCode.AUTH_FORBIDDEN, "권한이 없습니다: " + accessDeniedException.getMessage());
-                        })
+                        .authenticationEntryPoint(customAuthenticationEntryPoint())
+                        .accessDeniedHandler(customAccessDeniedHandler())
                 )
                 // OAuth2 설정
                 .oauth2Login(oauth2 -> oauth2
@@ -161,5 +163,51 @@ public class SecurityConfig {
     @Bean
     public HttpSessionOAuth2AuthorizationRequestRepository authorizationRequestRepository() {
         return new HttpSessionOAuth2AuthorizationRequestRepository();
+    }
+
+    @Bean
+    public AuthenticationEntryPoint customAuthenticationEntryPoint() {
+        return (request, response, authException) -> {
+            log.warn("[SECURITY] 인증 실패 - URI: {}, 사유: {}", request.getRequestURI(), authException.getMessage());
+
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json;charset=UTF-8");
+
+            // RsData를 사용하여 응답 생성
+            RsData<Void> errorResponse = RsData.fail(
+                    ResponseCode.AUTH_REQUIRED,
+                    "인증이 필요합니다"
+            );
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+            String jsonResponse = mapper.writeValueAsString(errorResponse);
+            response.getWriter().write(jsonResponse);
+            response.getWriter().flush();
+        };
+    }
+
+    @Bean
+    public AccessDeniedHandler customAccessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            log.warn("[SECURITY] 접근 권한 없음 - URI: {}, 사유: {}", request.getRequestURI(), accessDeniedException.getMessage());
+
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType("application/json;charset=UTF-8");
+
+            // RsData를 사용하여 응답 생성
+            RsData<Void> errorResponse = RsData.fail(
+                    ResponseCode.AUTH_FORBIDDEN,
+                    "접근 권한이 없습니다"
+            );
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+            String jsonResponse = mapper.writeValueAsString(errorResponse);
+            response.getWriter().write(jsonResponse);
+            response.getWriter().flush();
+        };
     }
 }

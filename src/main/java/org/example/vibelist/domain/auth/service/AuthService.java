@@ -10,6 +10,11 @@ import org.example.vibelist.domain.auth.repository.AuthRepository;
 import org.example.vibelist.domain.auth.util.AuthUtil;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.auth.util.SocialAuthUtil;
+import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
+import org.example.vibelist.domain.post.comment.service.CommentService;
+import org.example.vibelist.domain.post.like.service.LikeService;
+import org.example.vibelist.domain.post.service.PostService;
+import org.example.vibelist.domain.user.repository.UserProfileRepository;
 import org.example.vibelist.global.constants.Role;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
@@ -43,6 +48,12 @@ public class AuthService {
     private final AuthUtil authUtil;
     private final SocialAuthUtil socialAuthUtil;
     private final CookieUtil cookieUtil;
+
+    private final PostService postService;
+    private final CommentService commentService;
+    private final LikeService likeService;
+    private final IntegrationTokenInfoService integrationTokenInfoService;
+
     
     /**
      * 회원가입 처리
@@ -206,6 +217,26 @@ public class AuthService {
         if (userOpt.isEmpty()) {
             throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다.");
         }
+
+        // 1. 사용자 프로필 삭제
+        userService.deleteUserProfile(userId);
+
+        // 2. 연관된 데이터들 순차 삭제
+
+        // PostLike 삭제
+        likeService.deleteAllLikesByUserId(userId);
+
+        // comment 삭제
+        commentService.deleteAllCommentsByUserId(userId);
+
+        // Post 소프트 삭제
+        postService.softDeleteAllPostsByUserIdBulk(userId);
+
+
+
+
+        // IntegrationTokenInfo 삭제
+        integrationTokenInfoService.deleteAllTokensByUserIdBulk(userId);
 
         userService.deleteUserProfile(userId);
         userService.deleteUser(userId);

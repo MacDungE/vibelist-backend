@@ -289,4 +289,34 @@ public class UserService {
     public List<UserDto> getAllUserDtos() {
         return getAllUsers();
     }
+
+    public boolean isUsernameAvailable(String username) {
+        // 1. 입력값 유효성 검사
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        // 2. 사용자명 정규화
+        String normalizedUsername = username.trim();
+
+        // 3. 길이 검증 (한글 고려하여 2-15자)
+        if (normalizedUsername.length() < 2 || normalizedUsername.length() > 15) {
+            return false;
+        }
+
+//        // 4. 금지어 필터링
+//        if (isProhibitedUsername(normalizedUsername)) {
+//            return false;
+//        }
+
+        // 4. 형식 검증 (프론트엔드와 동일한 패턴)
+        String pattern = "^[가-힣A-Za-z0-9_]+$";  // 프론트엔드와 통일
+        if (!normalizedUsername.matches(pattern)) {
+            return false;
+        }
+
+
+        // 6. 데이터베이스 중복 확인 (대소문자 구분 없음)
+        return !userRepository.existsByUsernameIgnoreCase(normalizedUsername);
+    }
 }

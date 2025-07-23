@@ -23,6 +23,8 @@ import org.example.vibelist.domain.user.repository.UserRepository;
 import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.RsData;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
@@ -74,7 +76,7 @@ public class LikeService {
     }
 
     public List<Post> getPostsByUserId(Long userId) {
-        return postLikeRepo.findPostsByUserId(userId);
+        return postLikeRepo.findLikedPostsByUserId(userId);
     }
 
     /* ---------------- Comment ---------------- */
@@ -109,6 +111,129 @@ public class LikeService {
         return commentLikeRepo.existsByCommentIdAndUserId(commentId, userId);
     }
 
+    /* ---------------- User Data Deletion ---------------- */
+
+    @Transactional
+    public RsData<Void> deleteAllPostLikesByUserId(Long userId) {
+        try {
+            // 1. 해당 사용자의 모든 포스트 좋아요 조회
+            List<PostLike> userPostLikes = postLikeRepo.findByUserId(userId);
+
+            if (userPostLikes.isEmpty()) {
+                log.info("[LIKE_601] 삭제할 포스트 좋아요가 없음 - userId: {}", userId);
+                return RsData.success(ResponseCode.POSTLIKE_DELETE, null);
+            }
+
+            log.info("[LIKE_602] 사용자 포스트 좋아요 일괄 삭제 시작 - userId: {}, likeCount: {}", userId, userPostLikes.size());
+
+            // 2. 각 좋아요를 삭제하면서 포스트의 좋아요 카운트도 감소
+            int successCount = 0;
+            int failCount = 0;
+
+            for (PostLike postLike : userPostLikes) {
+                try {
+                    // 포스트의 좋아요 수 감소
+                    Post post = postLike.getPost();
+                    post.decLike();
+
+                    // ES 업데이트 시도
+                    try {
+                        exploreService.saveToES(toDto(post));
+                    } catch (Exception e) {
+                        log.error("[LIKE_603] ES 업데이트 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
+                    }
+
+                    // 좋아요 삭제
+                    postLikeRepo.delete(postLike);
+                    successCount++;
+
+                } catch (Exception e) {
+                    failCount++;
+                    log.error("[LIKE_604] 포스트 좋아요 삭제 실패 - postLikeId: {}, userId: {}, error: {}",
+                            postLike.getId(), userId, e.getMessage());
+                }
+            }
+
+            log.info("[LIKE_605] 사용자 포스트 좋아요 일괄 삭제 완료 - userId: {}, 성공: {}, 실패: {}",
+                    userId, successCount, failCount);
+
+            return RsData.success(ResponseCode.POSTLIKE_DELETE, null);
+
+        } catch (Exception e) {
+            log.error("[LIKE_500] 사용자 포스트 좋아요 일괄 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 포스트 좋아요 삭제 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public RsData<Void> deleteAllCommentLikesByUserId(Long userId) {
+        try {
+            // 1. 해당 사용자의 모든 댓글 좋아요 조회
+            List<CommentLike> userCommentLikes = commentLikeRepo.findByUserId(userId);
+
+            if (userCommentLikes.isEmpty()) {
+                log.info("[LIKE_606] 삭제할 댓글 좋아요가 없음 - userId: {}", userId);
+                return RsData.success(ResponseCode.COMMENT_LIKE_DELETE, null);
+            }
+
+            log.info("[LIKE_607] 사용자 댓글 좋아요 일괄 삭제 시작 - userId: {}, likeCount: {}", userId, userCommentLikes.size());
+
+            // 2. 각 좋아요를 삭제하면서 댓글의 좋아요 카운트도 감소
+            int successCount = 0;
+            int failCount = 0;
+
+            for (CommentLike commentLike : userCommentLikes) {
+                try {
+                    // 댓글의 좋아요 수 감소
+                    Comment comment = commentLike.getComment();
+                    comment.decLike();
+
+                    // 좋아요 삭제
+                    commentLikeRepo.delete(commentLike);
+                    successCount++;
+
+                } catch (Exception e) {
+                    failCount++;
+                    log.error("[LIKE_608] 댓글 좋아요 삭제 실패 - commentLikeId: {}, userId: {}, error: {}",
+                            commentLike.getId(), userId, e.getMessage());
+                }
+            }
+
+            log.info("[LIKE_609] 사용자 댓글 좋아요 일괄 삭제 완료 - userId: {}, 성공: {}, 실패: {}",
+                    userId, successCount, failCount);
+
+            return RsData.success(ResponseCode.COMMENT_LIKE_DELETE, null);
+
+        } catch (Exception e) {
+            log.error("[LIKE_500] 사용자 댓글 좋아요 일괄 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 댓글 좋아요 삭제 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public RsData<Void> deleteAllLikesByUserId(Long userId) {
+        try {
+            log.info("[LIKE_610] 사용자 모든 좋아요 일괄 삭제 시작 - userId: {}", userId);
+
+            // 포스트 좋아요 삭제
+            deleteAllPostLikesByUserId(userId);
+
+            // 댓글 좋아요 삭제
+            deleteAllCommentLikesByUserId(userId);
+
+            log.info("[LIKE_611] 사용자 모든 좋아요 일괄 삭제 완료 - userId: {}", userId);
+
+            return RsData.success(ResponseCode.POSTLIKE_DELETE, null);
+
+        } catch (Exception e) {
+            log.error("[LIKE_500] 사용자 모든 좋아요 일괄 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 모든 좋아요 삭제 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
     private PostDetailResponse toDto(Post post) {
         Playlist pl = post.getPlaylist();
 
@@ -140,4 +265,38 @@ public class LikeService {
         );
     }
 
+    public Page<Post> getPostsByUserIdPageable(Long userId, Long viewerId, Pageable pageable) {
+        try {
+            // 본인이 조회하는 경우: 모든 좋아요한 게시글 조회 (공개/비공개 모두)
+            if (userId.equals(viewerId)) {
+                return postLikeRepo.findLikedPostsByUserIdPageable(userId, pageable);
+            }
+            // 타인이 조회하는 경우: 공개 게시글만 조회
+            else {
+                return postLikeRepo.findPublicLikedPostsByUserIdPageable(userId, pageable);
+            }
+        } catch (Exception e) {
+            log.error("[LIKE_612] 사용자가 좋아요한 게시글 페이지 조회 실패 - userId: {}, viewerId: {}, error: {}",
+                    userId, viewerId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "좋아요한 게시글 조회 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+    public Page<Post> getPostsByUsernamePageable(String username, String viewerUsername, Pageable pageable) {
+        try {
+            // 본인이 조회하는 경우: 모든 좋아요한 게시글 조회 (공개/비공개 모두)
+            if (username.equals(viewerUsername)) {
+                return postLikeRepo.findLikedPostsByUsernamePageable(username, pageable);
+            }
+            // 타인이 조회하는 경우: 공개 게시글만 조회
+            else {
+                return postLikeRepo.findPublicLikedPostsByUsernamePageable(username, pageable);
+            }
+        } catch (Exception e) {
+            log.error("[LIKE_612] 사용자가 좋아요한 게시글 페이지 조회 실패 - userId: {}, viewerId: {}, error: {}",
+                    username, viewerUsername, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "좋아요한 게시글 조회 중 오류 - userId=" + username + ", error=" + e.getMessage());
+        }
+    }
 }

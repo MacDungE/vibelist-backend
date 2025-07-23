@@ -3,6 +3,7 @@ package org.example.vibelist.domain.integration.repository;
 import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
 import org.example.vibelist.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -123,4 +124,9 @@ public interface IntegrationTokenInfoRepository extends JpaRepository<Integratio
     List<IntegrationTokenInfo> findByTokenResponseArrayContains(@Param("key") String key, @Param("arrayElement") String arrayElement);
 
     Long user(User user);
+
+    @Modifying
+    @Query("DELETE FROM IntegrationTokenInfo iti WHERE iti.user.id = :userId")
+    int deleteByUserId(@Param("userId") Long userId);
+
 }

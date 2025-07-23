@@ -10,6 +10,10 @@ import org.example.vibelist.domain.post.dto.PostDetailResponse;
 import org.example.vibelist.domain.post.dto.PostUpdateRequest;
 import org.example.vibelist.domain.post.service.PostService;
 import org.example.vibelist.global.security.core.CustomUserDetails;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -52,8 +56,7 @@ public class PostController {
     @GetMapping("/{id}")
     public ResponseEntity<RsData<PostDetailResponse>> getPostDetail(@PathVariable Long id,
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
-        Long userId = userDetail.getId();
+        Long userId = userDetail == null ? null : userDetail.getId();
         RsData<PostDetailResponse> result = postService.getPostDetail(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 200 : 404).body(result);
     }
@@ -79,13 +82,30 @@ public class PostController {
     }
 
 
-    @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "현재 인증된 사용자가 좋아요한 게시글 목록을 조회합니다.")
-    @GetMapping(value = "/likes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<RsData<List<PostDetailResponse>>> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
+    @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "특정 사용자가 좋아요한 게시글 목록을 페이지네이션으로 조회합니다.")
+    @GetMapping(value = "/{username}/likes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RsData<Page<PostDetailResponse>>> getLikedPostsByUser(
+            @PathVariable String username,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
-        Long userId = userDetail.getId();
-        RsData<List<PostDetailResponse>> result = postService.getLikedPostsByUser(userId);
+        String viewerUsername = userDetail.getUsername();
+        RsData<Page<PostDetailResponse>> result = postService.getLikedPostsByUser(username, viewerUsername, pageable);
         return ResponseEntity.ok(result);
     }
+
+    @Operation(summary = "사용자가 작성한 게시글 목록 조회", description = "특정 사용자가 작성한 게시글 목록을 페이지네이션으로 조회합니다.")
+    @GetMapping(value = "/{username}/posts", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RsData<Page<PostDetailResponse>>> getPostsByUser(
+            @PathVariable String username,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails userDetail) {
+        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
+        String viewerUsername = userDetail.getUsername();
+        RsData<Page<PostDetailResponse>> result = postService.getPostsByUser(username, viewerUsername, pageable);
+        return ResponseEntity.ok(result);
+    }
+
+
 
 }
