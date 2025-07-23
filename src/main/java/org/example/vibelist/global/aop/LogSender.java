@@ -26,7 +26,6 @@ public class LogSender {
     public void send(UserLog logData){
         try{
             String jsonLog = objectMapper.writeValueAsString(logData);
-            log.info("USER_LOG_PREVIEW: {}", jsonLog);
 
             MDC.put("userId", logData.getUserId());
             MDC.put("ip", logData.getIp());
