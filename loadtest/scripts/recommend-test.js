@@ -2,8 +2,8 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 export let options = {
-    vus: 100,          // 동시에 100명의 가상 유저
-    duration: '30s',  // 30초간 테스트
+    vus: 50,          // 동시에 50명의 가상 유저
+    duration: '10s',  // 10초간 테스트
 };
 
 export default function () {
@@ -22,12 +22,12 @@ export default function () {
     };
 
     // AWS 서버 주소/포트에 맞게 수정
-    const res = http.post('http://localhost:8080/v1/recommend', payload, params);
+    const res = http.post('http://host.docker.internal:8080/v1/recommend', payload, params);
 
     check(res, {
         'status is 200': (r) => r.status === 200,
         // 필요하면 응답 내용도 검사 가능
     });
 
-    // sleep(1); // 각 가상 유저가 1초 대기
+    sleep(0.5); // 각 가상 유저가 1초 대기
 }
