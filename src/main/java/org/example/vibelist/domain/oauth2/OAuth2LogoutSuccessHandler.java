@@ -19,7 +19,8 @@ import java.util.Map;
 @Slf4j
 public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 
-    // 로그앙웃을 커스텀으로 하고 싶을때 사용하는 인터페이스
+    @Value("${frontend.logout.url}")
+    private String logoutUrl;
 
     // 카카오 로그아웃 리다이렉트 URI (환경에 맞게 설정)
     @Value("${oauth2.kakao.logout-redirect-uri:http://localhost:8080/login.html}")
@@ -36,7 +37,7 @@ public class OAuth2LogoutSuccessHandler implements LogoutSuccessHandler {
 
 
         // 기본 리디렉션 URL → 일반 로그아웃 시 login.html로 이동
-        String redirectUrl = "/login.html";
+        String redirectUrl = logoutUrl;
 
         if (authentication != null && authentication.getPrincipal() instanceof DefaultOAuth2User auth2User) {
 

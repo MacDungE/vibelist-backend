@@ -56,9 +56,9 @@ public class PostController {
     @UserActivityLog(action="VIEW_POST")//AOP전달
     public ResponseEntity<RsData<?>> getPostDetail(@PathVariable Long id,
                                             @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
+        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
-        RsData<?> result = postService.getPostDetail(id, userId);
+        RsData<PostDetailResponse> result = postService.getPostDetail(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 200 : 404).body(result);
     }
 
@@ -68,9 +68,9 @@ public class PostController {
     @UserActivityLog(action="EDIT_POST")//AOP전달
     public ResponseEntity<RsData<?>> updatePost(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail,
                            @RequestBody @Valid PostUpdateRequest request) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
+        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
-        RsData<?> result = postService.updatePost(userId, request);
+        RsData<Void> result = postService.updatePost(userId, request);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
     }
 
@@ -80,9 +80,9 @@ public class PostController {
     @UserActivityLog(action="DELETE_POST")//AOP전달
     public ResponseEntity<RsData<?>> deletePost(@PathVariable Long id,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
+        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
-        RsData<?> result = postService.deletePost(userId, id);
+        RsData<Void> result = postService.deletePost(userId, id);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
     }
 
@@ -93,7 +93,7 @@ public class PostController {
     public ResponseEntity<RsData<?>> getLikedPostsByUser(@AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED);
         Long userId = userDetail.getId();
-        RsData<?> result = postService.getLikedPostsByUser(userId);
+        RsData<List<PostDetailResponse>> result = postService.getLikedPostsByUser(userId);
         return ResponseEntity.ok(result);
     }
 }

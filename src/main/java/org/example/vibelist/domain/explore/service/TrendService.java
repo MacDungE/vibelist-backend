@@ -176,7 +176,10 @@ public class TrendService {
                 .withPageable(Pageable.ofSize(size))
                 .build();
 
+        log.info(nq.toString());
+
         SearchHits<PostDocument> hits = operations.search(nq, PostDocument.class);
+
         return hits.getSearchHits();
     }
 

@@ -27,7 +27,7 @@ public class HealthController {
 
     @Operation(summary = "헬스 체크", description = "서버 상태 확인용 API")
     @GetMapping("/health")
-    public ResponseEntity<RsData<?>> healthCheck() {
+    public ResponseEntity<RsData<String>> healthCheck() {
         return ResponseEntity.ok(RsData.success(ResponseCode.HEALTH_OK, "ok"));
     }
 } 
