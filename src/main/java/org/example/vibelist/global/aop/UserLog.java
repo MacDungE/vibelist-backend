@@ -14,5 +14,6 @@ public class UserLog {
     private String domain; // ex: user,post, etc
     private String api;// ex: api/v1/post
     private String requestBody;
+    private Long duration;
     private LocalDateTime timestamp;
 }
