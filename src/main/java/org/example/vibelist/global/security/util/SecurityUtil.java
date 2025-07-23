@@ -12,7 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SecurityUtil {
 
-ㅎ
+
     public static Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
