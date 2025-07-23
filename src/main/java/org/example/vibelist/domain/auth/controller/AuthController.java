@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import org.example.vibelist.domain.auth.service.AuthService;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.user.dto.SocialAccountResponse;
 import org.example.vibelist.domain.user.service.UserService;
-import org.example.vibelist.global.aop.UserActivityLog;
+
 import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.util.SecurityUtil;
