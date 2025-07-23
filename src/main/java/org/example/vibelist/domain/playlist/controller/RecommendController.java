@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.playlist.dto.RecommendRqDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.RecommendService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,8 +37,9 @@ public class RecommendController {
     @Operation(summary = "감정 기반 트랙 추천",
             description = "사용자의 감정 정보를 바탕으로 트랙을 추천합니다. valence/energy 직접 입력하거나 자연어 감정 설명을 입력할 수 있습니다. (둘 중 하나만 입력해도 추천이 동작합니다.)"
     )
-    public ResponseEntity<RsData<List<TrackRsDto>>> recommend(@RequestBody @Valid RecommendRqDto request) {
-        RsData<List<TrackRsDto>> result = recommendService.recommend(request);
+    @UserActivityLog(action = "RECOMMEND_PLAYLIST")
+    public ResponseEntity<RsData<?>> recommend(@RequestBody @Valid RecommendRqDto request) {
+        RsData<?> result = recommendService.recommend(request);
         return ResponseEntity.status(result.isSuccess() ? 200 : 400).body(result);
     }
 

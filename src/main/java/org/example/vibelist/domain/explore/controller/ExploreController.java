@@ -9,6 +9,7 @@ import org.example.vibelist.domain.explore.dto.TrendResponse;
 import org.example.vibelist.domain.explore.service.ExploreService;
 import org.example.vibelist.domain.explore.service.TrendService;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +29,8 @@ public class ExploreController {
 
     @Operation(summary = "게시글 검색", description = "키워드를 기반으로 게시글을 검색합니다.")
     @GetMapping("/search")
-    public ResponseEntity<RsData<Page<PostDetailResponse>>> search(
+    @UserActivityLog(action = "SEARCH")
+    public ResponseEntity<RsData<?>> search(
             @Parameter(description = "검색 키워드", required = true)
             @RequestParam("q") String keyword,
             @Parameter(hidden = true) Pageable pageable) {
