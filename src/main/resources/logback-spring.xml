@@ -1,4 +1,4 @@
-
+<configuration>
 <!-- 콘솔용 Appender -->
 <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
@@ -23,16 +23,8 @@
     </encoder>
 </appender>
 
-        <!-- 콘솔 로그는 전체 -->
-        <!--    <root level="INFO">-->
-        <!--        <appender-ref ref="CONSOLE"/>-->
-        <!--    </root>-->
-<root level="WARN">
-<appender-ref ref="CONSOLE"/>
-</root>
-
         <!-- 사용자 로그만 logstash로 -->
 <logger name="user-log" level="INFO" additivity="false">
 <appender-ref ref="CONSOLE"/>
 </logger>
-        </configuration>
+</configuration>
