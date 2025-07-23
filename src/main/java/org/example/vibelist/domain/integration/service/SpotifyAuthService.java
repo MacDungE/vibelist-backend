@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.integration.entity.DevIntegrationTokenInfo;
 import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
+import org.example.vibelist.global.response.GlobalException;
+import org.example.vibelist.global.response.ResponseCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,7 @@ public class SpotifyAuthService {
     private final DevIntegrationTokenInfoService devIntegrationTokenInfoService;
 
     public  Map<String,String> refreshAccessToken(String refreshToken) {
-        if (refreshToken == null) throw new IllegalStateException("Refresh token 없음");
+        if (refreshToken == null) throw new GlobalException(ResponseCode.INTEGRATION_TOKEN_INVALID);
 
         String url = "https://accounts.spotify.com/api/token";
         String auth = clientId + ":" + clientSecret;
@@ -71,7 +73,7 @@ public class SpotifyAuthService {
             tokenMap.put("expires_in",expiresIn.toString());
             return tokenMap;
         } catch (Exception e) {
-            throw new RuntimeException("Refresh 실패", e);
+            throw new GlobalException(ResponseCode.INTEGRATION_SPOTIFY_REFRESH_FAIL);
         }
     }
 /*
@@ -97,7 +99,7 @@ public class SpotifyAuthService {
             return root.get("id").asText(); //spotify상의 user_id 추출
         } catch (Exception e) {
             log.error("Failed to extract user ID from Spotify response", e);
-            throw new RuntimeException("Failed to get Spotify user id", e);
+            throw new GlobalException(ResponseCode.INTEGRATION_SPOTIFY_EXTRACT_USERID_FAIL);
         }
     }
     public boolean isAccessTokenValid(String accessToken) {
@@ -141,7 +143,7 @@ public class SpotifyAuthService {
                 Map<String, String> tokenMap = refreshAccessToken(info.getRefreshToken());
 
                 if (!info.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
-                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                    throw new GlobalException(ResponseCode.INTEGRATION_TOKEN_INVALID);
                 }
 
                 String newAccessToken = tokenMap.get("access_token");
@@ -160,7 +162,7 @@ public class SpotifyAuthService {
                 Map<String, String> tokenMap = refreshAccessToken(dev.getRefreshToken());
 
                 if (!dev.getRefreshToken().equals(tokenMap.get("refresh_token"))) {
-                    throw new IllegalArgumentException("refresh_token이 동일하지 않습니다.");
+                    throw new GlobalException(ResponseCode.INTEGRATION_TOKEN_INVALID);
                 }
 
                 String newAccessToken = tokenMap.get("access_token");
@@ -169,7 +171,6 @@ public class SpotifyAuthService {
                 devIntegrationTokenInfoService.updateDev("sung_1", newAccessToken, dev.getRefreshToken(), newExpires);
                 return newAccessToken;
             }
-
             return dev.getAccessToken();
         }
     }

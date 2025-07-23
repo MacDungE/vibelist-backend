@@ -18,6 +18,8 @@ import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.entity.UserProfile;
 import org.example.vibelist.domain.user.service.UserService;
 import org.example.vibelist.global.util.UsernameGenerator;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -227,6 +229,8 @@ public class AuthService {
      * - 서버 측에서는 JWT 토큰이 stateless이므로 별도 처리 불필요
      */
     public void logout(HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         // access token과 refresh token 쿠키 삭제
         cookieUtil.removeAllAuthCookies(response);
     }

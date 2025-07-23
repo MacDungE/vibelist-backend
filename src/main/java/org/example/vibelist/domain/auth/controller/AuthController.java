@@ -17,12 +17,12 @@ import org.example.vibelist.domain.auth.service.AuthService;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.user.dto.SocialAccountResponse;
 import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.util.SecurityUtil;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.ResponseCode;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -112,6 +112,7 @@ public class AuthController {
     @Operation(summary = "로그아웃", description = "사용자를 로그아웃하고 토큰을 무효화합니다.")
     @SecurityRequirement(name = "bearer-key")
     @PostMapping("/logout")
+    @UserActivityLog(action = "LOGOUT") //AOP 전달
     public ResponseEntity<?> logout(HttpServletResponse response) {
         authService.logout(response);
         Map<String, String> logoutResponse = new HashMap<>();

@@ -42,6 +42,7 @@ public enum ResponseCode {
     INTEGRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "INTEGRATION_404", "연동 정보를 찾을 수 없습니다."),
     INTEGRATION_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "INTEGRATION_401", "유효하지 않은 연동 토큰입니다."),
     INTEGRATION_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "INTEGRATION_404", "연동 토큰을 찾을 수 없습니다."),
+    INTEGRATION_SPOTIFY_REFRESH_FAIL(HttpStatus.BAD_GATEWAY, "INTEGRATION_501", "스포티파이 ACCESS 토큰 갱신 실패"), //토큰 refreshing 실패
     INTEGRATION_ALREADY_CONNECTED(HttpStatus.CONFLICT, "INTEGRATION_409", "이미 연동된 서비스입니다."),
     INTEGRATION_DISCONNECTED(HttpStatus.OK, "INTEGRATION_200", "연동 해제 성공"),
     INTEGRATION_DISCONNECTED_ALL(HttpStatus.OK, "INTEGRATION_200", "모든 연동 해제 성공"),
@@ -52,6 +53,7 @@ public enum ResponseCode {
     INTEGRATION_SPOTIFY_CONNECT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 연동 시작 실패"),
     INTEGRATION_SPOTIFY_DEBUG_SUCCESS(HttpStatus.OK, "INTEGRATION_200", "스포티파이 디버그 정보 조회 성공"),
     INTEGRATION_SPOTIFY_DEBUG_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 디버그 정보 조회 실패"),
+    INTEGRATION_SPOTIFY_EXTRACT_USERID_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 유저정보 추출 실패"),//유저 정보 추출 실패
     // ====== PLAYLIST ======
     PLAYLIST_CREATED(HttpStatus.CREATED, "PLAYLIST_201", "플레이리스트 생성 성공"),
     PLAYLIST_CREATE_FAIL(HttpStatus.BAD_GATEWAY, "PLAYLIST_502", "플레이리스트 생성에 실패했습니다."),

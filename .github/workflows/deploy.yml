@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - main-redis
 
 jobs:
   deploy:
@@ -65,6 +66,8 @@ jobs:
             EMOTION_PROFILE_PATH=${{ secrets.EMOTION_PROFILE_PATH }}
             PROFILE=${{ secrets.PROFILE }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            LOGSTASH_HOSTNAME=${{ secrets.LOGSTASH_HOSTNAME }}
+            LOGSTASH_PID=${{ secrets.LOGSTASH_PID }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1

@@ -1,0 +1,41 @@
+<configuration>
+    <!-- 색상 및 예외 포맷 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+
+    <!-- 콘솔용 Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "userId": "%X{userId}",
+                        "ip": "%X{ip}",
+                        "eventType": "%X{eventType}",
+                        "domain": "%X{domain}",
+                        "api": "%X{api}",
+                        "requestBody": "%X{requestBody}",
+                        "message": "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- 콘솔 로그는 전체 -->
+<!--    <root level="INFO">-->
+<!--        <appender-ref ref="CONSOLE"/>-->
+<!--    </root>-->
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <!-- 사용자 로그만 logstash로 -->
+    <logger name="user-log" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+</configuration>
