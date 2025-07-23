@@ -1,6 +1,7 @@
 package org.example.vibelist.domain.auth.util;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,5 +64,23 @@ public class CookieUtil {
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
         return cookie;
+    }
+
+    /*
+
+     */
+
+    /**
+     * 요청에서 refresh 토큰 쿠키를 추출
+     */
+    public String resolveRefreshToken(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if (TokenConstants.REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 } 

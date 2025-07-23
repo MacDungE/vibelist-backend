@@ -18,7 +18,22 @@ public class SecurityUtil {
     }
 
     public static CustomUserDetails getCurrentUserDetails() {
-        return (CustomUserDetails) getAuthentication().getPrincipal();
+        Authentication authentication = getAuthentication();
+        if (authentication == null) {
+            throw new IllegalArgumentException("인증 객체가 null입니다.");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal == null) {
+            throw new IllegalArgumentException("Principal 객체가 null입니다.");
+        }
+
+        if (!(principal instanceof CustomUserDetails)) {
+            throw new IllegalArgumentException("Principal이 CustomUserDetails 타입이 아닙니다: " + 
+                    principal.getClass().getName());
+        }
+
+        return (CustomUserDetails) principal;
     }
     /**
      * 현재 인증된 사용자의 ID를 가져옵니다.

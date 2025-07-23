@@ -1,5 +1,6 @@
 package org.example.vibelist.domain.auth.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +11,12 @@ import org.example.vibelist.domain.auth.repository.AuthRepository;
 import org.example.vibelist.domain.auth.util.AuthUtil;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.auth.util.SocialAuthUtil;
+import org.example.vibelist.global.aop.LogSender;
+import org.example.vibelist.global.aop.LoggingAspect;
+import org.example.vibelist.global.aop.UserLog;
 import org.example.vibelist.global.constants.Role;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
 import org.example.vibelist.global.security.jwt.JwtTokenType;
 import org.example.vibelist.domain.user.entity.User;
@@ -26,7 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.RsData;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +54,8 @@ public class AuthService {
     private final AuthUtil authUtil;
     private final SocialAuthUtil socialAuthUtil;
     private final CookieUtil cookieUtil;
-    
+
+    private final LogSender logSender;
     /**
      * 회원가입 처리
      */
@@ -219,10 +229,46 @@ public class AuthService {
      * - 클라이언트의 access token과 refresh token 쿠키를 삭제
      * - 서버 측에서는 JWT 토큰이 stateless이므로 별도 처리 불필요
      */
-    public void logout(HttpServletResponse response) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public void logout(HttpServletRequest request,HttpServletResponse response) {
+        /*
+        refresh token으로 부터 userId추출
+         */
+        String userId = "anonymous";
+        String refreshToken = cookieUtil.resolveRefreshToken(request);
+        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
+            userId= "anonymous";
+        }
+        try {
+            Long userIdL = jwtTokenProvider.getUserIdFromToken(refreshToken);
+            userId = userIdL.toString();
+        } catch (Exception e) {
+            userId= "annoymous";
+        }
 
+        /*
+        IP 추출
+         */
+        String ip ="unknown";
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes attrs) {
+             request = attrs.getRequest();
+                ip = request.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) {
+                ip = request.getRemoteAddr();
+            }
+        }
+
+        UserLog logData = UserLog.builder()
+                .userId(userId)
+                .ip(ip)
+                .eventType("LOGOUT")
+                .domain("auth")
+                .timestamp(LocalDateTime.now())
+                .api("auth/v1/logout")
+                .requestBody(null)
+                .build();
         // access token과 refresh token 쿠키 삭제
+        logSender.send(logData);
         cookieUtil.removeAllAuthCookies(response);
     }
 

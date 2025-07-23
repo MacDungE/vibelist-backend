@@ -124,15 +124,14 @@ public class SecurityConfig {
 //                                .authorizationRequestRepository(authorizationRequestRepository())
                                 .authorizationRequestResolver(new CustomAuthorizationRequestResolver(repo)))
                 )
-                // 로그아웃 설정
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessHandler(oAuth2LogoutSuccessHandler)
-                        .logoutSuccessUrl("/login.html")
-                        .invalidateHttpSession(true)
-                        .deleteCookies(TokenConstants.ACCESS_TOKEN_COOKIE, TokenConstants.REFRESH_TOKEN_COOKIE)
-                        .permitAll()
-                )
+//                // 로그아웃 설정
+//                .logout(logout -> logout
+//                        .logoutUrl("/logout")
+//                        .logoutSuccessUrl("/login.html")
+//                        .invalidateHttpSession(true)
+//                        .deleteCookies(TokenConstants.ACCESS_TOKEN_COOKIE, TokenConstants.REFRESH_TOKEN_COOKIE)
+//                        .permitAll()
+//                )
                 // JWT 토큰 필터를 UsernamePasswordAuthenticationFilter 이전에 추가
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
