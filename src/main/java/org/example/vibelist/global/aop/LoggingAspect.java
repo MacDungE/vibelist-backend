@@ -10,6 +10,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,6 +52,7 @@ public class LoggingAspect {
 //
 //        logSender.send(log);
 //    }
+
     @Around("@annotation(userActivityLog)")
     public Object logUserAction(ProceedingJoinPoint pjp, UserActivityLog userActivityLog) throws Throwable {
         // 요청이 아닌 다른 스레드에서 실행된 것이라면 로깅 무시
@@ -79,7 +81,7 @@ public class LoggingAspect {
      *OAuth2 로그인시 id는 provider에 따라 String,Long,또는 char[]일 수 있습니다.
      * 명시적인 type check를 수행하여 id를 반환합니다.
      */
-    private String extractUserId() {
+    public String extractUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) return "anonymous"; // 비로그인 사용자
 
@@ -108,7 +110,7 @@ public class LoggingAspect {
     /*
     호출되는 API의 domain를 반환합니다.
      */
-    private String extractDomain(JoinPoint joinPoint) {
+    public String extractDomain(JoinPoint joinPoint) {
         String className = joinPoint.getTarget().getClass().getName();
         if (className.contains(".domain.auth.")) return "auth";
         if (className.contains(".domain.batch.")) return "batch";
@@ -124,7 +126,7 @@ public class LoggingAspect {
     /*
     요청자의 IP를 추출합니다.
      */
-    private String extractClientIp() {
+    public String extractClientIp() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes instanceof ServletRequestAttributes attrs) {
             HttpServletRequest request = attrs.getRequest();
@@ -139,7 +141,7 @@ public class LoggingAspect {
     /*
     호출되는 API르 반환합니다.
      */
-    private String extractRequestDetails() {
+    public String extractRequestDetails() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs != null) {
             HttpServletRequest request = attrs.getRequest();
@@ -156,7 +158,7 @@ public class LoggingAspect {
     /*
     Request body를 추출합니다.
      */
-    private String extractRequestBody(ProceedingJoinPoint joinPoint) {
+    public String extractRequestBody(ProceedingJoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         ObjectMapper objectMapper = new ObjectMapper();
         for (Object arg : args) {

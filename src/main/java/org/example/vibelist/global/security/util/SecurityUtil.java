@@ -12,7 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SecurityUtil {
 
-
+ㅎ
     public static Authentication getAuthentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
@@ -41,7 +41,7 @@ public class SecurityUtil {
             throw new IllegalArgumentException("인증되지 않은 사용자입니다.");
         }
     }
-    
+
     /**
      * 인증 객체에서 사용자 ID를 추출합니다.
      *
@@ -53,13 +53,13 @@ public class SecurityUtil {
         if (authentication == null) {
             throw new IllegalArgumentException("인증 객체가 null입니다.");
         }
-        
+
         if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
             return userDetails.getId();
         } else if (authentication.getPrincipal() instanceof Long) {
             return (Long) authentication.getPrincipal();
         } else {
-            throw new IllegalArgumentException("지원되지 않는 Principal 타입입니다: " + 
+            throw new IllegalArgumentException("지원되지 않는 Principal 타입입니다: " +
                     (authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null"));
         }
     }

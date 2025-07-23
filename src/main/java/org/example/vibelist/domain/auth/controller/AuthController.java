@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,7 @@ import org.example.vibelist.domain.auth.service.AuthService;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.user.dto.SocialAccountResponse;
 import org.example.vibelist.domain.user.service.UserService;
-import org.example.vibelist.global.aop.UserActivityLog;
+
 import org.example.vibelist.global.constants.SocialProviderConstants;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.example.vibelist.global.security.util.SecurityUtil;
@@ -112,9 +114,9 @@ public class AuthController {
     @Operation(summary = "로그아웃", description = "사용자를 로그아웃하고 토큰을 무효화합니다.")
     @SecurityRequirement(name = "bearer-key")
     @PostMapping("/logout")
-    @UserActivityLog(action = "LOGOUT") //AOP 전달
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        authService.logout(response);
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+
+        authService.logout(request,response);
         Map<String, String> logoutResponse = new HashMap<>();
         logoutResponse.put("message", "로그아웃 성공");
         logoutResponse.put("status", "success");
@@ -222,4 +224,5 @@ public class AuthController {
         String provider = SocialProviderConstants.fromAttributes(attributes);
         return provider != null ? SocialProviderConstants.getLowerCaseName(provider) : "unknown";
     }
+
 }
