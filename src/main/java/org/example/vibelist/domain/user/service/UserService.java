@@ -172,7 +172,7 @@ public class UserService {
     }
 
     public List<UserDto> searchUsersByName(String name) {
-        List<UserProfile> profiles = userProfileRepository.findByNameContaining(name);
+        List<UserProfile> profiles = userProfileRepository.findByNameContainingWithUser(name);
         return profiles.stream()
                 .map(profile -> {
                     User user = profile.getUser();
@@ -229,9 +229,19 @@ public class UserService {
 
     @Transactional
     public UserDto updateUserProfile(Long userId, UpdateUserProfileRequest request) {
-        Optional<UserProfile> profileOpt = userProfileRepository.findById(userId);
-        if (profileOpt.isPresent()) {
-            UserProfile profile = profileOpt.get();
+        Optional<User> userOpt = userRepository.findByIdWithProfile(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            UserProfile profile = user.getUserProfile();
+            
+            // username 업데이트 로직 (중복 체크 포함)
+            if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
+                if (userRepository.existsByUsername(request.getUsername())) {
+                    throw new GlobalException(ResponseCode.USER_ALREADY_EXISTS, 
+                        "username='" + request.getUsername() + "'은 이미 존재합니다.");
+                }
+                user.updateUsername(request.getUsername());
+            }
             
             // 프로필 업데이트 로직
             if (request.getName() != null) {
@@ -247,8 +257,9 @@ public class UserService {
                 profile.setBio(request.getBio());
             }
             
+            User updatedUser = userRepository.save(user);
             UserProfile updatedProfile = userProfileRepository.save(profile);
-            return convertToUserDto(updatedProfile.getUser(), updatedProfile);
+            return convertToUserDto(updatedUser, updatedProfile);
         }
         throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId);
     }
@@ -288,5 +299,35 @@ public class UserService {
      */
     public List<UserDto> getAllUserDtos() {
         return getAllUsers();
+    }
+
+    public boolean isUsernameAvailable(String username) {
+        // 1. 입력값 유효성 검사
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        // 2. 사용자명 정규화
+        String normalizedUsername = username.trim();
+
+        // 3. 길이 검증 (한글 고려하여 2-15자)
+        if (normalizedUsername.length() < 2 || normalizedUsername.length() > 15) {
+            return false;
+        }
+
+//        // 4. 금지어 필터링
+//        if (isProhibitedUsername(normalizedUsername)) {
+//            return false;
+//        }
+
+        // 4. 형식 검증 (프론트엔드와 동일한 패턴)
+        String pattern = "^[가-힣A-Za-z0-9_]+$";  // 프론트엔드와 통일
+        if (!normalizedUsername.matches(pattern)) {
+            return false;
+        }
+
+
+        // 6. 데이터베이스 중복 확인 (대소문자 구분 없음)
+        return !userRepository.existsByUsernameIgnoreCase(normalizedUsername);
     }
 }

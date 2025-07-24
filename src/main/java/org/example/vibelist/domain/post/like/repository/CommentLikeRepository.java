@@ -1,8 +1,10 @@
 package org.example.vibelist.domain.post.like.repository;
 
 import org.example.vibelist.domain.post.like.entity.CommentLike;
+import org.example.vibelist.domain.post.like.entity.PostLike;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
@@ -10,4 +12,5 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> 
     Optional<CommentLike> findByCommentIdAndUserId(Long commentId, Long userId);
     long countByCommentId(Long commentId);
     void deleteByCommentIdAndUserId(Long commentId, Long userId);
+    List<CommentLike> findByUserId(Long userId);
 }

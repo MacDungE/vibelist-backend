@@ -1,5 +1,6 @@
 package org.example.vibelist.domain.auth.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,21 +11,36 @@ import org.example.vibelist.domain.auth.repository.AuthRepository;
 import org.example.vibelist.domain.auth.util.AuthUtil;
 import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.auth.util.SocialAuthUtil;
+import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
+import org.example.vibelist.domain.post.comment.service.CommentService;
+import org.example.vibelist.domain.post.like.service.LikeService;
+import org.example.vibelist.domain.post.service.PostService;
+import org.example.vibelist.domain.user.repository.UserProfileRepository;
+import org.example.vibelist.global.aop.LogSender;
+import org.example.vibelist.global.aop.LoggingAspect;
+import org.example.vibelist.global.aop.UserLog;
 import org.example.vibelist.global.constants.Role;
 import org.example.vibelist.global.constants.TokenConstants;
+import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.example.vibelist.global.security.jwt.JwtTokenProvider;
 import org.example.vibelist.global.security.jwt.JwtTokenType;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.entity.UserProfile;
 import org.example.vibelist.domain.user.service.UserService;
 import org.example.vibelist.global.util.UsernameGenerator;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.RsData;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,7 +59,15 @@ public class AuthService {
     private final AuthUtil authUtil;
     private final SocialAuthUtil socialAuthUtil;
     private final CookieUtil cookieUtil;
-    
+
+    private final PostService postService;
+    private final CommentService commentService;
+    private final LikeService likeService;
+    private final IntegrationTokenInfoService integrationTokenInfoService;
+
+
+
+    private final LogSender logSender;
     /**
      * 회원가입 처리
      */
@@ -207,6 +231,26 @@ public class AuthService {
             throw new GlobalException(ResponseCode.USER_NOT_FOUND, "userId=" + userId + "인 사용자를 찾을 수 없습니다.");
         }
 
+        // 1. 사용자 프로필 삭제
+        userService.deleteUserProfile(userId);
+
+        // 2. 연관된 데이터들 순차 삭제
+
+        // PostLike 삭제
+        likeService.deleteAllLikesByUserId(userId);
+
+        // comment 삭제
+        commentService.deleteAllCommentsByUserId(userId);
+
+        // Post 소프트 삭제
+        postService.softDeleteAllPostsByUserIdBulk(userId);
+
+
+
+
+        // IntegrationTokenInfo 삭제
+        integrationTokenInfoService.deleteAllTokensByUserIdBulk(userId);
+
         userService.deleteUserProfile(userId);
         userService.deleteUser(userId);
     }
@@ -226,7 +270,44 @@ public class AuthService {
      * - 클라이언트의 access token과 refresh token 쿠키를 삭제
      * - 서버 측에서는 JWT 토큰이 stateless이므로 별도 처리 불필요
      */
-    public void logout(HttpServletResponse response) {
+    public void logout(HttpServletRequest request,HttpServletResponse response) {
+        /*
+        refresh token으로 부터 userId추출
+         */
+        String userId = "anonymous";
+        String refreshToken = cookieUtil.resolveRefreshToken(request);
+        if (refreshToken == null || !jwtTokenProvider.validateToken(refreshToken)) {
+            userId= "anonymous";
+        }
+        try {
+            Long userIdL = jwtTokenProvider.getUserIdFromToken(refreshToken);
+            userId = userIdL.toString();
+        } catch (Exception e) {
+            userId= "annoymous";
+        }
+
+        /*
+        IP 추출
+         */
+        String ip ="unknown";
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes attrs) {
+             request = attrs.getRequest();
+                ip = request.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) {
+                ip = request.getRemoteAddr();
+            }
+        }
+
+        UserLog logData = UserLog.builder()
+                .userId(userId)
+                .ip(ip)
+                .eventType("LOGOUT")
+                .domain("auth")
+                .timestamp(LocalDateTime.now())
+                .api("auth/v1/logout")
+                .requestBody(null)
+                .build();
         // access token과 refresh token 쿠키 삭제
         cookieUtil.removeAllAuthCookies(response);
     }

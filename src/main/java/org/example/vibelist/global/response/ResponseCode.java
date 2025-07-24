@@ -23,11 +23,13 @@ public enum ResponseCode {
     LIKE_CANCELLED(HttpStatus.OK, "LIKE_201", "좋아요 취소"),
     LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "LIKE_404", "존재하지 않는 좋아요입니다."),
     LIKE_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "LIKE_500", "좋아요 처리 중 오류가 발생했습니다."),
+    POSTLIKE_DELETE(HttpStatus.OK,"LIKE_204" ,"Post 좋아요 삭제" ),
     // ====== COMMENT_LIKE ======
     COMMENT_LIKE_SUCCESS(HttpStatus.OK, "COMMENT_LIKE_200", "댓글 좋아요 성공"),
     COMMENT_LIKE_CANCELLED(HttpStatus.OK, "COMMENT_LIKE_201", "댓글 좋아요 취소"),
     COMMENT_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_LIKE_404", "존재하지 않는 댓글 좋아요입니다."),
     COMMENT_LIKE_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMENT_LIKE_500", "댓글 좋아요 처리 중 오류가 발생했습니다."),
+    COMMENT_LIKE_DELETE(HttpStatus.OK,"COMMENT_LIKE_204" ,"Comment 좋아요 삭제" ),
     // ====== USER ======
     USER_FOUND(HttpStatus.OK, "USER_200", "사용자 조회 성공"),
     USER_CREATED(HttpStatus.CREATED, "USER_201", "사용자 생성 성공"),
@@ -38,10 +40,12 @@ public enum ResponseCode {
     AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_401", "로그인이 필요합니다."),
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_403", "권한이 없습니다."),
     USERNAME_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "USER_500", "사용자명 생성에 실패했습니다."),
+    USER_CHECK_SUCCESS(HttpStatus.OK,"USER_200" ,"유저네임 중복 여부 확인" ),
     // ====== INTEGRATION ======
     INTEGRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "INTEGRATION_404", "연동 정보를 찾을 수 없습니다."),
     INTEGRATION_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "INTEGRATION_401", "유효하지 않은 연동 토큰입니다."),
     INTEGRATION_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "INTEGRATION_404", "연동 토큰을 찾을 수 없습니다."),
+    INTEGRATION_SPOTIFY_REFRESH_FAIL(HttpStatus.BAD_GATEWAY, "INTEGRATION_501", "스포티파이 ACCESS 토큰 갱신 실패"), //토큰 refreshing 실패
     INTEGRATION_ALREADY_CONNECTED(HttpStatus.CONFLICT, "INTEGRATION_409", "이미 연동된 서비스입니다."),
     INTEGRATION_DISCONNECTED(HttpStatus.OK, "INTEGRATION_200", "연동 해제 성공"),
     INTEGRATION_DISCONNECTED_ALL(HttpStatus.OK, "INTEGRATION_200", "모든 연동 해제 성공"),
@@ -52,6 +56,8 @@ public enum ResponseCode {
     INTEGRATION_SPOTIFY_CONNECT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 연동 시작 실패"),
     INTEGRATION_SPOTIFY_DEBUG_SUCCESS(HttpStatus.OK, "INTEGRATION_200", "스포티파이 디버그 정보 조회 성공"),
     INTEGRATION_SPOTIFY_DEBUG_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 디버그 정보 조회 실패"),
+    INTEGRATION_TOKEN_DELETE(HttpStatus.OK,"INTEGRATION_204" ,"연동 토큰 삭제 성공" ),
+    INTEGRATION_SPOTIFY_EXTRACT_USERID_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "INTEGRATION_500", "스포티파이 유저정보 추출 실패"),//유저 정보 추출 실패
     // ====== PLAYLIST ======
     PLAYLIST_CREATED(HttpStatus.CREATED, "PLAYLIST_201", "플레이리스트 생성 성공"),
     PLAYLIST_CREATE_FAIL(HttpStatus.BAD_GATEWAY, "PLAYLIST_502", "플레이리스트 생성에 실패했습니다."),

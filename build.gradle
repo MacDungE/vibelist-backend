@@ -23,6 +23,7 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -69,6 +70,17 @@ dependencies {
     implementation 'org.springframework.data:spring-data-redis'
 
 
+    //logstash 사용을 위한 라이브러리
+    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+
+
+
+    //s3를 위한 라이브러리
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+
+
+    //logback
+    implementation 'com.sndyuk:logback-more-appenders:1.8.5'
 
 }
 

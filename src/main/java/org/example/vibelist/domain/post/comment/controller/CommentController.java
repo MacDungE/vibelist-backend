@@ -1,17 +1,16 @@
 package org.example.vibelist.domain.post.comment.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.post.comment.dto.CommentCreateDto;
 import org.example.vibelist.domain.post.comment.dto.CommentResponseDto;
 import org.example.vibelist.domain.post.comment.dto.CommentUpdateDto;
 import org.example.vibelist.domain.post.comment.service.CommentService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.security.core.CustomUserDetails;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,8 +30,9 @@ public class CommentController {
 
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
     @PostMapping
-    public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, CustomUserDetails details) {
-        if (details == null) {
+    @UserActivityLog(action = "CREATE_COMMENT")//AOP 전달
+    public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
+     if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
         Long userId = details.getId();
@@ -42,7 +42,8 @@ public class CommentController {
 
     @Operation(summary = "댓글 조회", description = "현재 게시글의 댓글을 정렬 기준에 따라 조회합니다.")
     @GetMapping
-    public ResponseEntity<RsData<List<CommentResponseDto>>> getAll(
+    @UserActivityLog(action = "VIEW_COMMENT")//AOP 전달
+    public ResponseEntity<RsData<?>> getAll(
             @RequestParam Long postId,
             @RequestParam(defaultValue = "latest") String sort
     ) {
@@ -52,7 +53,8 @@ public class CommentController {
 
     @Operation(summary = "댓글 수정", description = "댓글 내용을 수정합니다.")
     @PutMapping("/{id}")
-    public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, CustomUserDetails details) {
+    @UserActivityLog(action = "UPDATE_COMMENT")//AOP 전달
+    public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
         if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
@@ -63,7 +65,8 @@ public class CommentController {
 
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<RsData<Void>> delete(@PathVariable Long id, CustomUserDetails details) {
+    @UserActivityLog(action = "REMOVE_COMMENT")//AOP 전달
+    public ResponseEntity<RsData<?>> delete(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails details) {
         if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
