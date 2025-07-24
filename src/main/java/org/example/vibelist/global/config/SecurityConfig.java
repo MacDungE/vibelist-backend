@@ -76,6 +76,8 @@ public class SecurityConfig {
                         .requestMatchers("/login/oauth2/**", "/oauth2/**", "/v1/oauth2/**").permitAll()
                         // OAuth2 인증 엔드포인트 명시적 허용 (integration_user_id 파라미터 포함)
                         .requestMatchers("/oauth2/authorization/**").permitAll()
+                        // 사용자명 설정 페이지 허용
+                        .requestMatchers("/setup/username").permitAll()
                         // 헬스체크 및 모니터링 엔드포인트 허용
                         .requestMatchers("/health/**", "/actuator/**", "/prometheus").permitAll()
                         // 웹소켓 엔드포인트 허용

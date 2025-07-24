@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자명 설정 - VibeList</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .setup-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .logo {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .username-hint {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .submit-button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .submit-button:hover {
+            background-color: #45a049;
+        }
+        .submit-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .provider-info {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="logo">VibeList</div>
+        <div class="welcome-message">
+            <h2>환영합니다!</h2>
+            <p>VibeList에서 사용할 사용자명을 설정해주세요.</p>
+        </div>
+        
+        <form th:action="@{/setup/username}" method="post" id="usernameForm">
+            <input type="hidden" name="tempUserId" th:value="${tempUserId}">
+            <input type="hidden" name="temporaryToken" th:value="${temporaryToken}">
+            
+            <div class="form-group">
+                <label for="username">사용자명</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       placeholder="사용자명 입력" 
+                       required
+                       pattern="^[a-zA-Z0-9_]{3,20}$"
+                       minlength="3"
+                       maxlength="20">
+                <div class="username-hint">
+                    3-20자의 영문, 숫자, 언더스코어(_)만 사용 가능합니다.
+                </div>
+                <div th:if="${error}" class="error-message" th:text="${error}"></div>
+            </div>
+            
+            <button type="submit" class="submit-button" id="submitButton">
+                계속하기
+            </button>
+        </form>
+        
+        <div class="provider-info">
+            <span th:text="${provider}"></span>로 로그인 중
+        </div>
+    </div>
+    
+    <script>
+        const usernameInput = document.getElementById('username');
+        const submitButton = document.getElementById('submitButton');
+        const form = document.getElementById('usernameForm');
+        
+        usernameInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const isValid = /^[a-zA-Z0-9_]{3,20}$/.test(value);
+            
+            if (!isValid && value.length > 0) {
+                e.target.setCustomValidity('3-20자의 영문, 숫자, 언더스코어(_)만 사용 가능합니다.');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+        
+        form.addEventListener('submit', function(e) {
+            submitButton.disabled = true;
+            submitButton.textContent = '처리 중...';
+        });
+    </script>
+</body>
+</html>
