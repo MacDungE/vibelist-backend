@@ -1,10 +1,5 @@
 package org.example.vibelist.domain.playlist.service;
 
-
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +11,13 @@ import org.example.vibelist.domain.playlist.emotion.profile.EmotionFeatureProfil
 import org.example.vibelist.domain.playlist.emotion.type.EmotionModeType;
 import org.example.vibelist.domain.playlist.emotion.profile.EmotionProfileManager;
 import org.example.vibelist.domain.playlist.emotion.type.EmotionType;
-import org.example.vibelist.domain.playlist.es.document.AudioFeatureEsDocument;
-import org.example.vibelist.domain.playlist.es.builder.ESQueryBuilder;
+import org.example.vibelist.domain.playlist.provider.TrackQueryProvider;
+import org.example.vibelist.domain.playlist.pool.RecommendPoolService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
 
-import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.example.vibelist.global.response.RsData;
@@ -39,9 +31,11 @@ import org.example.vibelist.global.response.GlobalException;
 public class RecommendService {
 
     // 감정 분류 및 전이 → 검색 범위 계산 → Elasticsearch 쿼리 실행을 수행하는 추천 서비스
-    // 추천 결과를 트랙 리스트로 반환
+    // 1. 좌표 기반: (valence, energy)를 감정으로 매핑 -> 매핑된 감정 pool에서 가져오기 -> 추천 결과 반환 (List<TrackRsDto>)
+    // 2. 텍스트 기반: llm이 반환한 audio feature -> es 검색(fallback: 감정별 pool에서 가져오기) -> 추천 결과 반환 (List<TrackRsDto>)
 
-    private final ElasticsearchClient client;
+    private final RecommendPoolService poolService;
+    private final TrackQueryProvider queryProvider;
     private final EmotionProfileManager profileManager;
     private final EmotionTextManager textManager;
 
@@ -77,10 +71,7 @@ public class RecommendService {
         EmotionAnalysis analysis = textManager.getEmotionAnalysis(userText, mode);
         log.info("📊 LLM 기반 검색 범위: {}", analysis);
 
-        Query llmQuery = ESQueryBuilder.build(analysis);
-        log.info("🔍 Elasticsearch 쿼리 생성 완료");
-
-        List<TrackRsDto> result = searchTracks(llmQuery);
+        List<TrackRsDto> result = queryProvider.recommendByAnalysis(analysis, 20);
 
         // 검색 결과 너무 적으면 fallback
         if (result.size() < 10) {
@@ -101,6 +92,8 @@ public class RecommendService {
 
     // 감정 -> 플레이리스트 추천
     public List<TrackRsDto> recommendByEmotionType(EmotionType emotion, EmotionModeType mode) {
+        long start = System.currentTimeMillis();
+
         EmotionType transitioned = profileManager.getTransition(emotion, mode);
         log.info("🔁 전이된 감정: {}", transitioned);
 
@@ -109,36 +102,39 @@ public class RecommendService {
                 profile.getValence().getMin(), profile.getValence().getMax(),
                 profile.getEnergy().getMin(), profile.getEnergy().getMax());
 
-        Query emotionQuery = ESQueryBuilder.build(profile);
-        log.info("🔍 Elasticsearch 쿼리 생성 완료");
+        String key = "recommendPool:" + transitioned;
 
-        return searchTracks(emotionQuery);
+        List<TrackRsDto> randTracks = poolService.recommendFromPool(key, 20);
+
+        // ES 직접 검색: fallback
+        if (randTracks == null || randTracks.isEmpty()) {
+            log.info("❌ Pool MISS - ES 직접 검색만 수행 (pool 저장 안함): key={}", key);
+            List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20); // 20곡 직접 ES에서 가져옴
+            long end = System.currentTimeMillis();
+            log.info("🎯 추천 결과 반환: 분기=ES직접검색, 곡수={}, 시간={}ms", result.size(), (end - start));
+            return result;
         }
 
-    // **공통화된 ES 검색/변환 메서드**
-    private List<TrackRsDto> searchTracks(Query query) {
-        SearchRequest request = SearchRequest.of(s -> s
-                .index("audio_feature_index")
-                .query(query)
-                .size(20)
-                .sort(sort -> sort
-                        .score(scoreSort -> scoreSort.order(SortOrder.Desc))
-                )
-        );
-
-        try {
-            SearchResponse<AudioFeatureEsDocument> response = client.search(request, AudioFeatureEsDocument.class);
-            log.info("📦 검색 결과 수신 - 총 {}개", response.hits().hits().size());
-
-            return response.hits().hits().stream()
-                    .map(Hit::source)
-                    .map(TrackRsDto::from)
-                    .collect(Collectors.toList());
-
-        } catch (IOException e) {
-            log.error("❌ Elasticsearch 검색 실패", e);
-            throw new GlobalException(ResponseCode.ES_SEARCH_FAILED, "Elasticsearch 검색 실패: " + e.getMessage());
-        }
+        long end = System.currentTimeMillis();
+        log.info("🎯 추천 결과 반환: 분기=캐시, 곡수={}, 시간={}ms", randTracks.size(), (end - start));
+        return randTracks;
     }
+
+    // es 기반 추천 <- 성능 비교 테스트용(k6)
+//    public List<TrackRsDto> recommendByEs(RecommendRqDto request) throws JsonProcessingException {
+//        log.info("🎯 recommendDirect 호출 - request: {}", request);
+//        log.info("🧭 좌표 기반 추천 - valence: {}, energy: {}, mode: {}", request.getUserValence(), request.getUserEnergy(), request.getMode());
+//        EmotionType emotion = profileManager.classify(request.getUserValence(), request.getUserEnergy());
+//        log.info("🧠 분류된 감정: {}", emotion);
+//        EmotionType transitioned = profileManager.getTransition(emotion, request.getMode());
+//        log.info("🔁 전이된 감정: {}", transitioned);
+//        EmotionFeatureProfile profile = profileManager.getProfile(transitioned);
+//        log.info("📊 검색 범위 - valence: {} ~ {}, energy: {} ~ {}",
+//                profile.getValence().getMin(), profile.getValence().getMax(),
+//                profile.getEnergy().getMin(), profile.getEnergy().getMax());
+//        List<TrackRsDto> result = queryProvider.recommendByProfile(profile, 20);
+//        log.info("🎵 추천 결과 반환 - 분기=좌표, 곡수={}", result.size());
+//        return result;
+//    }
 
 }
