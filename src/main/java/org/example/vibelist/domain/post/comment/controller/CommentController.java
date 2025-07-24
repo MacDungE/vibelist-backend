@@ -1,8 +1,6 @@
 package org.example.vibelist.domain.post.comment.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.vibelist.domain.post.comment.dto.CommentCreateDto;
@@ -11,8 +9,8 @@ import org.example.vibelist.domain.post.comment.dto.CommentUpdateDto;
 import org.example.vibelist.domain.post.comment.service.CommentService;
 import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.security.core.CustomUserDetails;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,8 +31,8 @@ public class CommentController {
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
     @PostMapping
     @UserActivityLog(action = "CREATE_COMMENT")//AOP 전달
-    public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, CustomUserDetails details) {
-        if (details == null) {
+    public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
+     if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
         Long userId = details.getId();
@@ -56,7 +54,7 @@ public class CommentController {
     @Operation(summary = "댓글 수정", description = "댓글 내용을 수정합니다.")
     @PutMapping("/{id}")
     @UserActivityLog(action = "UPDATE_COMMENT")//AOP 전달
-    public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, CustomUserDetails details) {
+    public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
         if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
@@ -68,7 +66,7 @@ public class CommentController {
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
     @DeleteMapping("/{id}")
     @UserActivityLog(action = "REMOVE_COMMENT")//AOP 전달
-    public ResponseEntity<RsData<?>> delete(@PathVariable Long id, CustomUserDetails details) {
+    public ResponseEntity<RsData<?>> delete(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails details) {
         if (details == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }

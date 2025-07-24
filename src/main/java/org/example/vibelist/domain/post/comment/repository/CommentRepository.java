@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostId(Long postId);
+    List<Comment> findByUserId(Long userId);
 
     @Query("SELECT c FROM Comment c JOIN FETCH c.user u WHERE c.post.id = :postId AND c.parent IS NULL")
     List<Comment> findParentByPostId(@Param("postId") Long postId, Sort sort);

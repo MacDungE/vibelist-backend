@@ -12,6 +12,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateUserProfileRequest {
+    /** 사용자명 (unique) */
+    private String username;
+    
     /** 사용자 실명 */
     private String name;
     

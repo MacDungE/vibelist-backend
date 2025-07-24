@@ -116,4 +116,12 @@ public class UserController {
             throw new GlobalException(ResponseCode.USER_NOT_FOUND, e.getMessage());
         }
     }
+
+    // 구체적인 패턴들을 먼저 선언
+    @GetMapping("/check-username")
+    public ResponseEntity<RsData<Boolean>> checkUsername(@RequestParam String username) {
+        // username 중복 체크 로직
+        boolean isAvailable = userService.isUsernameAvailable(username);
+        return ResponseEntity.ok(RsData.success(ResponseCode.USER_CHECK_SUCCESS, isAvailable));
+    }
 } 
