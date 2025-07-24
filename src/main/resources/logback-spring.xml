@@ -1,0 +1,44 @@
+<configuration>
+    <!-- 🎨 일반 콘솔 로그 (Spring 스타일 + 색상) -->
+    <appender name="PLAIN_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- 🟢 JSON 포맷 콘솔 로그 (user-log 전용) -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "userId": "%X{userId}",
+                        "ip": "%X{ip}",
+                        "eventType": "%X{eventType}",
+                        "domain": "%X{domain}",
+                        "api": "%X{api}",
+                        "requestBody": "%X{requestBody}",
+                        "message": "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- ✅ user-log는 JSON + 일반 콘솔 모두 출력 -->
+    <logger name="user-log" level="INFO" additivity="true">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </logger>
+
+    <!-- ✅ 모든 로그는 PLAIN 콘솔로 출력 -->
+    <root level="INFO">
+        <appender-ref ref="PLAIN_CONSOLE"/>
+    </root>
+</configuration>
