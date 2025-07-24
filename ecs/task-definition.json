@@ -6,6 +6,8 @@
     {
       "name": "spring-backend",
       "image": "<IMAGE_URI>",
+      "cpu": 512,
+      "memory": 1024,
       "portMappings": [
         {
           "containerPort": 8080,
@@ -26,7 +28,5 @@
       }
     }
   ],
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024"
+  "requiresCompatibilities": ["EC2"]
 }
