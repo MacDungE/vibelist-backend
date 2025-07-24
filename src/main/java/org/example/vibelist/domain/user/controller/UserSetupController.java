@@ -26,8 +26,8 @@ public class UserSetupController {
     
     @GetMapping("/setup/username")
     public String showUsernameSetupPage(
-            @RequestParam("tempUserId") Long tempUserId,
-            @RequestParam("provider") String provider,
+            @RequestParam(value = "tempUserId",  required = false) Long tempUserId,
+            @RequestParam(value = "provider",  required = false) String provider,
             @RequestParam(value = "token", required = false) String temporaryToken,
             Model model) {
         
@@ -56,9 +56,7 @@ public class UserSetupController {
             String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
             
             return "redirect:" + frontendCallbackUrl + 
-                   "?accessToken=" + accessToken + 
-                   "&isNewUser=true" +
-                   "&username=" + URLEncoder.encode(username, StandardCharsets.UTF_8);
+                   "?accessToken=" + accessToken;
                    
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "사용자명 설정 중 오류가 발생했습니다.");
