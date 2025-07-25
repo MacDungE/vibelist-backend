@@ -34,7 +34,7 @@ public class LikeController {
 
     @Operation(summary = "포스트 좋아요 토글")
     @PostMapping("/post/{postId}/likes")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "TOGGLE_LIKE_POST")//AOP 전달
     public ResponseEntity<RsData<?>> togglePost(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         Long userId = userDetail.getId();
@@ -52,7 +52,7 @@ public class LikeController {
     @Operation(summary = "내가 눌렀는지 (포스트)",
             security = @SecurityRequirement(name = "access-cookie"))
     @GetMapping("/post/{postId}/likes/me")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     public ResponseEntity<LikeStatusRes> postMe(@PathVariable Long postId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         boolean liked = likeService.userLikedPost(postId, userDetail.getId());
         return ResponseEntity.ok(new LikeStatusRes(liked));
@@ -65,7 +65,7 @@ public class LikeController {
     @Operation(summary = "댓글 좋아요 토글",
             security = @SecurityRequirement(name = "access-cookie"))
     @PostMapping("/comment/{commentId}/likes")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "TOGGLE_LIKE_COMMENT") //AOP 전달 
     public ResponseEntity<LikeStatusRes> toggleComment(@PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         boolean liked = likeService.toggleCommentLike(commentId, userDetail.getId());
@@ -82,7 +82,7 @@ public class LikeController {
     @Operation(summary = "내가 눌렀는지 (댓글)",
             security = @SecurityRequirement(name = "access-cookie"))
     @GetMapping("/comment/{commentId}/likes/me")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     public ResponseEntity<LikeStatusRes> commentMe(@PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetail) {
         boolean liked = likeService.userLikedComment(commentId, userDetail.getId());
         return ResponseEntity.ok(new LikeStatusRes(liked));

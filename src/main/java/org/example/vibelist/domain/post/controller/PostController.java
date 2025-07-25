@@ -48,7 +48,7 @@ public class PostController {
     @Operation(summary = "게시글 + 플레이리스트 생성", description = "트랙 리스트를 포함한 게시글을 작성합니다.")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "CREATE_POST")//AOP 전달
     public ResponseEntity<RsData<Long>> createPost(@RequestBody @Valid PostCreateRequest request,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
@@ -70,7 +70,7 @@ public class PostController {
     @Operation(summary = "게시글 수정", description = "게시글 내용과 공개 여부를 수정합니다.")
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action="EDIT_POST")//AOP전달
     public ResponseEntity<RsData<Void>> updatePost(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail,
                            @RequestBody @Valid PostUpdateRequest request) {
@@ -82,7 +82,7 @@ public class PostController {
     @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action="DELETE_POST")//AOP전달
     public ResponseEntity<RsData<Void>> deletePost(@PathVariable Long id,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
@@ -94,7 +94,7 @@ public class PostController {
 
     @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "특정 사용자가 좋아요한 게시글 목록을 페이지네이션으로 조회합니다.")
     @GetMapping(value = "/{username}/likes", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action="VIEW_LIKES_POST")//AOP전달
     public ResponseEntity<RsData<Page<PostDetailResponse>>> getLikedPostsByUser(
             @PathVariable String username,
@@ -107,7 +107,7 @@ public class PostController {
 
     @Operation(summary = "사용자가 작성한 게시글 목록 조회", description = "특정 사용자가 작성한 게시글 목록을 페이지네이션으로 조회합니다.")
     @GetMapping(value = "/{username}/posts", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action="VIEW_CREATED_POST")//AOP전달
     public ResponseEntity<RsData<Page<PostDetailResponse>>> getPostsByUser(
             @PathVariable String username,
