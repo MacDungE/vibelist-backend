@@ -3,7 +3,7 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   deploy:
@@ -71,6 +71,8 @@ jobs:
             FRONTEND_LOGIN_URL=${{ secrets.FRONTEND_LOGIN_URL }}
             FRONTEND_LOGOUT_URL=${{ secrets.FRONTEND_LOGOUT_URL }}
             FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            REDIS_HOST=${{ secrets.REDIS_HOST }}
+            REDIS_PORT=${{ secrets.REDIS_PORT }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
