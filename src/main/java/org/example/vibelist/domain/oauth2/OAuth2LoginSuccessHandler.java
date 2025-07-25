@@ -185,15 +185,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 리다이렉트 URL 결정
         String redirectUrl;
         if (isNewUser) {
-            // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
-            redirectUrl = callbackUrl + "?isNewUser=true";
-            if (tempUserId != null) {
-                redirectUrl += "&tempUserId=" + tempUserId;
+            // 신규 사용자: 서버 사용자명 설정 페이지로 리다이렉트
+            redirectUrl = "/setup/username";
+            if (id != null) {
+                redirectUrl += "?tempUserId=" + id;
             }
             if (provider != null) {
                 redirectUrl += "&provider=" + provider;
             }
-            log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
+            log.info("[OAuth2_LOG] 신규 사용자 - 서버 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
         } else {
             // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
             redirectUrl = callbackUrl;

@@ -301,6 +301,24 @@ public class UserService {
         return getAllUsers();
     }
 
+    @Transactional
+    public User updateUsername(Long userId, String newUsername) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "User not found"));
+        
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        
+        user.updateUsername(newUsername);
+        return userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isUsernameExists(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
     public boolean isUsernameAvailable(String username) {
         // 1. 입력값 유효성 검사
         if (username == null || username.trim().isEmpty()) {
