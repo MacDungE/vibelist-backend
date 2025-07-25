@@ -106,7 +106,7 @@ public class PostController {
 
     @Operation(summary = "사용자가 작성한 게시글 목록 조회", description = "특정 사용자가 작성한 게시글 목록을 페이지네이션으로 조회합니다.")
     @GetMapping(value = "/{username}/posts", produces = MediaType.APPLICATION_JSON_VALUE)
-    @UserActivityLog(action="VIEW_LIKES_POST")//AOP전달
+    @UserActivityLog(action="VIEW_CREATED_POST")//AOP전달
     public ResponseEntity<RsData<Page<PostDetailResponse>>> getPostsByUser(
             @PathVariable String username,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
