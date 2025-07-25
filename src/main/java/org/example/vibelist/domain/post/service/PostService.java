@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.SpotifyPlaylistDto;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
 import org.example.vibelist.domain.playlist.service.PlaylistService;
+import org.example.vibelist.domain.post.cache.PostCacheService;
 import org.example.vibelist.domain.post.dto.PlaylistDetailResponse;
 import org.example.vibelist.domain.post.dto.PostCreateRequest;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
@@ -21,13 +22,11 @@ import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,6 +46,9 @@ public class PostService {
     private final LikeService likeService;
     private final ExploreService exploreService;
     private final TagService tagService;
+
+    // 캐시 전용 서비스
+    private final PostCacheService postCacheService;
 
     @Transactional
     public RsData<Long> createPost(Long userId, PostCreateRequest dto) {
@@ -116,6 +118,10 @@ public class PostService {
                     .map(tagService::getOrCreate)
                     .collect(Collectors.toSet());
             post.edit(dto.getContent(), tags, dto.getIsPublic());
+
+            // 캐시 무효화
+            postCacheService.deleteFromCache(dto.getId());
+
             try {
                 PostDetailResponse postDetailResponse = toDto(post);
                 exploreService.saveToES(postDetailResponse);
@@ -139,6 +145,10 @@ public class PostService {
             if (!post.getUser().getId().equals(userId))
                 throw new GlobalException(ResponseCode.POST_FORBIDDEN, "게시글 삭제 권한 없음 - userId=" + userId + ", postId=" + postId);
             post.markDeleted();
+
+            // 캐시 무효화
+            postCacheService.deleteFromCache(postId);
+
             try {
                 exploreService.deleteFromES(postId);
             } catch (Exception e) {
@@ -167,7 +177,12 @@ public class PostService {
             // 2. 벌크 소프트 삭제
             int deletedCount = postRepository.softDeleteByUserId(userId);
 
-            // 3. ES에서 일괄 삭제
+            // 3. 캐시에서 일괄 삭제
+            for (Long postId : postIds) {
+                postCacheService.deleteFromCache(postId);
+            }
+
+            // 4. ES에서 일괄 삭제
             int esFailCount = 0;
             for (Long postId : postIds) {
                 try {
@@ -192,16 +207,28 @@ public class PostService {
 
     public RsData<PostDetailResponse> getPostDetail(Long postId, Long viewerId) {
         try {
+            // 캐시에서 권한 체크와 함께 조회 시도
+            PostDetailResponse cachedPost = postCacheService.getWithPermissionCheck(postId, viewerId);
+            if (cachedPost != null) {
+                // 조회수 증가 (캐시 히트 시에도)
+                Post post = postRepository.findById(postId).orElse(null);
+                if (post != null && post.getDeletedAt() == null) {
+                    post.addViewCnt();
+                }
+
+                log.info("캐시에서 게시글 반환: postId={}, isPublic={}", postId, cachedPost.isPublic());
+                return RsData.success(ResponseCode.POST_CREATED, "게시글 상세 조회 성공", cachedPost);
+            }
+
+            // 캐시 미스 또는 권한 없음 - DB에서 조회
             Post post = postRepository.findDetailById(postId)
                     .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
 
             // 비공개 게시글 접근 권한 체크
             if (!post.getIsPublic()) {
-                // viewerId가 null이면 비로그인 사용자이므로 접근 불가
                 if (viewerId == null) {
                     throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글은 로그인이 필요합니다 - postId=" + postId);
                 }
-                // 작성자가 아닌 경우 접근 불가
                 if (!post.getUser().getId().equals(viewerId)) {
                     throw new GlobalException(ResponseCode.POST_FORBIDDEN, "비공개 게시글 접근 권한 없음 - viewerId=" + viewerId + ", postId=" + postId);
                 }
@@ -217,7 +244,12 @@ public class PostService {
                 log.error("[POST_004] Elasticsearch 반영 실패 - postId: {}, error: {}", post.getId(), e.getMessage());
             }
 
-            return RsData.success(ResponseCode.POST_CREATED, "게시글 상세 조회 성공", toDto(post));
+            PostDetailResponse responseDto = toDto(post);
+
+            // 캐시에 저장 (공개 게시글만)
+            postCacheService.saveToCache(postId, responseDto);
+
+            return RsData.success(ResponseCode.POST_CREATED, "게시글 상세 조회 성공", responseDto);
 
         } catch (GlobalException ce) {
             throw ce;
