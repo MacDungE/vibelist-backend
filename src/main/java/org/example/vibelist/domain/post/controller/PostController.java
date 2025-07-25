@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -47,10 +48,10 @@ public class PostController {
     @Operation(summary = "게시글 + 플레이리스트 생성", description = "트랙 리스트를 포함한 게시글을 작성합니다.")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action = "CREATE_POST")//AOP 전달
     public ResponseEntity<RsData<Long>> createPost(@RequestBody @Valid PostCreateRequest request,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
         RsData<Long> result = postService.createPost(userId, request);
         return ResponseEntity.status(result.isSuccess() ? 201 : 400).body(result);
@@ -69,10 +70,10 @@ public class PostController {
     @Operation(summary = "게시글 수정", description = "게시글 내용과 공개 여부를 수정합니다.")
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action="EDIT_POST")//AOP전달
     public ResponseEntity<RsData<Void>> updatePost(@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail,
                            @RequestBody @Valid PostUpdateRequest request) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
         RsData<Void> result = postService.updatePost(userId, request);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
@@ -81,10 +82,10 @@ public class PostController {
     @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다.")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action="DELETE_POST")//AOP전달
     public ResponseEntity<RsData<Void>> deletePost(@PathVariable Long id,
                            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         Long userId = userDetail.getId();
         RsData<Void> result = postService.deletePost(userId, id);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);
@@ -93,12 +94,12 @@ public class PostController {
 
     @Operation(summary = "사용자가 좋아요한 게시글 목록 조회", description = "특정 사용자가 좋아요한 게시글 목록을 페이지네이션으로 조회합니다.")
     @GetMapping(value = "/{username}/likes", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action="VIEW_LIKES_POST")//AOP전달
     public ResponseEntity<RsData<Page<PostDetailResponse>>> getLikedPostsByUser(
             @PathVariable String username,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         String viewerUsername = userDetail.getUsername();
         RsData<Page<PostDetailResponse>> result = postService.getLikedPostsByUser(username, viewerUsername, pageable);
         return ResponseEntity.ok(result);
@@ -106,12 +107,12 @@ public class PostController {
 
     @Operation(summary = "사용자가 작성한 게시글 목록 조회", description = "특정 사용자가 작성한 게시글 목록을 페이지네이션으로 조회합니다.")
     @GetMapping(value = "/{username}/posts", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action="VIEW_CREATED_POST")//AOP전달
     public ResponseEntity<RsData<Page<PostDetailResponse>>> getPostsByUser(
             @PathVariable String username,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails userDetail) {
-        if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         String viewerUsername = userDetail.getUsername();
         RsData<Page<PostDetailResponse>> result = postService.getPostsByUser(username, viewerUsername, pageable);
         return ResponseEntity.ok(result);
