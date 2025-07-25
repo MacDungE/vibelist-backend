@@ -7,7 +7,7 @@
       "name": "spring-backend",
       "image": "<IMAGE_URI>",
       "cpu": 512,
-      "memory": 1024,
+      "memory": 820,
       "portMappings": [
         {
           "containerPort": 8080,
