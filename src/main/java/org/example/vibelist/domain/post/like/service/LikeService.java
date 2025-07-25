@@ -4,12 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.example.vibelist.domain.explore.service.ExploreService;
 import org.example.vibelist.domain.post.comment.entity.Comment;
 import org.example.vibelist.domain.post.comment.repository.CommentRepository;
 import org.example.vibelist.domain.post.dto.PlaylistDetailResponse;
 import org.example.vibelist.domain.post.dto.PostDetailResponse;
 import org.example.vibelist.domain.post.entity.Playlist;
+
+import org.example.vibelist.domain.post.like.pool.LikeEvent;
+import org.example.vibelist.domain.post.like.pool.LikeEventPoolBufferProvider;
 import org.example.vibelist.domain.post.entity.Post;
 import org.example.vibelist.domain.post.like.entity.CommentLike;
 import org.example.vibelist.domain.post.like.entity.PostLike;
@@ -42,25 +46,18 @@ public class LikeService {
     private final CommentRepository commentRepo;
     private final UserRepository userRepo;
     private final ExploreService exploreService;
+    private final LikeEventPoolBufferProvider likeEventPoolBufferProvider;
     /* ---------------- Post ---------------- */
 
     @Transactional
     public RsData<Boolean> togglePostLike(Long postId, Long userId) {
         try {
-            if (postLikeRepo.existsByPostIdAndUserId(postId, userId)) {
-                postLikeRepo.deleteByPostIdAndUserId(postId, userId);
-                postRepo.findById(postId).ifPresent(Post::decLike);
-                return RsData.success(ResponseCode.LIKE_CANCELLED, false);
-            }
-            Post post = postRepo.findById(postId)
-                    .orElseThrow(() -> new GlobalException(ResponseCode.POST_NOT_FOUND, "postId=" + postId + "인 게시글을 찾을 수 없습니다."));
-            PostLike like = PostLike.create(userRepo.getReferenceById(userId), post);
-            postLikeRepo.save(like);
-            post.incLike();
-            exploreService.saveToES(toDto(post));
-            return RsData.success(ResponseCode.LIKE_SUCCESS, true);
-        } catch (GlobalException ce) {
-            throw ce;
+            boolean liked = postLikeRepo.existsByPostIdAndUserId(postId, userId);
+            LikeEvent.Action action = liked ? LikeEvent.Action.UNLIKE : LikeEvent.Action.LIKE;
+            LikeEvent event = new LikeEvent(postId, userId, action, System.currentTimeMillis());
+            likeEventPoolBufferProvider.addEvent(event);
+            // DB에는 바로 반영하지 않음, 즉시 성공 응답
+            return RsData.success(liked ? ResponseCode.LIKE_CANCELLED : ResponseCode.LIKE_SUCCESS, !liked);
         } catch (Exception e) {
             log.info("[LIKE_500] 게시글 좋아요 토글 실패 - postId: {}, userId: {}, error: {}", postId, userId, e.getMessage());
             throw new GlobalException(ResponseCode.LIKE_INTERNAL_ERROR, "게시글 좋아요 토글 실패 - postId=" + postId + ", userId=" + userId + ", error=" + e.getMessage());
@@ -68,10 +65,31 @@ public class LikeService {
     }
 
     public long countPostLikes(Long postId) {
-        return postLikeRepo.countByPostId(postId);
+        // Redis 버퍼에 해당 postId의 최신 이벤트들 반영
+        List<LikeEvent> buffer = likeEventPoolBufferProvider.getEvents(likeEventPoolBufferProvider.getPartition(postId));
+        // userId별 최신 이벤트만 남김
+        java.util.Map<Long, LikeEvent> latest = new java.util.HashMap<>();
+        for (LikeEvent e : buffer) {
+            if (e.getPostId().equals(postId)) {
+                LikeEvent prev = latest.get(e.getUserId());
+                if (prev == null || e.getTimestamp() > prev.getTimestamp()) {
+                    latest.put(e.getUserId(), e);
+                }
+            }
+        }
+        long dbCount = postLikeRepo.countByPostId(postId);
+        // Redis 버퍼의 최신 상태 반영
+        long delta = latest.values().stream().mapToInt(e -> e.getAction() == LikeEvent.Action.LIKE ? 1 : -1).sum();
+        return dbCount + delta;
     }
 
     public boolean userLikedPost(Long postId, Long userId) {
+        // Redis 버퍼에 최신 이벤트가 있으면 그 결과 우선
+        LikeEvent latest = likeEventPoolBufferProvider.getLatestEventForUser(postId, userId);
+        if (latest != null) {
+            return latest.getAction() == LikeEvent.Action.LIKE;
+        }
+        // 없으면 DB로 fallback
         return postLikeRepo.existsByPostIdAndUserId(postId, userId);
     }
 
@@ -84,19 +102,12 @@ public class LikeService {
     @Transactional
     public boolean toggleCommentLike(Long commentId, Long userId) {
         try {
-            if (commentLikeRepo.existsByCommentIdAndUserId(commentId, userId)) {
-                commentLikeRepo.deleteByCommentIdAndUserId(commentId, userId);
-                commentRepo.findById(commentId).ifPresent(Comment::decLike); //comment entity에 반영
-                return false;
-            }
-            Comment comment = commentRepo.findById(commentId)
-                    .orElseThrow(() -> new GlobalException(ResponseCode.COMMENT_NOT_FOUND, "commentId=" + commentId + "인 댓글을 찾을 수 없습니다."));
-            CommentLike like = CommentLike.create(userRepo.getReferenceById(userId), comment);
-            commentLikeRepo.save(like);
-            comment.incLike();//comment entity에 반영
-            return true;
-        } catch (GlobalException ce) {
-            throw ce;
+            boolean liked = commentLikeRepo.existsByCommentIdAndUserId(commentId, userId);
+            LikeEvent.Action action = liked ? LikeEvent.Action.UNLIKE : LikeEvent.Action.LIKE;
+            LikeEvent event = new LikeEvent(commentId, userId, action, System.currentTimeMillis());
+            likeEventPoolBufferProvider.addEvent(event);
+            // DB에는 바로 반영하지 않음, 즉시 성공 응답
+            return !liked;
         } catch (Exception e) {
             log.info("[COMMENT_LIKE_500] 댓글 좋아요 토글 실패 - commentId: {}, userId: {}, error: {}", commentId, userId, e.getMessage());
             throw new GlobalException(ResponseCode.COMMENT_LIKE_INTERNAL_ERROR, "댓글 좋아요 토글 실패 - commentId=" + commentId + ", userId=" + userId + ", error=" + e.getMessage());
@@ -104,10 +115,29 @@ public class LikeService {
     }
 
     public long countCommentLikes(Long commentId) {
-        return commentLikeRepo.countByCommentId(commentId);
+        // Redis 버퍼에 해당 commentId의 최신 이벤트들 반영
+        List<LikeEvent> buffer = likeEventPoolBufferProvider.getEvents(likeEventPoolBufferProvider.getPartition(commentId));
+        java.util.Map<Long, LikeEvent> latest = new java.util.HashMap<>();
+        for (LikeEvent e : buffer) {
+            if (e.getPostId().equals(commentId)) {
+                LikeEvent prev = latest.get(e.getUserId());
+                if (prev == null || e.getTimestamp() > prev.getTimestamp()) {
+                    latest.put(e.getUserId(), e);
+                }
+            }
+        }
+        long dbCount = commentLikeRepo.countByCommentId(commentId);
+        long delta = latest.values().stream().mapToInt(e -> e.getAction() == LikeEvent.Action.LIKE ? 1 : -1).sum();
+        return dbCount + delta;
     }
 
     public boolean userLikedComment(Long commentId, Long userId) {
+        // Redis 버퍼에 최신 이벤트가 있으면 그 결과 우선
+        LikeEvent latest = likeEventPoolBufferProvider.getLatestEventForUser(commentId, userId);
+        if (latest != null) {
+            return latest.getAction() == LikeEvent.Action.LIKE;
+        }
+        // 없으면 DB로 fallback
         return commentLikeRepo.existsByCommentIdAndUserId(commentId, userId);
     }
 

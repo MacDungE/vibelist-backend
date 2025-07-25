@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.ResponseCode;
+import org.example.vibelist.domain.explore.pool.TrendPoolProvider;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,7 @@ public class TrendService {
     private final ElasticsearchOperations operations;
     private final PostTrendRepository postTrendRepository;
     private final TrendSnapshotRepository trendSnapshotRepository;
+    private final TrendPoolProvider trendPoolProvider;
 
     private static final int TOP_N_TRENDS = 50; // 스냅샷으로 저장할 상위 게시글 수
     private static final int TREND_API_LIMIT = 10; // API로 가져올 기본 개수
@@ -82,6 +84,10 @@ public class TrendService {
 
             log.info("Finished trend capturing. Saved {} trends (snapshot ID={}).",
                     trends.size(), snapshot.getId());
+
+            // 6. 최신 트렌드 리스트를 Redis Pool에도 저장
+            List<TrendResponse> trendResponses = trends.stream().map(this::toDto).collect(Collectors.toList());
+            trendPoolProvider.savePool(trendResponses);
         } catch (Exception e) {
             log.error("Error during trend capturing and saving process", e);
             snapshot.fail();
@@ -149,6 +155,22 @@ public class TrendService {
                 .limit(limit)
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Redis Pool에서 트렌드 조회, 없으면 DB에서 조회 후 Redis에 저장
+     */
+    public List<TrendResponse> getTopTrendsWithRedis(int limit) {
+        List<TrendResponse> cached = trendPoolProvider.getPool();
+        if (cached != null && !cached.isEmpty()) {
+            return cached.stream().limit(limit).toList();
+        }
+        // 없으면 DB에서 조회 후 Redis에 저장
+        List<TrendResponse> trends = getTopTrends(limit);
+        if (trends != null && !trends.isEmpty()) {
+            trendPoolProvider.savePool(trends);
+        }
+        return trends;
     }
 
     private Map<Long, PostTrend> getPreviousTrendsMap() {
