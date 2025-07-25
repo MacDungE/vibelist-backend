@@ -61,14 +61,14 @@ public class LoggingAspect {
             return pjp.proceed();
         }
 
-        long start = System.currentTimeMillis(); // 시작 시간 측정
+        double start = System.currentTimeMillis(); // 시작 시간 측정
         Object result;
         try {
             result = pjp.proceed(); // 실제 메서드 실행
             return result;
         } finally {
-            long end = System.currentTimeMillis(); // 종료 시간 측정
-            long duration = end - start;
+            double end = System.currentTimeMillis(); // 종료 시간 측정
+            double duration = end - start;
 
             UserLog logData = UserLog.builder()
                     .userId(extractUserId())
