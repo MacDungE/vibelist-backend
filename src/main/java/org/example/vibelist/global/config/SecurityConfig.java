@@ -44,7 +44,7 @@ public class SecurityConfig {
     private final CustomAuthorizationCodeTokenResponseClient customTokenResponseClient;
     private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
 
-    @Value("${frontend.login.url:https://your-production-domain.com}")
+    @Value("${frontend.url:https://your-production-domain.com}")
     private String frontendProdUrl;
 
     @Value("${frontend.dev.url:http://localhost:3000}")
