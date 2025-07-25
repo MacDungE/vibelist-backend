@@ -50,7 +50,7 @@ public class ExploreController {
     public ResponseEntity<List<TrendResponse>> getTrends(
             @Parameter(description = "최대 조회 개수", example = "10")
             @RequestParam(defaultValue = "10") int limit) {
-        List<TrendResponse> trends = trendService.getTopTrends(limit);
+        List<TrendResponse> trends = trendService.getTopTrendsWithRedis(limit);
         return ResponseEntity.ok(trends);
     }
 }
