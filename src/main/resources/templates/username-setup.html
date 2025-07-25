@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자명 설정 - VibeList</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 px-4">
+    <div class="mt-10 mb-10 w-full max-w-md rounded-2xl bg-white/90 p-8 shadow-xl">
+        <h1 class="mb-2 text-center text-2xl font-bold text-indigo-700">사용자명 설정</h1>
+        <p class="mb-6 text-center text-gray-500">
+            VibeList에 오신 것을 환영합니다!
+            <br>
+            사용자명을 입력해 주세요.
+        </p>
+        
+        <form th:action="@{/setup/username}" method="post" id="usernameForm" class="space-y-6">
+            <input type="hidden" name="tempUserId" th:value="${tempUserId}">
+            <input type="hidden" name="temporaryToken" th:value="${temporaryToken}">
+            
+            <div>
+                <label for="username" class="mb-1 block text-sm font-semibold text-gray-700">사용자명(아이디)</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       placeholder="사용자명을 입력하세요" 
+                       required
+                       pattern="^[a-zA-Z_]{3,15}$"
+                       minlength="3"
+                       maxlength="15"
+                       class="w-full rounded-lg border border-gray-200 px-4 py-3 text-[15px] transition focus:outline-none focus:border-indigo-500"
+                       autofocus
+                      >
+                <div class="mt-1 text-xs text-gray-600">
+                    3-15자의 영문, 언더스코어(_)만 사용 가능합니다.
+                </div>
+                <div th:if="${error}" class="mt-1 text-xs text-red-500" th:text="${error}"></div>
+            </div>
+            
+            <button type="submit" id="submitButton" 
+                    class="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 py-3 text-lg font-bold text-white shadow-md transition hover:from-indigo-600 hover:to-purple-600 disabled:bg-gray-300 disabled:text-gray-400">
+                <span id="buttonText">계속하기</span>
+            </button>
+        </form>
+        
+        <div class="text-center mt-6 text-sm text-gray-500">
+            <span th:text="${provider}"></span>로 로그인 중
+        </div>
+    </div>
+    
+    <script>
+        const usernameInput = document.getElementById('username');
+        const submitButton = document.getElementById('submitButton');
+        const form = document.getElementById('usernameForm');
+        
+        usernameInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const isValid = /^[a-zA-Z_]{3,15}$/.test(value);
+            
+            if (!isValid && value.length > 0) {
+                e.target.setCustomValidity('3-15자의 영문, 언더스코어(_)만 사용 가능합니다.');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+        
+        form.addEventListener('submit', function(e) {
+            const tempUserId = document.querySelector('input[name="tempUserId"]').value;
+
+
+            if (!tempUserId ) {
+                e.preventDefault();
+                alert('필수 정보가 누락되었습니다. 다시 로그인해 주세요.');
+                return;
+            }
+            
+            submitButton.disabled = true;
+            document.getElementById('buttonText').textContent = '처리 중...';
+        });
+    </script>
+</body>
+</html>

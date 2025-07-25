@@ -120,6 +120,46 @@ public class CommentService {
         }
     }
 
+    @Transactional
+    public RsData<Void> deleteAllCommentsByUserId(Long userId) {
+        try {
+            // 1. 해당 사용자의 모든 댓글 조회
+            List<Comment> userComments = commentRepository.findByUserId(userId);
+
+            if (userComments.isEmpty()) {
+                log.info("[COMMENT_501] 삭제할 댓글이 없음 - userId: {}", userId);
+                return RsData.success(ResponseCode.COMMENT_DELETED, null);
+            }
+
+            log.info("[COMMENT_502] 사용자 댓글 일괄 삭제 시작 - userId: {}, commentCount: {}", userId, userComments.size());
+
+            // 2. 각 댓글 삭제
+            int successCount = 0;
+            int failCount = 0;
+
+            for (Comment comment : userComments) {
+                try {
+                    commentRepository.delete(comment);
+                    successCount++;
+                } catch (Exception e) {
+                    failCount++;
+                    log.error("[COMMENT_503] 댓글 삭제 실패 - commentId: {}, userId: {}, error: {}",
+                            comment.getId(), userId, e.getMessage());
+                }
+            }
+
+            log.info("[COMMENT_504] 사용자 댓글 일괄 삭제 완료 - userId: {}, 성공: {}, 실패: {}",
+                    userId, successCount, failCount);
+
+            return RsData.success(ResponseCode.COMMENT_DELETED, null);
+
+        } catch (Exception e) {
+            log.error("[COMMENT_500] 사용자 댓글 일괄 삭제 오류 - userId: {}, error: {}", userId, e.getMessage());
+            throw new GlobalException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "사용자 댓글 삭제 중 오류 - userId=" + userId + ", error=" + e.getMessage());
+        }
+    }
+
     public RsData<List<CommentResponseDto>> getSortedComments(Long postId, String sort) {
         try {
             // 1. 정렬 옵션 준비

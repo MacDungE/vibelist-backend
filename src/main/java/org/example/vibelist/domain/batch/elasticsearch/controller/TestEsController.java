@@ -20,7 +20,7 @@ public class TestEsController {
     private final TestEsService  testEsService;
     @Operation(summary = "테스트 ES 도큐먼트 삽입", description = "테스트용 ES 도큐먼트 삽입 API")
     @PostMapping("insert")
-    public ResponseEntity<RsData<?>> insert(@RequestBody List<TestEsDoc> testEsDocs) {
+    public ResponseEntity<RsData<String>> insert(@RequestBody List<TestEsDoc> testEsDocs) {
         try {
             for(TestEsDoc testEsDoc : testEsDocs) {
                 log.info(testEsDoc.toString());

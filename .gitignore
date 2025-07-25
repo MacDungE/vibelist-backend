@@ -39,4 +39,8 @@ out/
 # Environment variables
 .env
 
-.kiro/specs
+#Docker-compose
+docker-compose.yml
+
+#Volume
+volumes/

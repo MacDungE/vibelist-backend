@@ -35,14 +35,14 @@ public class UserController {
 
     @Operation(summary = "사용자 생성", description = "새로운 사용자와 프로필을 생성합니다.")
     @PostMapping
-    public ResponseEntity<RsData<?>> createUser(@RequestBody CreateUserRequest request) {
-        RsData<?> result = userService.createUserWithProfile(request);
+    public ResponseEntity<RsData<UserDto>> createUser(@RequestBody CreateUserRequest request) {
+        RsData<UserDto> result = userService.createUserWithProfile(request);
         return ResponseEntity.status(result.isSuccess() ? 201 : 400).body(result);
     }
 
     @Operation(summary = "현재 사용자 정보 조회", description = "현재 인증된 사용자의 정보를 조회합니다.")
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUserInfo(@AuthenticationPrincipal CustomUserDetails userDetail) {
+    public ResponseEntity<UserDto> getCurrentUserInfo(@AuthenticationPrincipal CustomUserDetails userDetail) {
         if (userDetail == null) throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         UserDto userDto = userService.findUserDtoById(userDetail.getId())
                 .orElseThrow(() -> new GlobalException(ResponseCode.USER_NOT_FOUND, "사용자 정보를 찾을 수 없습니다."));
@@ -51,8 +51,8 @@ public class UserController {
 
     @Operation(summary = "사용자 정보 조회", description = "특정 사용자의 정보를 조회합니다.")
     @GetMapping("/{userId}")
-    public ResponseEntity<RsData<?>> getUser(@PathVariable Long userId) {
-        RsData<?> result = userService.getUser(userId);
+    public ResponseEntity<RsData<UserDto>> getUser(@PathVariable Long userId) {
+        RsData<UserDto> result = userService.getUser(userId);
         return ResponseEntity.status(result.isSuccess() ? 200 : 404).body(result);
     }
 
@@ -115,5 +115,13 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             throw new GlobalException(ResponseCode.USER_NOT_FOUND, e.getMessage());
         }
+    }
+
+    // 구체적인 패턴들을 먼저 선언
+    @GetMapping("/check-username")
+    public ResponseEntity<RsData<Boolean>> checkUsername(@RequestParam String username) {
+        // username 중복 체크 로직
+        boolean isAvailable = userService.isUsernameAvailable(username);
+        return ResponseEntity.ok(RsData.success(ResponseCode.USER_CHECK_SUCCESS, isAvailable));
     }
 } 

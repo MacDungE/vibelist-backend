@@ -10,6 +10,7 @@ import org.example.vibelist.domain.auth.util.CookieUtil;
 import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
 import org.example.vibelist.domain.user.entity.User;
 import org.example.vibelist.domain.user.service.UserService;
+import org.example.vibelist.global.aop.UserActivityLog;
 import org.example.vibelist.global.constants.TokenConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     // Oauth2 로그인 성공시 트리거 되는것
     @Override
+    @UserActivityLog(action="LOGIN") //AOP에 전송
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication)
@@ -128,6 +130,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 일반 로그인 처리 - 기존 로직 유지
      */
+    @UserActivityLog(action="LOGIN") //AOP에 전송
     private void handleRegularLogin(Map<String, Object> attributes, HttpServletResponse response) 
             throws IOException {
         log.info("[OAuth2_LOG] 일반 로그인 처리 시작");
@@ -182,15 +185,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 리다이렉트 URL 결정
         String redirectUrl;
         if (isNewUser) {
-            // 신규 사용자: 사용자명 설정 페이지로 리다이렉트
-            redirectUrl = callbackUrl + "?isNewUser=true";
-            if (tempUserId != null) {
-                redirectUrl += "&tempUserId=" + tempUserId;
+            // 신규 사용자: 서버 사용자명 설정 페이지로 리다이렉트
+            redirectUrl = "/setup/username";
+            if (id != null) {
+                redirectUrl += "?tempUserId=" + id;
             }
             if (provider != null) {
                 redirectUrl += "&provider=" + provider;
             }
-            log.info("[OAuth2_LOG] 신규 사용자 - 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
+            log.info("[OAuth2_LOG] 신규 사용자 - 서버 사용자명 설정 페이지로 리다이렉트: {}", redirectUrl);
         } else {
             // 기존 사용자의 일반 로그인: 메인 페이지로 리다이렉트
             redirectUrl = callbackUrl;

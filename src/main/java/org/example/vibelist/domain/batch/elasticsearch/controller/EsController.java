@@ -19,7 +19,7 @@ public class EsController {
     private final EsService esService;
     @Operation(summary = "RDS to ES 데이터 이관", description = "Rds에 저장되어 있는 Audio-feature 데이터들을 ElasticSearch로 옮기는 메소드.")
     @GetMapping("/insert")
-    public ResponseEntity<RsData<?>> rdsToEs() {
+    public ResponseEntity<RsData<String>> rdsToEs() {
         try {
             esService.executeTestInsert();
             return ResponseEntity.ok(RsData.success(ResponseCode.BATCH_SUCCESS, "insertion success"));

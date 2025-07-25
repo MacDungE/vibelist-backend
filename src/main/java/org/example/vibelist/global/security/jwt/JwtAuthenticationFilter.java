@@ -26,13 +26,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         try {
             String token = getTokenFromRequest(request);
-            
+
             if (StringUtils.hasText(token)) {
                 log.debug("JWT 토큰 발견: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
-                
+
                 if (jwtTokenProvider.validateToken(token)) {
                     // 토큰 타입이 ACCESS인지 확인
                     String tokenType = jwtTokenProvider.getTokenType(token);
@@ -51,12 +51,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } else {
                 log.debug("JWT 토큰이 요청에 포함되지 않음: {}", request.getRequestURI());
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("만료된 JWT 토큰: {}", e.getMessage());
+            // SecurityContext를 클리어하고 AuthenticationEntryPoint에서 401 처리하도록 함
+            SecurityContextHolder.clearContext();
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("유효하지 않은 JWT 토큰: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
         } catch (Exception e) {
-            log.error("JWT 토큰 처리 중 오류 발생: {}", e.getMessage(), e);
-            // 인증 컨텍스트를 클리어하여 보안상 안전하게 처리
+            log.error("JWT 토큰 처리 중 예상치 못한 오류: {}", e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
-        
+
         filterChain.doFilter(request, response);
     }
 
