@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.integration.dto.IntegrationTokenResponse;
+import org.example.vibelist.domain.integration.dto.IntegrationStatusDto;
+import org.example.vibelist.domain.integration.dto.TokenValidityDto;
 import org.example.vibelist.domain.integration.entity.IntegrationTokenInfo;
 import org.example.vibelist.domain.integration.service.IntegrationTokenInfoService;
 import org.example.vibelist.global.response.GlobalException;
@@ -15,6 +17,7 @@ import org.example.vibelist.global.response.RsData;
 import org.example.vibelist.global.security.util.SecurityUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -37,12 +40,13 @@ public class IntegrationController {
 
     @Operation(summary = "연동 상태 조회", description = "현재 사용자의 모든 외부 서비스 연동 상태를 조회합니다.")
     @GetMapping("/status")
-    public ResponseEntity<RsData<?>> getCurrentUserIntegrationStatus() {
+    @PreAuthorize("authenticated")
+    public ResponseEntity<List<IntegrationStatusDto>> getCurrentUserIntegrationStatus() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
-        RsData<?> result = integrationTokenInfoService.getUserActiveTokens(userId);
+        List<IntegrationStatusDto> result = integrationTokenInfoService.getUserIntegrationStatus(userId);
         return ResponseEntity.ok(result);
     }
 
@@ -63,20 +67,23 @@ public class IntegrationController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "유효한 토큰 정보 조회", description = "특정 제공자의 유효한 토큰 정보를 조회합니다. (만료되지 않은 토큰만)")
+    @Operation(summary = "유효한 토큰 정보 조회", description = "특정 제공자의 토큰 유효성을 확인합니다.")
     @SecurityRequirement(name = "bearer-key")
     @GetMapping("/{provider}/valid")
-    public ResponseEntity<IntegrationTokenResponse> getValidProviderIntegration(
+    @PreAuthorize("authenticated")
+    public ResponseEntity<TokenValidityDto> getValidProviderIntegration(
             @Parameter(description = "서비스 제공자 (spotify, google 등)") @PathVariable String provider) {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
             throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
         }
 
-        IntegrationTokenInfo tokenInfo = integrationTokenInfoService.getValidTokenInfo(userId, provider)
-                .orElseThrow(() -> new GlobalException(ResponseCode.INTEGRATION_TOKEN_INVALID, provider + " 서비스의 유효한 토큰이 없습니다."));
-
-        IntegrationTokenResponse response = convertToTokenResponse(tokenInfo);
+        boolean isValid = integrationTokenInfoService.hasValidToken(userId, provider);
+        
+        TokenValidityDto response = TokenValidityDto.builder()
+                .isValid(isValid)
+                .build();
+        
         return ResponseEntity.ok(response);
     }
 
