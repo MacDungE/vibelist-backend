@@ -31,7 +31,7 @@ public class SwaggerConfig {
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("개발 서버"),
-                        new Server().url("https://api.vibelist.com").description("운영 서버")
+                        new Server().url("https://api.vibelist.click").description("운영 서버")
                 ))
                 .components(new Components()
                         .addSecuritySchemes("bearer-key",
