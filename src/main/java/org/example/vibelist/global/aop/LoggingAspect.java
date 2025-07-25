@@ -55,26 +55,34 @@ public class LoggingAspect {
 
     @Around("@annotation(userActivityLog)")
     public Object logUserAction(ProceedingJoinPoint pjp, UserActivityLog userActivityLog) throws Throwable {
-        // 요청이 아닌 다른 스레드에서 실행된 것이라면 로깅 무시
+        // 요청 스레드가 아닌 경우 로그 제외
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (!(requestAttributes instanceof ServletRequestAttributes)) {
-            return pjp.proceed(); // 내부에서 호출된 경우 로그 남기지 않음
+            return pjp.proceed();
         }
 
-        Object result = pjp.proceed(); // 실제 메서드 실행
-        // 로그 기록
-        UserLog logData = UserLog.builder()
-                .userId(extractUserId())
-                .ip(extractClientIp())
-                .eventType(userActivityLog.action())
-                .domain(extractDomain(pjp))
-                .timestamp(LocalDateTime.now())
-                .api(extractRequestDetails())
-                .requestBody(extractRequestBody(pjp))
-                .build();
+        double start = System.currentTimeMillis(); // 시작 시간 측정
+        Object result;
+        try {
+            result = pjp.proceed(); // 실제 메서드 실행
+            return result;
+        } finally {
+            double end = System.currentTimeMillis(); // 종료 시간 측정
+            double duration = end - start;
 
-        logSender.send(logData);
-        return result;
+            UserLog logData = UserLog.builder()
+                    .userId(extractUserId())
+                    .ip(extractClientIp())
+                    .eventType(userActivityLog.action())
+                    .domain(extractDomain(pjp))
+                    .timestamp(LocalDateTime.now())
+                    .api(extractRequestDetails())
+                    .requestBody(extractRequestBody(pjp))
+                    .duration(duration) // ⬅️ 여기 추가
+                    .build();
+
+            logSender.send(logData);
+        }
     }
 
     /*

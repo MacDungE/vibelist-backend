@@ -34,7 +34,7 @@ public class LogSender {
             MDC.put("timestamp", logData.getTimestamp().toString());
             MDC.put("api", logData.getApi());
             MDC.put("requestBody", logData.getRequestBody());
-
+            MDC.put("duration", String.valueOf(logData.getDuration()));
             userLogger.info("User Action Log");
         }
         catch(JsonProcessingException e){

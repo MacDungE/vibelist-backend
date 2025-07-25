@@ -24,6 +24,7 @@
                         "domain": "%X{domain}",
                         "api": "%X{api}",
                         "requestBody": "%X{requestBody}",
+                        "duration": "%X{duration}",
                         "message": "%msg"
                         }
                     </pattern>
