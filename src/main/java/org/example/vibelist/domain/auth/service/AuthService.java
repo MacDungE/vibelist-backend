@@ -308,6 +308,7 @@ public class AuthService {
                 .api("auth/v1/logout")
                 .requestBody(null)
                 .build();
+        logSender.send(logData);
         // access token과 refresh token 쿠키 삭제
         cookieUtil.removeAllAuthCookies(response);
     }

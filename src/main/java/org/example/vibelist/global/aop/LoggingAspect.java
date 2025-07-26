@@ -19,11 +19,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.reactive.HandlerMapping;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Slf4j
@@ -150,18 +151,45 @@ public class LoggingAspect {
     /*
     호출되는 API르 반환합니다.
      */
-    public String extractTemplateUri() {
+    public String extractRequestDetails() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) return "unknown";
-
+        /* oauth2 로그인 로직*/
         HttpServletRequest request = attrs.getRequest();
-        String pattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        String uri = request.getRequestURI(); // 예: /login/oauth2/code/google
 
-        String query = request.getQueryString();  // 예: q=우울함
-        if (query != null) {
-            return pattern + "?" + URLDecoder.decode(query, StandardCharsets.UTF_8);
+        if (uri == null) return "unknown";
+
+        // /login/oauth2/code/{provider} 에서 provider만 추출
+        Pattern pattern = Pattern.compile("^/login/oauth2/code/([^/?]+)");
+        Matcher matcher = pattern.matcher(uri);
+        if (matcher.find()) {
+            String provider = matcher.group(1); // google, kakao, spotify
+            return "/login/oauth2/" + provider;
         }
-        return pattern;
+
+        // 게시글 상세/삭제/수정: /v1/post/{id}
+        if (uri.matches("^/v1/post/[^/]+$") && request.getMethod().matches("GET|DELETE|PATCH")) {
+            return "/v1/post/{id}";
+        }
+
+        // 사용자가 작성한 게시글 목록: /v1/post/{username}/posts
+        if (uri.matches("^/v1/post/[^/]+/posts$") && request.getMethod().equals("GET")) {
+            return "/v1/post/{username}/posts";
+        }
+
+        // 사용자가 좋아요한 게시글 목록: /v1/post/{username}/likes
+        if (uri.matches("^/v1/post/[^/]+/likes$") && request.getMethod().equals("GET")) {
+            return "/v1/post/{username}/likes";
+        }
+
+        if (uri.matches("^/v1/comments/\\d+$") && request.getMethod().matches("PUT|DELETE")) {
+            return "/v1/comments/{id}";
+        }
+        if (uri.equals("/v1/comments") && request.getMethod().matches("GET|POST")) {
+            return "/v1/comments";
+        }
+        return uri; // fallback
     }
     /*
     Request body를 추출합니다.
