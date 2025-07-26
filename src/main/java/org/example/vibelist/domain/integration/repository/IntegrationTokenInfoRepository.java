@@ -63,6 +63,13 @@ public interface IntegrationTokenInfoRepository extends JpaRepository<Integratio
     boolean existsByUserIdAndProvider(Long userId, String provider);
 
     /**
+     * 유효한 토큰 존재 여부 확인 (성능 최적화)
+     * EXISTS 쿼리를 사용하여 전체 엔티티를 로드하지 않고 존재 여부만 확인
+     */
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM IntegrationTokenInfo t WHERE t.user.id = :userId AND t.provider = :provider")
+    boolean existsValidTokenByUserIdAndProvider(@Param("userId") Long userId, @Param("provider") String provider);
+
+    /**
      * Provider별 활성 토큰 수 조회
      */
     @Query("SELECT COUNT(t) FROM IntegrationTokenInfo t WHERE t.provider = :provider AND t.isActive = true")

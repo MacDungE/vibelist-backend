@@ -12,6 +12,7 @@ import org.example.vibelist.global.security.core.CustomUserDetails;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,11 +31,9 @@ public class CommentController {
 
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
     @PostMapping
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "CREATE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
-     if (details == null) {
-            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
-        }
         Long userId = details.getId();
         RsData<?> result = commentService.create(dto, userId);
         return ResponseEntity.status(result.isSuccess() ? 201 : 400).body(result);
@@ -53,11 +52,9 @@ public class CommentController {
 
     @Operation(summary = "댓글 수정", description = "댓글 내용을 수정합니다.")
     @PutMapping("/{id}")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "UPDATE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
-        if (details == null) {
-            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
-        }
         Long userId = details.getId();
         RsData<?> result = commentService.update(id, dto, userId);
         return ResponseEntity.status(result.isSuccess() ? 200 : 403).body(result);
@@ -65,11 +62,9 @@ public class CommentController {
 
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
     @DeleteMapping("/{id}")
+    @PreAuthorize("authenticated")
     @UserActivityLog(action = "REMOVE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> delete(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails details) {
-        if (details == null) {
-            throw new GlobalException(ResponseCode.AUTH_REQUIRED, "로그인이 필요합니다.");
-        }
         Long userId = details.getId();
         RsData<Void> result = commentService.delete(id, userId);
         return ResponseEntity.status(result.isSuccess() ? 204 : 403).body(result);

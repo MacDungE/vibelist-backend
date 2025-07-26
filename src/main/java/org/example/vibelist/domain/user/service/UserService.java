@@ -181,6 +181,12 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public UserDto searchUserByUsername(String username) {
+        UserProfile profile = userProfileRepository.findByUsernameContainingWithUser(username);
+        User user = profile.getUser();
+        return convertToUserDto(user, profile);
+    }
+
     public List<UserDto> getAllUsers() {
         List<User> users = userRepository.findAllWithProfile();
         return users.stream()

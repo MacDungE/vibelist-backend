@@ -16,6 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.vibelist.global.response.ResponseCode;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.RsData;
+import org.example.vibelist.domain.integration.dto.IntegrationStatusDto;
+import org.example.vibelist.global.constants.SocialProviderConstants;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * 외부 서비스 연동을 위한 토큰 정보 관리 서비스
@@ -153,6 +158,15 @@ public class IntegrationTokenInfoService {
     @Transactional(readOnly = true)
     public Optional<IntegrationTokenInfo> getValidTokenInfo(Long userId, String provider) {
         return tokenInfoRepository.findValidTokenByUserIdAndProvider(userId, provider.toUpperCase());
+    }
+
+    /**
+     * 유효한 토큰 존재 여부 확인 (성능 최적화)
+     * 전체 엔티티를 로드하지 않고 존재 여부만 확인
+     */
+    @Transactional(readOnly = true)
+    public boolean hasValidToken(Long userId, String provider) {
+        return tokenInfoRepository.existsValidTokenByUserIdAndProvider(userId, provider.toUpperCase());
     }
 
     /**
@@ -421,5 +435,30 @@ public class IntegrationTokenInfoService {
                 tokenInfo.updateTokenResponse(tokenResponse);
             }
         }
+    }
+
+    /**
+     * 사용자의 모든 지원 제공자별 연동 상태를 조회
+     * @param userId 사용자 ID
+     * @return 제공자별 연동 상태 리스트
+     */
+    public List<IntegrationStatusDto> getUserIntegrationStatus(Long userId) {
+        log.info("[INTEGRATION_STATUS] 사용자 연동 상태 조회 - userId: {}", userId);
+        
+        // 현재 사용자가 연동한 제공자들 조회
+        List<IntegrationTokenInfo> userTokens = tokenInfoRepository.findActiveTokensByUserId(userId);
+        Map<String, Boolean> integratedProviders = userTokens.stream()
+                .collect(Collectors.toMap(
+                    token -> token.getProvider().toLowerCase(),
+                    token -> true
+                ));
+        
+        // 지원하는 모든 제공자에 대해 연동 상태 생성
+        return Arrays.stream(SocialProviderConstants.getSupportedProviders())
+                .map(provider -> IntegrationStatusDto.builder()
+                        .provider(provider.toLowerCase())
+                        .isIntegration(integratedProviders.getOrDefault(provider.toLowerCase(), false))
+                        .build())
+                .collect(Collectors.toList());
     }
 } 
