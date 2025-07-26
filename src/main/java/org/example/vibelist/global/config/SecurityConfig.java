@@ -89,7 +89,7 @@ public class SecurityConfig {
                         // 탐색(검색/피드/트렌드) 자유롭게 허용
                         .requestMatchers("/v1/explore/**").permitAll()
                         // 게시글, 댓글, 좋아요 관련 API는 모두 허용하고 컨트롤러에서 세밀하게 제어
-                        .requestMatchers("/v1/post/**", "/v1/comment/**", "/v1/like/**").permitAll()
+                        .requestMatchers("/v1/post/**", "/v1/comment/**", "/v1/comments/**", "/v1/like/**").permitAll()
 
                         // 좋아요 조회
                         .requestMatchers("/v1/users/{postname}/profile").permitAll()
