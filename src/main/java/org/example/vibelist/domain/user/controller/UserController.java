@@ -17,6 +17,7 @@ import org.example.vibelist.global.security.util.SecurityUtil;
 import org.example.vibelist.global.response.GlobalException;
 import org.example.vibelist.global.response.ResponseCode;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -75,6 +76,17 @@ public class UserController {
             UserDto updatedUser = userService.updateUserProfile(userId, request);
             return ResponseEntity.ok(updatedUser);
         } catch (IllegalArgumentException e) {
+            throw new GlobalException(ResponseCode.USER_NOT_FOUND, e.getMessage());
+        }
+    }
+
+    @Operation(summary = "사용자 프로필 페이지 호출 api")
+    @GetMapping("/{username}/profile")
+    public ResponseEntity<?> getUserProfile(@PathVariable String username) {
+        try {
+            UserDto userProfile = userService.searchUserByUsername(username);
+            return ResponseEntity.ok(userProfile);
+        }catch (IllegalArgumentException e) {
             throw new GlobalException(ResponseCode.USER_NOT_FOUND, e.getMessage());
         }
     }
