@@ -210,7 +210,6 @@ public class AuthService {
                 .bio(bio)
                 .locale(existingProfile.getLocale())
                 .build();
-        
         userService.saveUserProfile(updatedProfile);
     }
     
@@ -308,7 +307,7 @@ public class AuthService {
                 .api("auth/v1/logout")
                 .requestBody(null)
                 .build();
-        logSender.send(logData);
+        logSender.send(logData); //AOP 로그 전송
         // access token과 refresh token 쿠키 삭제
         cookieUtil.removeAllAuthCookies(response);
     }
