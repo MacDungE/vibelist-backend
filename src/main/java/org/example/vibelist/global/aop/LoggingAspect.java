@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.reactive.HandlerMapping;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -149,19 +150,18 @@ public class LoggingAspect {
     /*
     호출되는 API르 반환합니다.
      */
-    public String extractRequestDetails() {
+    public String extractTemplateUri() {
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            HttpServletRequest request = attrs.getRequest();
-            String uri = request.getRequestURI(); // 예: /v1/post/1
-            String query = request.getQueryString(); // 예: foo=bar
-            if(query!=null){ //query값이 넘어올때
-                String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
-                return uri + "?" + decodedQuery; // ex: v1/explore/search?q=우울함
-            }
-            return uri;
+        if (attrs == null) return "unknown";
+
+        HttpServletRequest request = attrs.getRequest();
+        String pattern = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+
+        String query = request.getQueryString();  // 예: q=우울함
+        if (query != null) {
+            return pattern + "?" + URLDecoder.decode(query, StandardCharsets.UTF_8);
         }
-        return "unknown";
+        return pattern;
     }
     /*
     Request body를 추출합니다.
