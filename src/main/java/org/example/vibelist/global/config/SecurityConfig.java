@@ -96,7 +96,7 @@ public class SecurityConfig {
                         // 댓글 조회 허용 (GET 요청만)
                         .requestMatchers(HttpMethod.GET, "/v1/comments").permitAll()
                         // 좋아요 조회
-                        .requestMatchers("/v1/post/{postId}/likes/count", "/v1/post/{postId}/likes/me", "/v1/comment/{commentId}/likes/count", "/v1/comment/{commentId}/likes/me").permitAll()
+                        .requestMatchers("/v1/post/{postId}/likes/count", "/v1/post/{postId}/likes/me", "/v1/comment/{commentId}/likes/count", "/v1/comment/{commentId}/likes/me","/v1/users/{postname}/profile").permitAll()
                         // 나머지 게시글/댓글/좋아요(생성/수정/삭제/토글 등)는 인증 필요
                         .requestMatchers("/v1/post/**").authenticated()
                         .requestMatchers("/v1/comment/**").authenticated()
