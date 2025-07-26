@@ -121,7 +121,7 @@ public class PostESQueryBuilder {
                 // ① deletedAt 존재 여부
                 .filter(f -> f.bool(fb -> fb.mustNot(mn -> mn.exists(e -> e.field("deletedAt")))))
 
-                // ② createdAt ≥ since  OR  updatedAt ≥ since  (최소 1개 조건 만족)
+                // ② createdAt ≥ since  OR  updatedAt ≥ since
                 .filter(f -> f.bool(b2 -> b2
                         .should(s -> s.range(r -> r
                                 .untyped(u -> u
@@ -133,7 +133,13 @@ public class PostESQueryBuilder {
                                         .field("updatedAt")
                                         .gte(JsonData.of(iso)))
                         ))
-                        .minimumShouldMatch("1")      // should 절 둘 중 하나 이상
+                        .minimumShouldMatch("1")
+                ))
+
+                // ③ isPublic == true
+                .filter(f -> f.term(t -> t
+                        .field("isPublic")
+                        .value(true)
                 ))
         ));
     }
