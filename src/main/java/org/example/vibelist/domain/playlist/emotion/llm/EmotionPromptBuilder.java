@@ -6,12 +6,12 @@ public class EmotionPromptBuilder {
     public static String build(String userText, EmotionModeType mode) {
         return """
         아래 텍스트는 사용자의 감정 설명이며, 모드는 감정 전이(유지/변화)의 방향성을 나타냅니다.
-        반드시 두 입력값을 모두 고려해 검색에 사용할 Audio Feature의 범위와, 최종 감정 분류(emotionType)를 모두 JSON 형식으로만 출력하세요.
+        그러나 **이 출력에서는 감정 설명만 고려**하며, 모드는 참고용으로만 입력됩니다.
+        검색에 사용할 Audio Feature의 범위와, 최종 감정 분류(emotionType)를 모두 JSON 형식으로만 출력하세요.
         
         - 감정 설명: 사용자의 현재 감정 상태를 의미하는 자유로운 텍스트
-        - 모드: maintain, elevate, calm-down, reverse 중 하나, 감정 유지/상승/진정/역전
+        - 모드: maintain, elevate, calm-down, reverse 중 하나, 감정 유지/상승/진정/역전 (참고용)
         
-        ❗️모드에 따라 emotionType과 각 feature 범위를 변화시키세요. 예를 들어 '슬픔', 'elevate'라면 슬픔에서 더 긍정적인 감정으로 feature를 조정해야 합니다.
         
         사용될 Audio Feature:
         - danceability (0.0~1.0, 주로 0.2~0.9)
@@ -28,7 +28,7 @@ public class EmotionPromptBuilder {
         [DEPRESSED, SLEEPY, TENSE, SAD, NEUTRAL, FEAR, CALM, JOY, EXCITED]
         
         감정 설명: "%s"
-        모드: "%s"
+        모드: "%s" (참고용)
         
         JSON 출력 예시 (슬픔에서 elevate 모드일 때):
         {
