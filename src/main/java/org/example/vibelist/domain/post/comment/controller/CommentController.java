@@ -31,7 +31,7 @@ public class CommentController {
 
     @Operation(summary = "댓글 생성", description = "새로운 댓글을 등록합니다.")
     @PostMapping
-    @PreAuthorize("authenticated")
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action = "CREATE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> create(@RequestBody CommentCreateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
         Long userId = details.getId();
@@ -52,7 +52,7 @@ public class CommentController {
 
     @Operation(summary = "댓글 수정", description = "댓글 내용을 수정합니다.")
     @PutMapping("/{id}")
-    @PreAuthorize("authenticated")
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action = "UPDATE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> update(@PathVariable Long id, @RequestBody CommentUpdateDto dto, @AuthenticationPrincipal CustomUserDetails details) {
         Long userId = details.getId();
@@ -62,7 +62,7 @@ public class CommentController {
 
     @Operation(summary = "댓글 삭제", description = "댓글을 삭제합니다.")
     @DeleteMapping("/{id}")
-    @PreAuthorize("authenticated")
+    @PreAuthorize("isAuthenticated()")
     @UserActivityLog(action = "REMOVE_COMMENT")//AOP 전달
     public ResponseEntity<RsData<?>> delete(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails details) {
         Long userId = details.getId();

@@ -68,7 +68,8 @@ public class TrendService {
 
             // 3. 지난 24시간 내 활성 게시글 조회 & 스코어링
             LocalDateTime since = LocalDateTime.now().minusHours(24);
-            List<SearchHit<PostDocument>> hits = findScoredAndSortedActivePosts(since, TOP_N_TRENDS);
+            LocalDateTime updateSince = LocalDateTime.now().minusHours(72);
+            List<SearchHit<PostDocument>> hits = findScoredAndSortedActivePosts(since,updateSince, TOP_N_TRENDS);
 
             // 4. DTO → 엔티티 변환 및 저장
             List<PostTrend> trends = hits.stream()
@@ -164,10 +165,11 @@ public class TrendService {
 
     private List<SearchHit<PostDocument>> findScoredAndSortedActivePosts(
             LocalDateTime since,
+            LocalDateTime updateSince,
             int size
     ) {
         // ES 쿼리 생성
-        Query activeQuery = PostESQueryBuilder.buildActivePostsSince(since);
+        Query activeQuery = PostESQueryBuilder.buildActivePostsSince(since, updateSince);
         List<SortOptions> sort = PostESQueryBuilder.buildScoreSortOptions();
 
         NativeQuery nq = NativeQuery.builder()
