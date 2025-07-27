@@ -1,5 +1,6 @@
 package org.example.vibelist.domain.playlist.pool;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vibelist.domain.playlist.dto.TrackRsDto;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class RecommendPoolService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper redisObjectMapper; // JSON 직렬화/역직렬화용 ObjectMapper
 
     // pool 저장 (TTL: 캐싱 시간)
     public void savePool(String key, Set<TrackRsDto> pool, long ttl, TimeUnit unit) {
@@ -33,7 +35,9 @@ public class RecommendPoolService {
         Set<Object> randTracks = redisTemplate.opsForSet().distinctRandomMembers(key, count);
         if (randTracks != null && !randTracks.isEmpty()) {
             log.info("🚀 Pool HIT: key={}, size={}", key, randTracks.size());
-            return randTracks.stream().map(o -> (TrackRsDto) o).toList();
+            return randTracks.stream()
+                    .map(o -> redisObjectMapper.convertValue(o, TrackRsDto.class))
+                    .toList();
         } else {
             log.info("❌ Pool MISS: key={}", key);
             return  null;
