@@ -17,9 +17,10 @@ public class PostESQueryBuilder {
 
     private PostESQueryBuilder() { }
 
-    /* ---------- 1. 키워드 + 가중치 스코어링 검색 ---------- */
+    //    /* ---------- 1. 키워드 검색 ---------- */
     public static Query search(String keyword) {
-        Query baseQuery = Query.of(q -> q.bool(b -> b
+        return Query.of(q -> q.bool(b -> b
+                /* MUST 절 – multi_match 하나만 넣어 간결하게 */
                 .must(m -> m.multiMatch(mm -> mm
                         .query(keyword)
                         .fields(
@@ -29,31 +30,19 @@ public class PostESQueryBuilder {
                                 "playlist.tracks.artist",
                                 "playlist.tracks.album"
                         )
-                        .type(TextQueryType.BestFields)
-                        .operator(Operator.And)
-                        .fuzziness("AUTO")
+                        .type(TextQueryType.BestFields)   // ← 기본값과 동일 – 한 field 최고스코어만
+                        .operator(Operator.And)           // ← 모든 토큰 포함 (느슨하게 = Or)
+                        .fuzziness("AUTO")                // ← 오타 허용
                 ))
+
+                /* FILTER 절 – 공개 글만 */
                 .filter(f -> f.term(t -> t
                         .field("isPublic")
                         .value(true)
                 ))
         ));
-
-        return Query.of(q -> q.functionScore(fs -> fs
-                .query(baseQuery)
-                .functions(f -> f.fieldValueFactor(fvf -> fvf
-                        .field("likeCnt")
-                        .factor(2.0)
-                        .missing(0.0)
-                ).weight(1.0))
-                .functions(f -> f.fieldValueFactor(fvf -> fvf
-                        .field("viewCnt")
-                        .factor(1.0)
-                        .missing(0.0)
-                ).weight(1.0))
-                .scoreMode(FunctionScoreMode.Sum)
-        ));
     }
+
 
     /* ---------- 2. 공개 피드 + 시간 감쇠 정렬 ---------- */
     public static Query feed() {
