@@ -58,11 +58,11 @@ VibeList 백엔드는 AWS 클라우드 환경에서 아래와 같이 구성되�
    - 배포 자동화(Docker, Github Actions 등) 및 보안 그룹 설정
       - EC2  세부 Spec
 
-     | 인스턴스 타입 | 구성 요소 | 사양 |
-             | --- | --- | --- |
-     | `t3.medium` | Elasticsearch, Kibana | 2 vCPU / 4 GB RAM |
-     | `t2.small` | Logstash, Redis | 1 vCPU / 2 GB RAM |
-     | `t2.micro` | Spring Boot Backend | 1 vCPU / 1 GB RAM |
+      | 인스턴스 타입 | 구성 요소              | 사양              |
+      |---------------|------------------------|-------------------|
+      | t3.medium     | Elasticsearch, Kibana  | 2 vCPU / 4 GB RAM |
+      | t2.small      | Logstash, Redis        | 1 vCPU / 2 GB RAM |
+      | t2.micro      | Spring Boot Backend    | 1 vCPU / 1 GB RAM |
 - **ECS (Elastic Container Service)**
    - Docker 컨테이너 기반의 서비스 오케스트레이션
    - Blue/Green 배포, Auto Scaling, 롤링 업데이트 지원
