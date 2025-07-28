@@ -1,6 +1,21 @@
 # VibeList API Server
 
-[Java](https://img.shields.io/badge/Java-21-007396?style=flat&logo=openjdk&logoColor=white)[Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-6DB33F?style=flat&logo=springboot&logoColor=white)[Spring Security](https://img.shields.io/badge/Spring%20Security-Active-6DB33F?style=flat&logo=springsecurity&logoColor=white[Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-ORM-007396?style=flat&logo=spring&logoColor=white)[JWT](https://img.shields.io/badge/JWT-Authorization-yellow?style=flat&logo=jsonwebtokens&logoColor=black)[OAuth2](https://img.shields.io/badge/OAuth2-SocialLogin-005C97?style=flat&logo=oauth&logoColor=white)[PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat&logo=postgresql&logoColor=white)[Gradle](https://img.shields.io/badge/Gradle-7.x-02303A?style=flat&logo=gradle&logoColor=white)[Lombok](https://img.shields.io/badge/Lombok-Annotation-EA3324?style=flat&logo=lombok&logoColor=white)[Swagger](https://img.shields.io/badge/Swagger-UI-85EA2D?style=flat&logo=swagger&logoColor=black)[Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=flat&logo=docker&logoColor=white)[Redis](https://img.shields.io/badge/Redis-InMemory-DC382D?style=flat&logo=redis&logoColor=white)[Elasticsearch](https://img.shields.io/badge/Elasticsearch-Search-005571?style=flat&logo=elasticsearch&logoColor=white)[Logstash](https://img.shields.io/badge/Logstash-Pipeline-000000?style=flat&logo=logstash&logoColor=white)[Kibana](https://img.shields.io/badge/Kibana-Visualization-E8478B?style=flat&logo=kibana&logoColor=white)[GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?style=flat&logo=githubactions&logoColor=white)
+[![Java](https://img.shields.io/badge/Java-21-007396?style=flat&logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-6DB33F?style=flat&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Security](https://img.shields.io/badge/Spring%20Security-Active-6DB33F?style=flat&logo=springsecurity&logoColor=white)](https://spring.io/projects/spring-security)
+[![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-ORM-007396?style=flat&logo=spring&logoColor=white)](https://spring.io/projects/spring-data-jpa)
+[![JWT](https://img.shields.io/badge/JWT-Authorization-yellow?style=flat&logo=jsonwebtokens&logoColor=black)](https://jwt.io/)
+[![OAuth2](https://img.shields.io/badge/OAuth2-SocialLogin-005C97?style=flat&logo=oauth&logoColor=white)](https://oauth.net/2/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Gradle](https://img.shields.io/badge/Gradle-7.x-02303A?style=flat&logo=gradle&logoColor=white)](https://gradle.org/)
+[![Lombok](https://img.shields.io/badge/Lombok-Annotation-EA3324?style=flat&logo=lombok&logoColor=white)](https://projectlombok.org/)
+[![Swagger](https://img.shields.io/badge/Swagger-UI-85EA2D?style=flat&logo=swagger&logoColor=black)](https://swagger.io/tools/swagger-ui/)
+[![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Redis](https://img.shields.io/badge/Redis-InMemory-DC382D?style=flat&logo=redis&logoColor=white)](https://redis.io/)
+[![Elasticsearch](https://img.shields.io/badge/Elasticsearch-Search-005571?style=flat&logo=elasticsearch&logoColor=white)](https://www.elastic.co/elasticsearch/)
+[![Logstash](https://img.shields.io/badge/Logstash-Pipeline-000000?style=flat&logo=logstash&logoColor=white)](https://www.elastic.co/logstash/)
+[![Kibana](https://img.shields.io/badge/Kibana-Visualization-E8478B?style=flat&logo=kibana&logoColor=white)](https://www.elastic.co/kibana/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?style=flat&logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
 > OAuth2 기반 소셜 로그인 & JWT 인증 백엔드
 >
@@ -248,7 +263,7 @@ VibeList 백엔드는 AWS EC2/ECS에서 발생하는 애플리케이션 로그�
 
 ### 로그 흐름 아키텍처
 
-![image.png](attachment:b0d020f9-0002-4825-98df-766b5d7606fe:image.png)
+![log_arch.png](img/log_arch.png)
 
 ### 주요 구성 및 분석 절차
 
@@ -271,7 +286,7 @@ VibeList 백엔드는 AWS EC2/ECS에서 발생하는 애플리케이션 로그�
 
 - 특정 사용자/기간/엔드포인트별 호출 건수
 
-  ![userlog.png](attachment:5f0cc8c4-2d31-4a17-88a3-3ad05c23898f:userlog.png)
+  ![userlog.png](img/userlog.png)
 
 
 ### 운영 효과
