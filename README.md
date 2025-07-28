@@ -53,7 +53,7 @@ VibeList 백엔드는 AWS 클라우드 환경에서 아래와 같이 구성되�
 
 ### 주요 서비스 구성
 
-- **EC2 (Elastic Compute Cloud)**
+- **EC2**
    - Spring Boot 애플리케이션을 호스팅하는 가상 서버
    - 배포 자동화(Docker, Github Actions 등) 및 보안 그룹 설정
       - EC2  세부 Spec
@@ -77,18 +77,7 @@ VibeList 백엔드는 AWS 클라우드 환경에서 아래와 같이 구성되�
 
 ### 아키텍처 흐름
 
-```
-[사용자]
-   ↓
-[Route53/ALB] (도메인 및 HTTPS)
-   ↓
-[EC2] 또는 [ECS] (Spring Boot API 서버)
-   ↓
-[RDS] (PostgreSQL DB)
-   ↑
-[CloudWatch] (로그/모니터링)
-
-```
+![full_arch.png](img/full_arch.png)
 
 ### 운영 특징
 
@@ -238,13 +227,15 @@ vibelist-backend/
 - **글로벌 예외 핸들러**: 모든 예외를 표준 JSON 응답으로 반환
 - **응답 예시**:
 
-    ```
-    {
-      "code": "USER_NOT_FOUND",
-      "message": "존재하지 않는 사용자입니다."
-    }
-    
-    ```
+```
+{
+  "success": false,
+  "code": "USER_404",
+  "message": "존재하지 않는 사용자입니다.",
+  "data": null,
+  "timestamp": "2025-07-28T15:10:00"
+}
+```
 
 - **커스텀 예외**: 비즈니스 로직별 상세 에러 코드 관리
 
