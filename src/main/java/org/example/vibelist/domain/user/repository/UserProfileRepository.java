@@ -42,4 +42,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
      */
     @Query("SELECT p FROM UserProfile p JOIN FETCH p.user WHERE p.name LIKE %:name%")
     List<UserProfile> findByNameContainingWithUser(@Param("name") String name);
-} 
+
+
+    @Query("SELECT p FROM UserProfile p JOIN FETCH p.user WHERE p.user.username LIKE %:username%")
+    UserProfile findByUsernameContainingWithUser(@Param("username") String username);
+}

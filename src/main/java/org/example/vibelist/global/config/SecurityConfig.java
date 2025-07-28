@@ -88,19 +88,12 @@ public class SecurityConfig {
                         .requestMatchers("/v1/public/**").permitAll()
                         // 탐색(검색/피드/트렌드) 자유롭게 허용
                         .requestMatchers("/v1/explore/**").permitAll()
-                        // 게시글/댓글/좋아요 조회(permitAll), 생성/수정/삭제/토글(인증 필요)
-                        // 게시글 조회
-                        .requestMatchers("/v1/post", "/v1/post/", "/v1/post/{id}", "/v1/post/likes", "/v1/post/{id}/likes", "/v1/post/{id}/likes/count", "/v1/post/{id}/likes/me").permitAll()
-                        // 댓글 조회
-                        .requestMatchers("/v1/comment", "/v1/comment/", "/v1/comment/{id}").permitAll()
-                        // 댓글 조회 허용 (GET 요청만)
-                        .requestMatchers(HttpMethod.GET, "/v1/comments").permitAll()
+                        // 게시글, 댓글, 좋아요 관련 API는 모두 허용하고 컨트롤러에서 세밀하게 제어
+                        .requestMatchers("/v1/post/**", "/v1/comment/**", "/v1/comments/**", "/v1/like/**").permitAll()
+
                         // 좋아요 조회
-                        .requestMatchers("/v1/post/{postId}/likes/count", "/v1/post/{postId}/likes/me", "/v1/comment/{commentId}/likes/count", "/v1/comment/{commentId}/likes/me").permitAll()
-                        // 나머지 게시글/댓글/좋아요(생성/수정/삭제/토글 등)는 인증 필요
-                        .requestMatchers("/v1/post/**").authenticated()
-                        .requestMatchers("/v1/comment/**").authenticated()
-                        .requestMatchers("/v1/like/**").authenticated()
+                        .requestMatchers("/v1/users/{postname}/profile").permitAll()
+
                         // 플레이리스트, 태그, 추천 등 기타 공개 API
                         .requestMatchers("/v1/playlist/**").permitAll()
                         .requestMatchers("/v1/tag/**").permitAll()

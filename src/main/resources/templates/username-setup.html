@@ -26,14 +26,14 @@
                        name="username" 
                        placeholder="사용자명을 입력하세요" 
                        required
-                       pattern="^[a-zA-Z_]{3,15}$"
+                       pattern="^[a-zA-Z0-9._]{3,15}$"
                        minlength="3"
                        maxlength="15"
                        class="w-full rounded-lg border border-gray-200 px-4 py-3 text-[15px] transition focus:outline-none focus:border-indigo-500"
                        autofocus
                       >
                 <div class="mt-1 text-xs text-gray-600">
-                    3-15자의 영문, 언더스코어(_)만 사용 가능합니다.
+                    3-15자의 영문, 숫자, 마침표(.), 언더스코어(_)만 사용 가능합니다.
                 </div>
                 <div th:if="${error}" class="mt-1 text-xs text-red-500" th:text="${error}"></div>
             </div>
@@ -56,10 +56,10 @@
         
         usernameInput.addEventListener('input', function(e) {
             const value = e.target.value;
-            const isValid = /^[a-zA-Z_]{3,15}$/.test(value);
+            const isValid = /^[a-zA-Z0-9.,_]{3,15}$/.test(value);
             
             if (!isValid && value.length > 0) {
-                e.target.setCustomValidity('3-15자의 영문, 언더스코어(_)만 사용 가능합니다.');
+                e.target.setCustomValidity('3-15자의 영문, 숫자, 마침표(.), 쉼표(,), 언더스코어(_)만 사용 가능합니다.');
             } else {
                 e.target.setCustomValidity('');
             }
