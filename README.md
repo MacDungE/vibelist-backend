@@ -178,11 +178,23 @@ vibelist-backend/
 
 ## 🗄️ 데이터베이스 설계
 
-- **User**: 기본 정보 (username, password, role)
-- **UserProfile**: 프로필(이메일, 이름, 전화번호, 아바타, 자기소개)
-- **UserSocial**: 소셜 연동(provider, providerUserId, accessToken 등)
-- **관계**: User ↔ UserProfile(1:1), User ↔ UserSocial(1:N)
-- **토큰 관리**: Refresh Token 테이블 별도 관리
+   - **User**: 로그인에 필요한 기본 정보(ID, 비밀번호, 역할)를 관리합니다.
+   - **UserProfile**: 이메일, 이름, 자기소개 등 사용자의 프로필 정보를
+     관리합니다. (User와 1:1 관계)
+   - **UserSocial** (Integration): 소셜 로그인 및 외부 서비스 연동 정보를 통합
+      관리합니다. provider (e.g., 'kakao', 'spotify'), providerUserId,
+     그리고 API 접근에 필요한 accessToken, refreshToken 등을 저장합니다.
+     이를 통해 Spotify 같은 음악 서비스와의 데이터 연동을 지원합니다.
+     (User와 1:N 관계)
+   - **Post**: 사용자가 작성하는 게시물입니다. 내용, 태그 등을 포함하며,
+     작성자인 User와 N:1 관계를 맺습니다.
+   - **Playlist**: 사용자가 생성하는 음악 플레이리스트입니다. 플레이리스트
+     제목, 설명 등을 포함하며, 생성자인 User와 N:1 관계입니다. 각
+     플레이리스트는 여러 개의 음악 트랙 정보를 가질 수 있습니다.
+   - **Comment / Like**: Post에 대한 댓글과 좋아요 정보를 관리하며, 각각 User
+     및 Post와 관계를 맺습니다.
+   - **토큰 관리**: VibeList 자체의 Refresh Token을 별도 테이블에서 암호화하여
+      관리합니다
 
 ---
 
